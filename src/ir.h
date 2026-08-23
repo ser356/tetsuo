@@ -7,6 +7,7 @@ typedef enum {
     IR_STRB,
     IR_LABEL,
     IR_JMP,
+    IR_CALL,
 } IrOp;
 
 typedef struct Instr {
@@ -16,12 +17,16 @@ typedef struct Instr {
     int         addr;
     uint64_t    imm;
     int         label;
+    char        *callee;
+    int         nargs;
     struct Instr *next;
 } Instr;
 
-typedef struct {
-    const char *name;
-    Instr      *head;
+typedef struct IrFn {
+    char        *name;
+    int         nparams;
+    Instr       *head;
+    struct IrFn *next;
 } IrFn;
 
-IrFn *lower(Func *f);
+IrFn *lower(Func *funcs);

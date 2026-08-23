@@ -10,6 +10,7 @@ typedef enum {
     EX_INT,
     EX_CAST,
     EX_DEREF,
+    EX_VAR,
 } ExprKind;
 
 typedef struct Expr {
@@ -17,23 +18,35 @@ typedef struct Expr {
     uint64_t    ival;
     struct Expr *inner;
     TyKind      cast_to;
+    int         var_index;
 } Expr;
 
 typedef enum {
     ST_STORE,
     ST_LOOP,
+    ST_CALL,
 } StmtKind;
 
 typedef struct Stmt {
     StmtKind    kind;
     Expr        *lhs_ptr;
     Expr        *rhs;
+    char        *callee;
+    Expr        **args;
+    int         nargs;
     struct Stmt *next;
 } Stmt;
 
-typedef struct {
+typedef struct Param {
     char *name;
-    Stmt *body;
+} Param;
+
+typedef struct Func {
+    char        *name;
+    Param       *params;
+    int         nparams;
+    Stmt        *body;
+    struct Func *next;
 } Func;
 
 Func *parse(const char *src);

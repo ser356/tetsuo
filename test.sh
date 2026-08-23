@@ -59,6 +59,9 @@ SECTIONS
 {
   . = $LOAD_ADDR;
   .text : { *(.text.boot) *(.text*) }
+  . = ALIGN(16);
+  . += 0x10000;
+  __stack_top = .;
 }
 EOF
 fi

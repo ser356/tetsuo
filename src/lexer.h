@@ -9,6 +9,7 @@ typedef enum {
     TK_NUM,
     TK_LPAREN, TK_RPAREN, TK_LBRACE, TK_RBRACE,
     TK_STAR, TK_EQ, TK_SEMI,
+    TK_COMMA, TK_COLON,
 } TokKind;
 
 typedef struct {

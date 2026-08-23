@@ -2,4 +2,4 @@
 #include "ir.h"
 #include <stdio.h>
 
-void codegen(FILE *out, IrFn *fn);
+void codegen(FILE *out, IrFn *funcs);

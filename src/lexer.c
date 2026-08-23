@@ -103,6 +103,8 @@ Tok lex_next(Lexer *lx) {
         case '*': t.kind = TK_STAR;   return t;
         case '=': t.kind = TK_EQ;     return t;
         case ';': t.kind = TK_SEMI;   return t;
+        case ',': t.kind = TK_COMMA;  return t;
+        case ':': t.kind = TK_COLON;  return t;
         default: die_lex(t.line, "caracter inesperado");
     }
     return t;

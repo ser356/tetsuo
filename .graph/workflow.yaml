@@ -43,7 +43,7 @@ nodes:
   verify:
     type: shell
     # rellena aquí tu comando de tests (p.ej. go test ./...)
-    command: ""
+    command: "bash test.sh"
     timeout: 10m
     routes:
       exit_zero: pass
