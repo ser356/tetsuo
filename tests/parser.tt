@@ -1,30 +1,12 @@
-struct SigInfo {
-    count: u64,
-    first_name_start: u64,
-    first_name_len: u64,
+bss SIG_BUF: 8
+
+fun sig_char(c: u8) {
+    SIG_BUF[0] = c
+    io_write(1, SIG_BUF, 1)
 }
 
-struct NameList {
-    starts: *u8,
-    lens:   *u8,
-    n:      u64,
-    cap:    u64,
-}
-
-fun nl_init(nl: *NameList, ar: *Arena, cap: u64) {
-    nl.starts = arena_take(ar, cap * 8)
-    nl.lens   = arena_take(ar, cap * 8)
-    nl.n = 0
-    nl.cap = cap
-}
-
-fun nl_push(nl: *NameList, start: u64, len: u64) {
-    if nl.n >= nl.cap { return }
-    let s: *u64 = nl.starts + nl.n * 8
-    let l: *u64 = nl.lens   + nl.n * 8
-    @s = start
-    @l = len
-    nl.n = nl.n + 1
+fun sig_slice(src: *u8, start: u64, len: u64) {
+    io_write(1, src + start, len)
 }
 
 fun skip_fun_body(lx: *Lexer) {
@@ -43,43 +25,95 @@ fun skip_fun_body(lx: *Lexer) {
     }
 }
 
-fun parse_toplevel(lx: *Lexer, out: *SigInfo) {
-    out.count = 0
-    out.first_name_start = 0
-    out.first_name_len = 0
-    let first_seen: u32 = 0
+fun ps_skip_fun_body(ps: *PState) {
+    let t: Tok
     while 1 == 1 {
-        let t: Tok
-        lex_next(lx, &t)
-        if t.kind == TK_EOF { break }
-        if t.kind == TK_FUN {
-            out.count = out.count + 1
-            let nt: Tok
-            lex_next(lx, &nt)
-            if first_seen == 0 {
-                if nt.kind == TK_IDENT {
-                    out.first_name_start = nt.start
-                    out.first_name_len = nt.tlen
-                    first_seen = 1
-                }
-            }
-            skip_fun_body(lx)
-        }
+        ps_next(ps, &t)
+        if t.kind == TK_LBRACE { break }
+        if t.kind == TK_EOF { return }
+    }
+    let depth: u64 = 1
+    while depth > 0 {
+        ps_next(ps, &t)
+        if t.kind == TK_EOF { return }
+        if t.kind == TK_LBRACE { depth = depth + 1 }
+        if t.kind == TK_RBRACE { depth = depth - 1 }
     }
 }
 
-fun collect_fun_names(lx: *Lexer, nl: *NameList) {
+fun print_type(ps: *PState, src: *u8) {
+    let t: Tok
+    ps_next(ps, &t)
+    if t.kind == TK_STAR {
+        sig_char(42)
+        print_type(ps, src)
+        return
+    }
+    if t.kind == TK_IDENT {
+        sig_slice(src, t.start, t.tlen)
+    }
+}
+
+fun print_fun_sig(ps: *PState, src: *u8) {
+    let name: Tok
+    ps_next(ps, &name)
+    if name.kind != TK_IDENT { return }
+    sig_slice(src, name.start, name.tlen)
+
+    let lp: Tok
+    ps_next(ps, &lp)
+    sig_char(40)
+
+    let first: u32 = 1
     while 1 == 1 {
-        let t: Tok
-        lex_next(lx, &t)
-        if t.kind == TK_EOF { break }
-        if t.kind == TK_FUN {
-            let nt: Tok
-            lex_next(lx, &nt)
-            if nt.kind == TK_IDENT {
-                nl_push(nl, nt.start, nt.tlen)
-            }
-            skip_fun_body(lx)
+        let k: u32 = ps_peek_kind(ps)
+        if k == TK_RPAREN { break }
+        let pn: Tok
+        ps_next(ps, &pn)
+        if pn.kind != TK_IDENT { break }
+        if first == 0 {
+            sig_char(44)
+            sig_char(32)
+        }
+        first = 0
+        sig_slice(src, pn.start, pn.tlen)
+        sig_char(58)
+        sig_char(32)
+        let colon: Tok
+        ps_next(ps, &colon)
+        print_type(ps, src)
+        if ps_peek_kind(ps) == TK_COMMA {
+            let cm: Tok
+            ps_next(ps, &cm)
         }
     }
+    let rp: Tok
+    ps_next(ps, &rp)
+    sig_char(41)
+
+    if ps_peek_kind(ps) == TK_ARROW {
+        let arr: Tok
+        ps_next(ps, &arr)
+        sig_char(32)
+        sig_char(45)
+        sig_char(62)
+        sig_char(32)
+        print_type(ps, src)
+    }
+    sig_char(10)
+    ps_skip_fun_body(ps)
+}
+
+fun dump_all_sigs(ps: *PState, src: *u8) -> u64 {
+    let count: u64 = 0
+    while 1 == 1 {
+        let t: Tok
+        ps_next(ps, &t)
+        if t.kind == TK_EOF { break }
+        if t.kind == TK_FUN {
+            print_fun_sig(ps, src)
+            count = count + 1
+        }
+    }
+    return count
 }

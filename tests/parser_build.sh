@@ -17,7 +17,7 @@ COMBINED=$BUILD/parser_combined.tt
 INPUT_TT=${1:-tests/hello.tt}
 INPUT_MAIN=$BUILD/parser_main_gen.tt
 sed "s|tests/hello.tt|${INPUT_TT}|" tests/parser_main.tt > "$INPUT_MAIN"
-cat tests/io.tt tests/lexer.tt tests/parser.tt "$INPUT_MAIN" > "$COMBINED"
+cat tests/io.tt tests/lexer.tt tests/expr.tt tests/parser.tt "$INPUT_MAIN" > "$COMBINED"
 
 "$COMPILER" --target=macos "$COMBINED" -o "$BUILD/parser_test.s"
 $CC -c "$BUILD/parser_test.s" -o "$BUILD/parser_test.o"
