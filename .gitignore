@@ -2,7 +2,6 @@ build/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 graft/
-.graph/sessions.db
 # --- copilot-sync repsol ---
 .env
 .env.*
@@ -10,3 +9,4 @@ graft/
 !.env.sample
 !.env.template
 # --- /copilot-sync repsol ---
+.graph/sessions.db
