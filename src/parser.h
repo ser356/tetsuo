@@ -3,50 +3,132 @@
 #include <stdint.h>
 
 typedef enum {
-    TY_PTR_MUT_U8,
-} TyKind;
+    T_U8, T_U32, T_U64, T_PTR, T_STR,
+} PrimType;
+
+typedef struct Type {
+    PrimType     kind;
+    struct Type *inner;
+} Type;
+
+int type_width(const Type *t);
+
+typedef enum {
+    OP_ADD, OP_SUB, OP_MUL, OP_DIV,
+    OP_AND, OP_OR, OP_XOR,
+} BinOpKind;
 
 typedef enum {
     EX_INT,
-    EX_CAST,
-    EX_DEREF,
     EX_VAR,
+    EX_CALL,
+    EX_DEREF,
+    EX_BIN,
+    EX_EQ,
+    EX_NE,
+    EX_STRLIT,
+    EX_ADDR,
 } ExprKind;
+
+struct ConstItem;
 
 typedef struct Expr {
     ExprKind    kind;
+    Type       *type;
+
     uint64_t    ival;
-    struct Expr *inner;
-    TyKind      cast_to;
+
     int         var_index;
+
+    char        *callee;
+    struct Expr **args;
+    int         nargs;
+
+    struct Expr *inner;
+
+    BinOpKind   op;
+    struct Expr *lhs;
+    struct Expr *rhs;
+
+    int         str_id;
+    char        *str_bytes;
+    size_t      str_len;
+
+    char        *label_name;
 } Expr;
 
 typedef enum {
+    ST_LET,
     ST_STORE,
+    ST_ASSIGN,
     ST_LOOP,
-    ST_CALL,
+    ST_WHILE,
+    ST_IF,
+    ST_BREAK,
+    ST_RETURN,
+    ST_EXPR,
 } StmtKind;
 
 typedef struct Stmt {
     StmtKind    kind;
-    Expr        *lhs_ptr;
-    Expr        *rhs;
-    char        *callee;
-    Expr        **args;
-    int         nargs;
+
+    int         let_local;
+    Expr        *let_init;
+
+    Expr        *store_ptr;
+    Expr        *store_val;
+
+    int         assign_local;
+    Expr        *assign_val;
+
+    Expr        *cond;
+
+    Expr        *ret_val;
+
+    Expr        *expr;
+
+    struct Stmt *body;
+    struct Stmt *else_body;
+
     struct Stmt *next;
 } Stmt;
 
-typedef struct Param {
+typedef struct Local {
     char *name;
-} Param;
+    Type *type;
+} Local;
 
 typedef struct Func {
     char        *name;
-    Param       *params;
+    Local       *locals;
+    int         nlocals;
     int         nparams;
+    Type        *ret_type;
     Stmt        *body;
     struct Func *next;
 } Func;
 
-Func *parse(const char *src);
+typedef struct ConstItem {
+    char             *name;
+    Type             *type;
+    uint64_t         value;
+    struct ConstItem *next;
+} ConstItem;
+
+typedef struct Program {
+    ConstItem *consts;
+    Func      *funcs;
+    struct StrLit *strs;
+    int       nstrs;
+} Program;
+
+typedef struct StrLit {
+    int       id;
+    char      *bytes;
+    size_t    len;
+    struct StrLit *next;
+} StrLit;
+
+Program *parse(const char *src);
+Type    *mk_ptr(Type *inner);
+Type    *mk_prim(PrimType k);

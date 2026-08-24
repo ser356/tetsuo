@@ -80,16 +80,89 @@ Tok lex_next(Lexer *lx) {
     }
 
     if (is_ident_start((unsigned char)c)) {
-        const char *s = lx->p;
         while (is_ident_cont((unsigned char)*lx->p)) lx->p++;
-        size_t n = (size_t)(lx->p - s);
-        t.start = s;
-        t.len   = n;
-        if (kw_match(s, n, "fn"))   { t.kind = TK_FN;   return t; }
-        if (kw_match(s, n, "as"))   { t.kind = TK_AS;   return t; }
-        if (kw_match(s, n, "mut"))  { t.kind = TK_MUT;  return t; }
-        if (kw_match(s, n, "loop")) { t.kind = TK_LOOP; return t; }
-        t.kind = TK_IDENT;
+        t.len = (size_t)(lx->p - t.start);
+        if      (kw_match(t.start, t.len, "fun"))    t.kind = TK_FUN;
+        else if (kw_match(t.start, t.len, "let"))    t.kind = TK_LET;
+        else if (kw_match(t.start, t.len, "const"))  t.kind = TK_CONST;
+        else if (kw_match(t.start, t.len, "return")) t.kind = TK_RETURN;
+        else if (kw_match(t.start, t.len, "if"))     t.kind = TK_IF;
+        else if (kw_match(t.start, t.len, "else"))   t.kind = TK_ELSE;
+        else if (kw_match(t.start, t.len, "loop"))   t.kind = TK_LOOP;
+        else if (kw_match(t.start, t.len, "while"))  t.kind = TK_WHILE;
+        else if (kw_match(t.start, t.len, "break"))  t.kind = TK_BREAK;
+        else                                          t.kind = TK_IDENT;
+        return t;
+    }
+
+    if (c == '-' && lx->p[1] == '>') {
+        lx->p += 2;
+        t.kind = TK_ARROW;
+        t.len  = 2;
+        return t;
+    }
+    if (c == '=' && lx->p[1] == '=') {
+        lx->p += 2;
+        t.kind = TK_EQEQ;
+        t.len  = 2;
+        return t;
+    }
+    if (c == '!' && lx->p[1] == '=') {
+        lx->p += 2;
+        t.kind = TK_BANGEQ;
+        t.len  = 2;
+        return t;
+    }
+
+    if (c == '\'') {
+        lx->p++;
+        size_t cap = 16, n = 0;
+        char *buf = malloc(cap);
+        if (!buf) { perror("malloc"); exit(1); }
+        while (*lx->p && *lx->p != '\'') {
+            char b;
+            if (*lx->p == '\\') {
+                lx->p++;
+                switch (*lx->p) {
+                    case 'n':  b = '\n'; lx->p++; break;
+                    case 't':  b = '\t'; lx->p++; break;
+                    case '\\': b = '\\'; lx->p++; break;
+                    case '\'': b = '\''; lx->p++; break;
+                    case '0':  b = '\0'; lx->p++; break;
+                    case 'x': {
+                        lx->p++;
+                        int hv = 0;
+                        for (int k = 0; k < 2; k++) {
+                            char q = *lx->p;
+                            int d;
+                            if      (isdigit((unsigned char)q))       d = q - '0';
+                            else if (q >= 'a' && q <= 'f')            d = q - 'a' + 10;
+                            else if (q >= 'A' && q <= 'F')            d = q - 'A' + 10;
+                            else { die_lex(t.line, "escape \\x requiere 2 hex"); return t; }
+                            hv = hv * 16 + d;
+                            lx->p++;
+                        }
+                        b = (char)hv;
+                        break;
+                    }
+                    default: die_lex(t.line, "escape desconocido"); return t;
+                }
+            } else if (*lx->p == '\n') {
+                die_lex(t.line, "salto de linea sin cerrar en literal de cadena");
+                return t;
+            } else {
+                b = *lx->p;
+                lx->p++;
+            }
+            if (n + 1 > cap) { cap *= 2; buf = realloc(buf, cap); if (!buf) { perror("realloc"); exit(1); } }
+            buf[n++] = b;
+        }
+        if (*lx->p != '\'') { die_lex(t.line, "literal de cadena sin cerrar"); return t; }
+        lx->p++;
+        t.kind = TK_STRING;
+        t.str_bytes = buf;
+        t.str_len = n;
+        t.len = (size_t)(lx->p - t.start);
         return t;
     }
 
@@ -100,12 +173,22 @@ Tok lex_next(Lexer *lx) {
         case ')': t.kind = TK_RPAREN; return t;
         case '{': t.kind = TK_LBRACE; return t;
         case '}': t.kind = TK_RBRACE; return t;
+        case '[': t.kind = TK_LBRACK; return t;
+        case ']': t.kind = TK_RBRACK; return t;
         case '*': t.kind = TK_STAR;   return t;
+        case '+': t.kind = TK_PLUS;   return t;
+        case '-': t.kind = TK_MINUS;  return t;
+        case '/': t.kind = TK_SLASH;  return t;
+        case '&': t.kind = TK_AMP;    return t;
+        case '|': t.kind = TK_PIPE;   return t;
+        case '^': t.kind = TK_CARET;  return t;
         case '=': t.kind = TK_EQ;     return t;
         case ';': t.kind = TK_SEMI;   return t;
         case ',': t.kind = TK_COMMA;  return t;
         case ':': t.kind = TK_COLON;  return t;
-        default: die_lex(t.line, "caracter inesperado");
+        case '.': t.kind = TK_DOT;    return t;
+        case '@': t.kind = TK_AT;     return t;
+        default:  die_lex(t.line, "caracter inesperado");
     }
     return t;
 }

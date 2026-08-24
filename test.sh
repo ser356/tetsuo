@@ -58,7 +58,9 @@ ENTRY(_start)
 SECTIONS
 {
   . = $LOAD_ADDR;
-  .text : { *(.text.boot) *(.text*) }
+  .text   : { *(.text.boot) *(.text*) }
+  . = ALIGN(8);
+  .rodata : { *(.rodata*) }
   . = ALIGN(16);
   . += 0x10000;
   __stack_top = .;
@@ -74,7 +76,14 @@ $CC -std=c11 -O0 -g -Wall -Wextra -Wswitch -Werror \
 
 # --------------------------------------------------------------- 2. mycc: .lang -> .s
 step "compilando $INPUT"
-"$COMPILER" "$INPUT" -o "$BASE.s"
+UART_LIB=tests/uart.tt
+if [[ -f $UART_LIB && $INPUT != $UART_LIB ]]; then
+  COMBINED=$BUILD/combined.tt
+  cat "$UART_LIB" "$INPUT" > "$COMBINED"
+  "$COMPILER" "$COMBINED" -o "$BASE.s"
+else
+  "$COMPILER" "$INPUT" -o "$BASE.s"
+fi
 
 if [[ $MODE == asm ]]; then
   step "ASM generado"
@@ -95,7 +104,8 @@ step "enlazando"
 "${XPREFIX}size"    "$BASE.elf"
 
 # -------------------------------------------------------------------- 5. QEMU
-QEMU_ARGS=(-M "$MACHINE" -cpu "$CPU" -nographic -kernel "$BASE.elf")
+QEMU_ARGS=(-M "$MACHINE" -cpu "$CPU" -display none -serial stdio -kernel "$BASE.elf")
+QEMU_TIMEOUT=${QEMU_TIMEOUT:-2}
 
 if [[ $MODE == debug ]]; then
   step "QEMU congelado en :1234 — conecta con:"
@@ -103,5 +113,9 @@ if [[ $MODE == debug ]]; then
   exec "$QEMU" "${QEMU_ARGS[@]}" -S -s
 fi
 
-step "arrancando (Ctrl-A X para salir)"
-exec "$QEMU" "${QEMU_ARGS[@]}"
+step "arrancando (timeout ${QEMU_TIMEOUT}s; QEMU_TIMEOUT=... para cambiar)"
+rc=0
+perl -e 'alarm shift @ARGV; exec @ARGV' "$QEMU_TIMEOUT" "$QEMU" "${QEMU_ARGS[@]}" || rc=$?
+echo
+[[ $rc -eq 0 || $rc -eq 142 ]] && exit 0
+exit $rc

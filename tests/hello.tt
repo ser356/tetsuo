@@ -1,11 +1,5 @@
-fn putc(c: u8) {
-    *(0x09000000 as *mut u8) = c;
-}
-
-fn main() {
-    putc(104);
-    putc(111);
-    putc(108);
-    putc(97);
+fun main() {
+    let saludo: str = 'hola\n'
+    print(saludo)
     loop {}
 }

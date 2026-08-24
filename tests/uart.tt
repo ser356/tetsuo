@@ -1,0 +1,19 @@
+const UART_DR: *u8  = 0x09000000
+const UART_FR: *u32 = 0x09000018
+
+fun uart_ready() -> u32 {
+    return @UART_FR & 32
+}
+
+fun putc(c: u8) {
+    while uart_ready() != 0 {}
+    @UART_DR = c
+}
+
+fun print(s: str) {
+    let i: u64 = 0
+    while i != s.len {
+        putc(s.ptr[i])
+        i = i + 1
+    }
+}

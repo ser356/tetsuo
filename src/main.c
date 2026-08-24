@@ -28,12 +28,12 @@ static char *read_all(const char *path) {
 
 int main(int argc, char **argv) {
     if (argc != 4 || strcmp(argv[2], "-o") != 0) usage(argv[0]);
-    char *src  = read_all(argv[1]);
-    Func *f    = parse(src);
-    IrFn *fn   = lower(f);
+    char    *src  = read_all(argv[1]);
+    Program *prog = parse(src);
+    IrFn    *fns  = lower(prog);
     FILE *o = fopen(argv[3], "w");
     if (!o) { perror(argv[3]); return 1; }
-    codegen(o, fn);
+    codegen(o, prog, fns);
     if (fclose(o) != 0) { perror(argv[3]); return 1; }
     return 0;
 }

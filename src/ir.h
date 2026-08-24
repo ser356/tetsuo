@@ -4,20 +4,34 @@
 
 typedef enum {
     IR_MOVI,
-    IR_STRB,
-    IR_LABEL,
-    IR_JMP,
+    IR_LABEL_ADDR,
+    IR_LOAD_LOCAL,
+    IR_STORE_LOCAL,
+    IR_LOAD_MEM,
+    IR_STORE_MEM,
+    IR_BINOP,
+    IR_CMPEQ,
+    IR_CMPNE,
     IR_CALL,
+    IR_RET,
+    IR_JMP,
+    IR_JZ,
+    IR_LABEL,
 } IrOp;
 
 typedef struct Instr {
     IrOp        op;
     int         dst;
-    int         src;
-    int         addr;
+    int         a;
+    int         b;
+    int         local;
+    int         width;
     uint64_t    imm;
     int         label;
+    int         str_id;
+    BinOpKind   binop;
     char        *callee;
+    int         *args;
     int         nargs;
     struct Instr *next;
 } Instr;
@@ -25,8 +39,16 @@ typedef struct Instr {
 typedef struct IrFn {
     char        *name;
     int         nparams;
+    Type        **param_types;
+    int         nlocals;
+    int         nslots;
+    Type        **slot_types;
+    int         frame_bytes;
+    Type        *ret_type;
+    int         *reg_of;
+    int         *last_use;
     Instr       *head;
     struct IrFn *next;
 } IrFn;
 
-IrFn *lower(Func *funcs);
+IrFn *lower(Program *prog);
