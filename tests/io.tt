@@ -1,0 +1,19 @@
+fun io_open_read(path: *u8) -> u64 {
+    return syscall(5, path, 0, 0)
+}
+
+fun io_read(fd: u64, buf: *u8, cap: u64) -> u64 {
+    return syscall(3, fd, buf, cap)
+}
+
+fun io_write(fd: u64, buf: *u8, len: u64) {
+    syscall(4, fd, buf, len)
+}
+
+fun io_close(fd: u64) {
+    syscall(6, fd, 0, 0)
+}
+
+fun io_exit(code: u64) {
+    syscall(1, code, 0, 0)
+}

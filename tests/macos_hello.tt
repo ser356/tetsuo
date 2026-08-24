@@ -1,0 +1,6 @@
+fun main() -> u32 {
+    let msg: str = 'hola desde macOS\n'
+    syscall(4, 1, msg.ptr, msg.len)
+    syscall(1, 0, 0, 0)
+    return 0
+}

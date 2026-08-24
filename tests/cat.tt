@@ -1,0 +1,21 @@
+struct Buf256 {
+    q00: u64, q01: u64, q02: u64, q03: u64,
+    q04: u64, q05: u64, q06: u64, q07: u64,
+    q08: u64, q09: u64, q10: u64, q11: u64,
+    q12: u64, q13: u64, q14: u64, q15: u64,
+    q16: u64, q17: u64, q18: u64, q19: u64,
+    q20: u64, q21: u64, q22: u64, q23: u64,
+    q24: u64, q25: u64, q26: u64, q27: u64,
+    q28: u64, q29: u64, q30: u64, q31: u64,
+}
+
+fun main() -> u32 {
+    let buf: Buf256
+    let ruta: str = 'tests/hello.tt\0'
+    let fd: u64 = io_open_read(ruta.ptr)
+    let n: u64 = io_read(fd, &buf, 256)
+    io_write(1, &buf, n)
+    io_close(fd)
+    io_exit(0)
+    return 0
+}

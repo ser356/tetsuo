@@ -1,5 +1,19 @@
 fun main() {
     let saludo: str = 'hola\n'
     print(saludo)
+
+    let ar: Arena
+    arena_init(&ar, HEAP_BASE, 4096)
+    let buf: *u8 = arena_take(&ar, 5)
+    buf[0] = 66
+    buf[1] = 79
+    buf[2] = 79
+    buf[3] = 77
+    buf[4] = 10
+    let i: u64 = 0
+    while i != 5 {
+        putc(buf[i])
+        i = i + 1
+    }
     loop {}
 }

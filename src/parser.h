@@ -3,12 +3,15 @@
 #include <stdint.h>
 
 typedef enum {
-    T_U8, T_U32, T_U64, T_PTR, T_STR,
+    T_U8, T_U32, T_U64, T_PTR, T_STR, T_STRUCT,
 } PrimType;
+
+struct StructDecl;
 
 typedef struct Type {
     PrimType     kind;
     struct Type *inner;
+    struct StructDecl *decl;
 } Type;
 
 int type_width(const Type *t);
@@ -120,7 +123,20 @@ typedef struct Program {
     Func      *funcs;
     struct StrLit *strs;
     int       nstrs;
+    struct StructDecl *structs;
 } Program;
+
+typedef struct Field {
+    char *name;
+    Type *type;
+} Field;
+
+typedef struct StructDecl {
+    char  *name;
+    Field *fields;
+    int    nfields;
+    struct StructDecl *next;
+} StructDecl;
 
 typedef struct StrLit {
     int       id;

@@ -2,6 +2,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+static Target g_target = TGT_VIRT;
+
+static void emit_sym(FILE *out, const char *name) {
+    if (g_target == TGT_MACOS) fprintf(out, "_%s", name);
+    else                       fprintf(out, "%s", name);
+}
 
 static const char *w_pool[7] = {"w9","w10","w11","w12","w13","w14","w15"};
 static const char *x_pool[7] = {"x9","x10","x11","x12","x13","x14","x15"};
@@ -70,6 +78,11 @@ static void emit_start(FILE *out) {
     fprintf(out, "    b       1b\n");
 }
 
+static void emit_text_section(FILE *out) {
+    if (g_target == TGT_MACOS) fprintf(out, "    .section __TEXT,__text\n");
+    else                       fprintf(out, "    .section .text.boot\n");
+}
+
 static const char *binop_mnemonic(BinOpKind op) {
     switch (op) {
         case OP_ADD: return "add";
@@ -93,8 +106,19 @@ static void emit_instr(FILE *out, IrFn *fn, Instr *i, int epilogue_label) {
         }
         case IR_LABEL_ADDR: {
             const char *dx = dst_x(fn, i->dst);
-            fprintf(out, "    adrp    %s, .L_str%d\n", dx, i->str_id);
-            fprintf(out, "    add     %s, %s, :lo12:.L_str%d\n", dx, dx, i->str_id);
+            if (g_target == TGT_MACOS) {
+                fprintf(out, "    adrp    %s, L_str%d@PAGE\n", dx, i->str_id);
+                fprintf(out, "    add     %s, %s, L_str%d@PAGEOFF\n", dx, dx, i->str_id);
+            } else {
+                fprintf(out, "    adrp    %s, .L_str%d\n", dx, i->str_id);
+                fprintf(out, "    add     %s, %s, :lo12:.L_str%d\n", dx, dx, i->str_id);
+            }
+            spill_x(out, fn, i->dst, dx);
+            return;
+        }
+        case IR_ADDR_LOCAL: {
+            const char *dx = dst_x(fn, i->dst);
+            fprintf(out, "    add     %s, sp, #%d\n", dx, 8 * i->local);
             spill_x(out, fn, i->dst, dx);
             return;
         }
@@ -169,22 +193,47 @@ static void emit_instr(FILE *out, IrFn *fn, Instr *i, int epilogue_label) {
             return;
         }
         case IR_CALL: {
+            if (strcmp(i->callee, "syscall") == 0) {
+                int s0 = i->args[0];
+                int r0 = fn->reg_of[s0];
+                if (r0 >= 0) fprintf(out, "    mov     x16, %s\n", x_pool[r0]);
+                else         fprintf(out, "    ldr     x16, [sp, #%d]\n", slot_off(fn, s0));
+                for (int k = 1; k < i->nargs; k++) {
+                    int s = i->args[k];
+                    int r = fn->reg_of[s];
+                    if (r >= 0) fprintf(out, "    mov     x%d, %s\n", k - 1, x_pool[r]);
+                    else        fprintf(out, "    ldr     x%d, [sp, #%d]\n", k - 1, slot_off(fn, s));
+                }
+                fprintf(out, "    svc     #0x80\n");
+                int r = fn->reg_of[i->dst];
+                if (r >= 0) fprintf(out, "    mov     %s, x0\n", x_pool[r]);
+                else        fprintf(out, "    str     x0, [sp, #%d]\n", slot_off(fn, i->dst));
+                return;
+            }
             for (int k = 0; k < i->nargs; k++) {
                 int s = i->args[k];
                 int r = fn->reg_of[s];
                 if (r >= 0) fprintf(out, "    mov     x%d, %s\n", k, x_pool[r]);
                 else        fprintf(out, "    ldr     x%d, [sp, #%d]\n", k, slot_off(fn, s));
             }
-            fprintf(out, "    bl      %s\n", i->callee);
+            fprintf(out, "    bl      ");
+            emit_sym(out, i->callee);
+            fprintf(out, "\n");
             int r = fn->reg_of[i->dst];
             if (r >= 0) fprintf(out, "    mov     %s, x0\n", x_pool[r]);
             else        fprintf(out, "    str     x0, [sp, #%d]\n", slot_off(fn, i->dst));
             return;
         }
         case IR_RET: {
+            int wide = fn->ret_type && type_width(fn->ret_type) == 8;
             int r = fn->reg_of[i->a];
-            if (r >= 0) fprintf(out, "    mov     w0, %s\n", w_pool[r]);
-            else        fprintf(out, "    ldr     w0, [sp, #%d]\n", slot_off(fn, i->a));
+            if (wide) {
+                if (r >= 0) fprintf(out, "    mov     x0, %s\n", x_pool[r]);
+                else        fprintf(out, "    ldr     x0, [sp, #%d]\n", slot_off(fn, i->a));
+            } else {
+                if (r >= 0) fprintf(out, "    mov     w0, %s\n", w_pool[r]);
+                else        fprintf(out, "    ldr     w0, [sp, #%d]\n", slot_off(fn, i->a));
+            }
             fprintf(out, "    b       .L%d\n", epilogue_label);
             return;
         }
@@ -212,8 +261,11 @@ static int param_width(Type *t) {
 }
 
 static void emit_fn(FILE *out, IrFn *fn, int epilogue_label) {
-    fprintf(out, "\n    .globl   %s\n", fn->name);
-    fprintf(out, "%s:\n", fn->name);
+    fprintf(out, "\n    .globl   ");
+    emit_sym(out, fn->name);
+    fprintf(out, "\n");
+    emit_sym(out, fn->name);
+    fprintf(out, ":\n");
     fprintf(out, "    stp     x29, x30, [sp, #-16]!\n");
     fprintf(out, "    mov     x29, sp\n");
     if (fn->frame_bytes > 0)
@@ -238,8 +290,11 @@ static void emit_fn(FILE *out, IrFn *fn, int epilogue_label) {
     fprintf(out, "    ret\n");
 }
 
-void codegen(FILE *out, Program *prog, IrFn *funcs) {
-    emit_start(out);
+void codegen(FILE *out, Target tgt, Program *prog, IrFn *funcs) {
+    g_target = tgt;
+
+    if (tgt == TGT_VIRT) emit_start(out);
+    else                 emit_text_section(out);
 
     int max_label = 0;
     for (IrFn *fn = funcs; fn; fn = fn->next) {
@@ -253,10 +308,12 @@ void codegen(FILE *out, Program *prog, IrFn *funcs) {
     for (IrFn *fn = funcs; fn; fn = fn->next) emit_fn(out, fn, epilogue_label++);
 
     if (prog->strs) {
-        fprintf(out, "\n    .section .rodata\n");
+        if (tgt == TGT_MACOS) fprintf(out, "\n    .section __TEXT,__cstring\n");
+        else                  fprintf(out, "\n    .section .rodata\n");
         for (StrLit *s = prog->strs; s; s = s->next) {
             fprintf(out, "    .balign  8\n");
-            fprintf(out, ".L_str%d:\n", s->id);
+            if (tgt == TGT_MACOS) fprintf(out, "L_str%d:\n", s->id);
+            else                  fprintf(out, ".L_str%d:\n", s->id);
             for (size_t k = 0; k < s->len; k++) {
                 fprintf(out, "    .byte   0x%02x\n", (unsigned char)s->bytes[k]);
             }

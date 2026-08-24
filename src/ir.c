@@ -142,9 +142,17 @@ static int lower_expr(B *b, Expr *e) {
         case EX_STRLIT:
             fprintf(stderr, "ir: literal de cadena solo admitido como init de 'let'\n");
             exit(1);
-        case EX_ADDR:
-            fprintf(stderr, "ir: EX_ADDR no soportado en hito 4\n");
-            exit(1);
+        case EX_ADDR: {
+            if (e->inner->kind != EX_VAR) {
+                fprintf(stderr, "ir: '&' solo sobre variable\n");
+                exit(1);
+            }
+            int s = new_slot(b, e->type);
+            Instr *op = ins(b, IR_ADDR_LOCAL);
+            op->dst = s;
+            op->local = e->inner->var_index;
+            return s;
+        }
     }
     fprintf(stderr, "ir: expr desconocida\n");
     exit(1);
@@ -159,6 +167,7 @@ static void lower_block(B *b, Stmt *body) {
 static void lower_stmt(B *b, Stmt *s) {
     switch (s->kind) {
         case ST_LET: {
+            if (!s->let_init) return;
             Type *ty = b->f->locals[s->let_local].type;
             if (ty->kind == T_STR) {
                 Expr *init = s->let_init;
@@ -326,6 +335,7 @@ static int instr_dst(Instr *i) {
     switch (i->op) {
         case IR_MOVI:
         case IR_LABEL_ADDR:
+        case IR_ADDR_LOCAL:
         case IR_LOAD_LOCAL:
         case IR_LOAD_MEM:
         case IR_BINOP:

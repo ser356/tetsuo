@@ -1,5 +1,6 @@
 const UART_DR: *u8  = 0x09000000
 const UART_FR: *u32 = 0x09000018
+const HEAP_BASE: *u8 = 0x40100000
 
 fun uart_ready() -> u32 {
     return @UART_FR & 32
@@ -16,4 +17,22 @@ fun print(s: str) {
         putc(s.ptr[i])
         i = i + 1
     }
+}
+
+struct Arena {
+    base: *u8,
+    pos: u64,
+    cap: u64,
+}
+
+fun arena_init(a: *Arena, base: *u8, cap: u64) {
+    a.base = base
+    a.pos = 0
+    a.cap = cap
+}
+
+fun arena_take(a: *Arena, n: u64) -> *u8 {
+    let p: *u8 = a.base + a.pos
+    a.pos = a.pos + n
+    return p
 }

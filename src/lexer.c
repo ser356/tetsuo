@@ -91,6 +91,7 @@ Tok lex_next(Lexer *lx) {
         else if (kw_match(t.start, t.len, "loop"))   t.kind = TK_LOOP;
         else if (kw_match(t.start, t.len, "while"))  t.kind = TK_WHILE;
         else if (kw_match(t.start, t.len, "break"))  t.kind = TK_BREAK;
+        else if (kw_match(t.start, t.len, "struct")) t.kind = TK_STRUCT;
         else                                          t.kind = TK_IDENT;
         return t;
     }

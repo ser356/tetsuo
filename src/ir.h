@@ -5,6 +5,7 @@
 typedef enum {
     IR_MOVI,
     IR_LABEL_ADDR,
+    IR_ADDR_LOCAL,
     IR_LOAD_LOCAL,
     IR_STORE_LOCAL,
     IR_LOAD_MEM,

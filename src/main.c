@@ -7,7 +7,7 @@
 #include <string.h>
 
 static void usage(const char *prog) {
-    fprintf(stderr, "uso: %s <fuente.tt> -o <salida.s>\n", prog);
+    fprintf(stderr, "uso: %s [--target=virt|macos] <fuente.tt> -o <salida.s>\n", prog);
     exit(2);
 }
 
@@ -27,13 +27,22 @@ static char *read_all(const char *path) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 4 || strcmp(argv[2], "-o") != 0) usage(argv[0]);
-    char    *src  = read_all(argv[1]);
+    Target tgt = TGT_VIRT;
+    int argi = 1;
+    while (argi < argc && strncmp(argv[argi], "--target=", 9) == 0) {
+        const char *v = argv[argi] + 9;
+        if      (strcmp(v, "virt") == 0)  tgt = TGT_VIRT;
+        else if (strcmp(v, "macos") == 0) tgt = TGT_MACOS;
+        else { fprintf(stderr, "target desconocido: %s\n", v); return 2; }
+        argi++;
+    }
+    if (argi + 3 != argc || strcmp(argv[argi + 1], "-o") != 0) usage(argv[0]);
+    char    *src  = read_all(argv[argi]);
     Program *prog = parse(src);
     IrFn    *fns  = lower(prog);
-    FILE *o = fopen(argv[3], "w");
-    if (!o) { perror(argv[3]); return 1; }
-    codegen(o, prog, fns);
-    if (fclose(o) != 0) { perror(argv[3]); return 1; }
+    FILE *o = fopen(argv[argi + 2], "w");
+    if (!o) { perror(argv[argi + 2]); return 1; }
+    codegen(o, tgt, prog, fns);
+    if (fclose(o) != 0) { perror(argv[argi + 2]); return 1; }
     return 0;
 }

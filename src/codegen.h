@@ -3,4 +3,9 @@
 #include "parser.h"
 #include <stdio.h>
 
-void codegen(FILE *out, Program *prog, IrFn *funcs);
+typedef enum {
+    TGT_VIRT,
+    TGT_MACOS,
+} Target;
+
+void codegen(FILE *out, Target tgt, Program *prog, IrFn *funcs);
