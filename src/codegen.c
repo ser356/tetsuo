@@ -106,7 +106,15 @@ static void emit_instr(FILE *out, IrFn *fn, Instr *i, int epilogue_label) {
         }
         case IR_LABEL_ADDR: {
             const char *dx = dst_x(fn, i->dst);
-            if (g_target == TGT_MACOS) {
+            if (i->label_name) {
+                if (g_target == TGT_MACOS) {
+                    fprintf(out, "    adrp    %s, _%s@PAGE\n", dx, i->label_name);
+                    fprintf(out, "    add     %s, %s, _%s@PAGEOFF\n", dx, dx, i->label_name);
+                } else {
+                    fprintf(out, "    adrp    %s, %s\n", dx, i->label_name);
+                    fprintf(out, "    add     %s, %s, :lo12:%s\n", dx, dx, i->label_name);
+                }
+            } else if (g_target == TGT_MACOS) {
                 fprintf(out, "    adrp    %s, L_str%d@PAGE\n", dx, i->str_id);
                 fprintf(out, "    add     %s, %s, L_str%d@PAGEOFF\n", dx, dx, i->str_id);
             } else {
@@ -177,7 +185,11 @@ static void emit_instr(FILE *out, IrFn *fn, Instr *i, int epilogue_label) {
             return;
         }
         case IR_CMPEQ:
-        case IR_CMPNE: {
+        case IR_CMPNE:
+        case IR_CMPLT:
+        case IR_CMPLE:
+        case IR_CMPGT:
+        case IR_CMPGE: {
             int wide = (i->width == 8);
             const char *a = wide
                 ? src_x_or_load(out, fn, i->a, "x16")
@@ -186,8 +198,15 @@ static void emit_instr(FILE *out, IrFn *fn, Instr *i, int epilogue_label) {
                 ? src_x_or_load(out, fn, i->b, "x17")
                 : src_w_or_load(out, fn, i->b, "w17");
             const char *dw = dst_w(fn, i->dst);
+            const char *cc = "eq";
+            if      (i->op == IR_CMPEQ) cc = "eq";
+            else if (i->op == IR_CMPNE) cc = "ne";
+            else if (i->op == IR_CMPLT) cc = "lo";
+            else if (i->op == IR_CMPLE) cc = "ls";
+            else if (i->op == IR_CMPGT) cc = "hi";
+            else if (i->op == IR_CMPGE) cc = "hs";
             fprintf(out, "    cmp     %s, %s\n", a, b);
-            fprintf(out, "    cset    %s, %s\n", dw, (i->op == IR_CMPEQ) ? "eq" : "ne");
+            fprintf(out, "    cset    %s, %s\n", dw, cc);
             if (!in_reg(fn, i->dst))
                 fprintf(out, "    str     x16, [sp, #%d]\n", slot_off(fn, i->dst));
             return;
@@ -225,14 +244,16 @@ static void emit_instr(FILE *out, IrFn *fn, Instr *i, int epilogue_label) {
             return;
         }
         case IR_RET: {
-            int wide = fn->ret_type && type_width(fn->ret_type) == 8;
-            int r = fn->reg_of[i->a];
-            if (wide) {
-                if (r >= 0) fprintf(out, "    mov     x0, %s\n", x_pool[r]);
-                else        fprintf(out, "    ldr     x0, [sp, #%d]\n", slot_off(fn, i->a));
-            } else {
-                if (r >= 0) fprintf(out, "    mov     w0, %s\n", w_pool[r]);
-                else        fprintf(out, "    ldr     w0, [sp, #%d]\n", slot_off(fn, i->a));
+            if (i->a >= 0) {
+                int wide = fn->ret_type && type_width(fn->ret_type) == 8;
+                int r = fn->reg_of[i->a];
+                if (wide) {
+                    if (r >= 0) fprintf(out, "    mov     x0, %s\n", x_pool[r]);
+                    else        fprintf(out, "    ldr     x0, [sp, #%d]\n", slot_off(fn, i->a));
+                } else {
+                    if (r >= 0) fprintf(out, "    mov     w0, %s\n", w_pool[r]);
+                    else        fprintf(out, "    ldr     w0, [sp, #%d]\n", slot_off(fn, i->a));
+                }
             }
             fprintf(out, "    b       .L%d\n", epilogue_label);
             return;
@@ -316,6 +337,20 @@ void codegen(FILE *out, Target tgt, Program *prog, IrFn *funcs) {
             else                  fprintf(out, ".L_str%d:\n", s->id);
             for (size_t k = 0; k < s->len; k++) {
                 fprintf(out, "    .byte   0x%02x\n", (unsigned char)s->bytes[k]);
+            }
+        }
+    }
+
+    if (prog->bsses) {
+        if (tgt == TGT_MACOS) {
+            fprintf(out, "\n");
+            for (BssItem *b = prog->bsses; b; b = b->next) {
+                fprintf(out, "    .zerofill __DATA,__bss,_%s,%llu,3\n", b->name, (unsigned long long)b->size);
+            }
+        } else {
+            fprintf(out, "\n");
+            for (BssItem *b = prog->bsses; b; b = b->next) {
+                fprintf(out, "    .comm   %s, %llu, 8\n", b->name, (unsigned long long)b->size);
             }
         }
     }

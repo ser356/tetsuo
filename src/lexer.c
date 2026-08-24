@@ -92,6 +92,7 @@ Tok lex_next(Lexer *lx) {
         else if (kw_match(t.start, t.len, "while"))  t.kind = TK_WHILE;
         else if (kw_match(t.start, t.len, "break"))  t.kind = TK_BREAK;
         else if (kw_match(t.start, t.len, "struct")) t.kind = TK_STRUCT;
+        else if (kw_match(t.start, t.len, "bss"))    t.kind = TK_BSS;
         else                                          t.kind = TK_IDENT;
         return t;
     }
@@ -113,6 +114,12 @@ Tok lex_next(Lexer *lx) {
         t.kind = TK_BANGEQ;
         t.len  = 2;
         return t;
+    }
+    if (c == '<' && lx->p[1] == '=') {
+        lx->p += 2; t.kind = TK_LE; t.len = 2; return t;
+    }
+    if (c == '>' && lx->p[1] == '=') {
+        lx->p += 2; t.kind = TK_GE; t.len = 2; return t;
     }
 
     if (c == '\'') {
@@ -189,6 +196,8 @@ Tok lex_next(Lexer *lx) {
         case ':': t.kind = TK_COLON;  return t;
         case '.': t.kind = TK_DOT;    return t;
         case '@': t.kind = TK_AT;     return t;
+        case '<': t.kind = TK_LT;     return t;
+        case '>': t.kind = TK_GT;     return t;
         default:  die_lex(t.line, "caracter inesperado");
     }
     return t;

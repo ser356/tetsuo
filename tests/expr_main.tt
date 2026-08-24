@@ -1,0 +1,61 @@
+bss PRINT_BUF: 32
+
+fun print_char(c: u8) {
+    PRINT_BUF[0] = c
+    io_write(1, PRINT_BUF, 1)
+}
+
+fun print_u64_rec(n: u64) {
+    if n == 0 { return }
+    print_u64_rec(n / 10)
+    let d: u8 = 48 + n - (n / 10) * 10
+    print_char(d)
+}
+
+fun print_u64(n: u64) {
+    if n == 0 { print_char(48); return }
+    print_u64_rec(n)
+}
+
+fun dump(n: *Node) {
+    if n.kind == NODE_INT {
+        print_u64(n.ival)
+        print_char(32)
+        return
+    }
+    dump(n.lhs)
+    dump(n.rhs)
+    print_char(n.op)
+    print_char(32)
+}
+
+fun run_case(src: str) -> u32 {
+    let ar: Arena
+    arena_init(&ar, IO_BUF, 65536)
+
+    let lx: Lexer
+    lex_init(&lx, src.ptr, src.len)
+
+    let ps: PState
+    ps_init(&ps, &lx)
+
+    let ast: *Node = parse_expr(&ps, &ar, 0)
+    dump(ast)
+    print_char(10)
+    return 0
+}
+
+fun main() -> u32 {
+    let c1: str = '1 + 2 * 3'
+    let c2: str = '(1 + 2) * 3'
+    let c3: str = '1 + 2 + 3'
+    let c4: str = '1 + 2 * 3 - 4'
+
+    run_case(c1)
+    run_case(c2)
+    run_case(c3)
+    run_case(c4)
+
+    io_exit(0)
+    return 0
+}

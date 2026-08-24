@@ -96,6 +96,14 @@ static ConstItem *lookup_const(Program *prog, const char *s, size_t n) {
     return NULL;
 }
 
+static BssItem *lookup_bss(Program *prog, const char *s, size_t n) {
+    for (BssItem *b = prog->bsses; b; b = b->next) {
+        size_t k = strlen(b->name);
+        if (k == n && memcmp(s, b->name, k) == 0) return b;
+    }
+    return NULL;
+}
+
 static int add_local(Func *f, char *name, Type *type) {
     f->locals = realloc(f->locals, (size_t)(f->nlocals + 1) * sizeof(Local));
     if (!f->locals) { perror("realloc"); exit(1); }
@@ -232,6 +240,14 @@ static Expr *parse_primary(P *p) {
             free(name);
             return e;
         }
+        BssItem *bi = lookup_bss(p->prog, nstart, nlen);
+        if (bi) {
+            Expr *e = mk_expr(EX_EXTERN);
+            e->callee = dup_slice(nstart, nlen);
+            e->type = mk_ptr(mk_prim(T_U8));
+            free(name);
+            return e;
+        }
         pdie(p, "identificador no declarado");
     }
     pdie(p, "expresion no reconocida");
@@ -363,7 +379,9 @@ static Expr *parse_unary(P *p) {
 static int op_prec(TokKind k) {
     switch (k) {
         case TK_EQEQ:
-        case TK_BANGEQ: return 1;
+        case TK_BANGEQ:
+        case TK_LT: case TK_LE:
+        case TK_GT: case TK_GE:  return 1;
         case TK_PIPE:  return 2;
         case TK_CARET: return 3;
         case TK_AMP:   return 4;
@@ -401,13 +419,22 @@ static Expr *parse_expr(P *p, int min_prec) {
             n = mk_expr(EX_EQ);
         } else if (op == TK_BANGEQ) {
             n = mk_expr(EX_NE);
+        } else if (op == TK_LT) {
+            n = mk_expr(EX_LT);
+        } else if (op == TK_LE) {
+            n = mk_expr(EX_LE);
+        } else if (op == TK_GT) {
+            n = mk_expr(EX_GT);
+        } else if (op == TK_GE) {
+            n = mk_expr(EX_GE);
         } else {
             n = mk_expr(EX_BIN);
             n->op = tok_to_binop(op);
         }
         n->lhs = lhs;
         n->rhs = rhs;
-        n->type = (op == TK_EQEQ || op == TK_BANGEQ) ? mk_prim(T_U32) : lhs->type;
+        int is_cmp = (op == TK_EQEQ || op == TK_BANGEQ || op == TK_LT || op == TK_LE || op == TK_GT || op == TK_GE);
+        n->type = is_cmp ? mk_prim(T_U32) : lhs->type;
         lhs = n;
     }
     return lhs;
@@ -434,7 +461,9 @@ static Stmt *parse_stmt(P *p) {
     }
     if (accept(p, TK_RETURN)) {
         Stmt *s = mk_stmt(ST_RETURN);
-        s->ret_val = parse_expr(p, 0);
+        if (p->cur.kind != TK_RBRACE && p->cur.kind != TK_SEMI && p->cur.kind != TK_EOF) {
+            s->ret_val = parse_expr(p, 0);
+        }
         skip_semi(p);
         return s;
     }
@@ -442,7 +471,13 @@ static Stmt *parse_stmt(P *p) {
         Stmt *s = mk_stmt(ST_IF);
         s->cond = parse_expr(p, 0);
         s->body = parse_block(p);
-        if (accept(p, TK_ELSE)) s->else_body = parse_block(p);
+        if (accept(p, TK_ELSE)) {
+            if (p->cur.kind == TK_IF) {
+                s->else_body = parse_stmt(p);
+            } else {
+                s->else_body = parse_block(p);
+            }
+        }
         return s;
     }
     if (accept(p, TK_LOOP)) {
@@ -557,6 +592,27 @@ static void parse_const(P *p) {
     *tail = c;
 }
 
+static void parse_bss(P *p) {
+    expect(p, TK_BSS, "se esperaba 'bss'");
+    if (p->cur.kind != TK_IDENT) pdie(p, "se esperaba nombre de bss");
+    char *name = dup_slice(p->cur.start, p->cur.len);
+    advance(p);
+    expect(p, TK_COLON, "se esperaba ':' tras nombre de bss");
+    if (p->cur.kind != TK_NUM) pdie(p, "se esperaba tamano numerico");
+    uint64_t sz = p->cur.ival;
+    advance(p);
+    skip_semi(p);
+
+    BssItem *b = calloc(1, sizeof(*b));
+    if (!b) { perror("calloc"); exit(1); }
+    b->name = name;
+    b->size = sz;
+
+    BssItem **tail = &p->prog->bsses;
+    while (*tail) tail = &(*tail)->next;
+    *tail = b;
+}
+
 static void parse_struct_decl(P *p) {
     expect(p, TK_STRUCT, "se esperaba 'struct'");
     if (p->cur.kind != TK_IDENT) pdie(p, "se esperaba nombre de struct");
@@ -567,6 +623,10 @@ static void parse_struct_decl(P *p) {
     StructDecl *d = calloc(1, sizeof(*d));
     if (!d) { perror("calloc"); exit(1); }
     d->name = name;
+
+    StructDecl **tail = &p->prog->structs;
+    while (*tail) tail = &(*tail)->next;
+    *tail = d;
 
     int cap = 0;
     while (p->cur.kind != TK_RBRACE && p->cur.kind != TK_EOF) {
@@ -587,10 +647,6 @@ static void parse_struct_decl(P *p) {
         skip_semi(p);
     }
     expect(p, TK_RBRACE, "se esperaba '}'");
-
-    StructDecl **tail = &p->prog->structs;
-    while (*tail) tail = &(*tail)->next;
-    *tail = d;
 }
 
 Program *parse(const char *src) {
@@ -606,6 +662,10 @@ Program *parse(const char *src) {
         if (p.cur.kind == TK_EOF) break;
         if (p.cur.kind == TK_CONST) {
             parse_const(&p);
+            continue;
+        }
+        if (p.cur.kind == TK_BSS) {
+            parse_bss(&p);
             continue;
         }
         if (p.cur.kind == TK_STRUCT) {

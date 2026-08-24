@@ -29,8 +29,13 @@ typedef enum {
     EX_BIN,
     EX_EQ,
     EX_NE,
+    EX_LT,
+    EX_LE,
+    EX_GT,
+    EX_GE,
     EX_STRLIT,
     EX_ADDR,
+    EX_EXTERN,
 } ExprKind;
 
 struct ConstItem;
@@ -124,6 +129,7 @@ typedef struct Program {
     struct StrLit *strs;
     int       nstrs;
     struct StructDecl *structs;
+    struct BssItem *bsses;
 } Program;
 
 typedef struct Field {
@@ -137,6 +143,12 @@ typedef struct StructDecl {
     int    nfields;
     struct StructDecl *next;
 } StructDecl;
+
+typedef struct BssItem {
+    char           *name;
+    uint64_t       size;
+    struct BssItem *next;
+} BssItem;
 
 typedef struct StrLit {
     int       id;

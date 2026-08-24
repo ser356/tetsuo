@@ -1,3 +1,23 @@
+bss IO_BUF: 65536
+
+struct Arena {
+    base: *u8,
+    pos: u64,
+    cap: u64,
+}
+
+fun arena_init(a: *Arena, base: *u8, cap: u64) {
+    a.base = base
+    a.pos = 0
+    a.cap = cap
+}
+
+fun arena_take(a: *Arena, n: u64) -> *u8 {
+    let p: *u8 = a.base + a.pos
+    a.pos = a.pos + n
+    return p
+}
+
 fun io_open_read(path: *u8) -> u64 {
     return syscall(5, path, 0, 0)
 }

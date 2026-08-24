@@ -1,0 +1,118 @@
+const NODE_INT: u32 = 0
+const NODE_BIN: u32 = 1
+
+struct Node {
+    kind: u32,
+    ival: u64,
+    op:   u32,
+    lhs:  *Node,
+    rhs:  *Node,
+}
+
+fun mk_int(ar: *Arena, v: u64) -> *Node {
+    let n: *Node = arena_take(ar, 40)
+    n.kind = NODE_INT
+    n.ival = v
+    n.op = 0
+    n.lhs = arena_take(ar, 0)
+    n.rhs = arena_take(ar, 0)
+    n.lhs = n.lhs - 0
+    return n
+}
+
+fun mk_bin(ar: *Arena, op: u32, lhs: *Node, rhs: *Node) -> *Node {
+    let n: *Node = arena_take(ar, 40)
+    n.kind = NODE_BIN
+    n.ival = 0
+    n.op = op
+    n.lhs = lhs
+    n.rhs = rhs
+    return n
+}
+
+struct PState {
+    lx:       *Lexer,
+    has_peek: u32,
+    peek_kind:  u32,
+    peek_start: u64,
+    peek_tlen:  u64,
+    peek_ival:  u64,
+    peek_tline: u64,
+}
+
+fun ps_init(ps: *PState, lx: *Lexer) {
+    ps.lx = lx
+    ps.has_peek = 0
+    ps.peek_kind = 0
+    ps.peek_start = 0
+    ps.peek_tlen = 0
+    ps.peek_ival = 0
+    ps.peek_tline = 0
+}
+
+fun ps_peek_kind(ps: *PState) -> u32 {
+    if ps.has_peek == 0 {
+        let t: Tok
+        lex_next(ps.lx, &t)
+        ps.peek_kind = t.kind
+        ps.peek_start = t.start
+        ps.peek_tlen = t.tlen
+        ps.peek_ival = t.ival
+        ps.peek_tline = t.tline
+        ps.has_peek = 1
+    }
+    return ps.peek_kind
+}
+
+fun ps_next(ps: *PState, out: *Tok) {
+    if ps.has_peek == 1 {
+        out.kind = ps.peek_kind
+        out.start = ps.peek_start
+        out.tlen = ps.peek_tlen
+        out.ival = ps.peek_ival
+        out.tline = ps.peek_tline
+        ps.has_peek = 0
+        return
+    }
+    lex_next(ps.lx, out)
+}
+
+fun op_prec(k: u32) -> u32 {
+    if k == TK_PLUS  { return 5 }
+    if k == TK_MINUS { return 5 }
+    if k == TK_STAR  { return 6 }
+    if k == TK_SLASH { return 6 }
+    return 0
+}
+
+fun parse_expr(ps: *PState, ar: *Arena, min_prec: u32) -> *Node {
+    let lhs: *Node
+    let k: u32 = ps_peek_kind(ps)
+    if k == TK_NUM {
+        let t: Tok
+        ps_next(ps, &t)
+        lhs = mk_int(ar, t.ival)
+    } else if k == TK_LPAREN {
+        let dummy: Tok
+        ps_next(ps, &dummy)
+        lhs = parse_expr(ps, ar, 0)
+        let rp: Tok
+        ps_next(ps, &rp)
+    } else {
+        lhs = mk_int(ar, 0)
+        return lhs
+    }
+    while 1 == 1 {
+        let opk: u32 = ps_peek_kind(ps)
+        let pr: u32 = op_prec(opk)
+        if pr == 0 { break }
+        if pr < min_prec { break }
+        let ot: Tok
+        ps_next(ps, &ot)
+        let src_ptr: *u8 = ps.lx.src + ot.start
+        let opch: u8 = @src_ptr
+        let rhs: *Node = parse_expr(ps, ar, pr + 1)
+        lhs = mk_bin(ar, opch, lhs, rhs)
+    }
+    return lhs
+}

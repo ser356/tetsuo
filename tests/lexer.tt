@@ -1,0 +1,323 @@
+const TK_EOF: u32     = 0
+const TK_FUN: u32     = 1
+const TK_LET: u32     = 2
+const TK_CONST: u32   = 3
+const TK_RETURN: u32  = 4
+const TK_IF: u32      = 5
+const TK_ELSE: u32    = 6
+const TK_LOOP: u32    = 7
+const TK_WHILE: u32   = 8
+const TK_BREAK: u32   = 9
+const TK_STRUCT: u32  = 10
+const TK_IDENT: u32   = 11
+const TK_NUM: u32     = 12
+const TK_STRING: u32  = 13
+const TK_LPAREN: u32  = 14
+const TK_RPAREN: u32  = 15
+const TK_LBRACE: u32  = 16
+const TK_RBRACE: u32  = 17
+const TK_LBRACK: u32  = 18
+const TK_RBRACK: u32  = 19
+const TK_STAR: u32    = 20
+const TK_PLUS: u32    = 21
+const TK_MINUS: u32   = 22
+const TK_SLASH: u32   = 23
+const TK_AMP: u32     = 24
+const TK_PIPE: u32    = 25
+const TK_CARET: u32   = 26
+const TK_EQ: u32      = 27
+const TK_EQEQ: u32    = 28
+const TK_BANGEQ: u32  = 29
+const TK_LT: u32      = 30
+const TK_LE: u32      = 31
+const TK_GT: u32      = 32
+const TK_GE: u32      = 33
+const TK_SEMI: u32    = 34
+const TK_COMMA: u32   = 35
+const TK_COLON: u32   = 36
+const TK_DOT: u32     = 37
+const TK_ARROW: u32   = 38
+const TK_AT: u32      = 39
+
+struct Lexer {
+    src: *u8,
+    pos: u64,
+    len: u64,
+    line: u64,
+}
+
+struct Tok {
+    kind: u32,
+    start: u64,
+    tlen: u64,
+    ival: u64,
+    tline: u64,
+}
+
+fun lex_init(lx: *Lexer, src: *u8, len: u64) {
+    lx.src = src
+    lx.pos = 0
+    lx.len = len
+    lx.line = 1
+}
+
+fun is_digit(c: u8) -> u32 {
+    if c >= 48 {
+        if c <= 57 { return 1 }
+    }
+    return 0
+}
+
+fun is_hex(c: u8) -> u32 {
+    if is_digit(c) == 1 { return 1 }
+    if c >= 97 {
+        if c <= 102 { return 1 }
+    }
+    if c >= 65 {
+        if c <= 70 { return 1 }
+    }
+    return 0
+}
+
+fun hex_val(c: u8) -> u32 {
+    if is_digit(c) == 1 { return c - 48 }
+    if c >= 97 { return c - 97 + 10 }
+    return c - 65 + 10
+}
+
+fun is_alpha(c: u8) -> u32 {
+    if c == 95 { return 1 }
+    if c >= 97 {
+        if c <= 122 { return 1 }
+    }
+    if c >= 65 {
+        if c <= 90 { return 1 }
+    }
+    return 0
+}
+
+fun is_alnum(c: u8) -> u32 {
+    if is_alpha(c) == 1 { return 1 }
+    if is_digit(c) == 1 { return 1 }
+    return 0
+}
+
+fun peek(lx: *Lexer) -> u8 {
+    if lx.pos >= lx.len { return 0 }
+    return lx.src[lx.pos]
+}
+
+fun peek1(lx: *Lexer) -> u8 {
+    let p: u64 = lx.pos + 1
+    if p >= lx.len { return 0 }
+    return lx.src[p]
+}
+
+fun skip_ws(lx: *Lexer) {
+    while lx.pos < lx.len {
+        let c: u8 = lx.src[lx.pos]
+        if c == 32 { lx.pos = lx.pos + 1 }
+        else if c == 9 { lx.pos = lx.pos + 1 }
+        else if c == 13 { lx.pos = lx.pos + 1 }
+        else if c == 10 {
+            lx.pos = lx.pos + 1
+            lx.line = lx.line + 1
+        }
+        else if c == 47 {
+            if peek1(lx) == 47 {
+                while lx.pos < lx.len {
+                    let cc: u8 = lx.src[lx.pos]
+                    if cc == 10 { break }
+                    lx.pos = lx.pos + 1
+                }
+            } else { break }
+        }
+        else { break }
+    }
+}
+
+fun bytes_eq(a: *u8, b: *u8, n: u64) -> u32 {
+    let i: u64 = 0
+    while i < n {
+        if a[i] != b[i] { return 0 }
+        i = i + 1
+    }
+    return 1
+}
+
+fun kw_kind(src: *u8, len: u64) -> u32 {
+    let kw_fun: str    = 'fun'
+    let kw_let: str    = 'let'
+    let kw_const: str  = 'const'
+    let kw_return: str = 'return'
+    let kw_if: str     = 'if'
+    let kw_else: str   = 'else'
+    let kw_loop: str   = 'loop'
+    let kw_while: str  = 'while'
+    let kw_break: str  = 'break'
+    let kw_struct: str = 'struct'
+    if len == 3 {
+        if bytes_eq(src, kw_fun.ptr, 3) == 1 { return TK_FUN }
+        if bytes_eq(src, kw_let.ptr, 3) == 1 { return TK_LET }
+    }
+    if len == 5 {
+        if bytes_eq(src, kw_const.ptr, 5) == 1 { return TK_CONST }
+        if bytes_eq(src, kw_while.ptr, 5) == 1 { return TK_WHILE }
+        if bytes_eq(src, kw_break.ptr, 5) == 1 { return TK_BREAK }
+    }
+    if len == 6 {
+        if bytes_eq(src, kw_return.ptr, 6) == 1 { return TK_RETURN }
+        if bytes_eq(src, kw_struct.ptr, 6) == 1 { return TK_STRUCT }
+    }
+    if len == 2 {
+        if bytes_eq(src, kw_if.ptr, 2) == 1 { return TK_IF }
+    }
+    if len == 4 {
+        if bytes_eq(src, kw_else.ptr, 4) == 1 { return TK_ELSE }
+        if bytes_eq(src, kw_loop.ptr, 4) == 1 { return TK_LOOP }
+    }
+    return TK_IDENT
+}
+
+fun lex_number(lx: *Lexer, t: *Tok) {
+    t.kind = TK_NUM
+    t.start = lx.pos
+    let base: u64 = 10
+    let c0: u8 = lx.src[lx.pos]
+    if c0 == 48 {
+        if peek1(lx) == 120 {
+            base = 16
+            lx.pos = lx.pos + 2
+        }
+    }
+    let v: u64 = 0
+    while lx.pos < lx.len {
+        let c: u8 = lx.src[lx.pos]
+        if base == 16 {
+            if is_hex(c) == 0 { break }
+            v = v * 16 + hex_val(c)
+        } else {
+            if is_digit(c) == 0 { break }
+            v = v * 10 + (c - 48)
+        }
+        lx.pos = lx.pos + 1
+    }
+    t.ival = v
+    t.tlen = lx.pos - t.start
+}
+
+fun lex_ident(lx: *Lexer, t: *Tok) {
+    t.start = lx.pos
+    while lx.pos < lx.len {
+        if is_alnum(lx.src[lx.pos]) == 0 { break }
+        lx.pos = lx.pos + 1
+    }
+    t.tlen = lx.pos - t.start
+    t.kind = kw_kind(lx.src + t.start, t.tlen)
+}
+
+fun lex_string(lx: *Lexer, t: *Tok) {
+    t.kind = TK_STRING
+    t.start = lx.pos
+    lx.pos = lx.pos + 1
+    while lx.pos < lx.len {
+        let c: u8 = lx.src[lx.pos]
+        if c == 39 {
+            lx.pos = lx.pos + 1
+            break
+        }
+        if c == 92 {
+            lx.pos = lx.pos + 2
+        } else {
+            lx.pos = lx.pos + 1
+        }
+    }
+    t.tlen = lx.pos - t.start
+}
+
+fun lex_next(lx: *Lexer, t: *Tok) {
+    skip_ws(lx)
+    t.tline = lx.line
+    if lx.pos >= lx.len {
+        t.kind = TK_EOF
+        t.start = lx.pos
+        t.tlen = 0
+        return
+    }
+    let c: u8 = lx.src[lx.pos]
+    if is_digit(c) == 1 { lex_number(lx, t); return }
+    if is_alpha(c) == 1 { lex_ident(lx, t); return }
+    if c == 39 { lex_string(lx, t); return }
+
+    if c == 45 {
+        if peek1(lx) == 62 {
+            t.kind = TK_ARROW
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+    if c == 61 {
+        if peek1(lx) == 61 {
+            t.kind = TK_EQEQ
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+    if c == 33 {
+        if peek1(lx) == 61 {
+            t.kind = TK_BANGEQ
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+    if c == 60 {
+        if peek1(lx) == 61 {
+            t.kind = TK_LE
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+    if c == 62 {
+        if peek1(lx) == 61 {
+            t.kind = TK_GE
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+
+    t.start = lx.pos
+    t.tlen = 1
+    lx.pos = lx.pos + 1
+    if c == 40 { t.kind = TK_LPAREN; return }
+    if c == 41 { t.kind = TK_RPAREN; return }
+    if c == 123 { t.kind = TK_LBRACE; return }
+    if c == 125 { t.kind = TK_RBRACE; return }
+    if c == 91 { t.kind = TK_LBRACK; return }
+    if c == 93 { t.kind = TK_RBRACK; return }
+    if c == 42 { t.kind = TK_STAR; return }
+    if c == 43 { t.kind = TK_PLUS; return }
+    if c == 45 { t.kind = TK_MINUS; return }
+    if c == 47 { t.kind = TK_SLASH; return }
+    if c == 38 { t.kind = TK_AMP; return }
+    if c == 124 { t.kind = TK_PIPE; return }
+    if c == 94 { t.kind = TK_CARET; return }
+    if c == 61 { t.kind = TK_EQ; return }
+    if c == 59 { t.kind = TK_SEMI; return }
+    if c == 44 { t.kind = TK_COMMA; return }
+    if c == 58 { t.kind = TK_COLON; return }
+    if c == 46 { t.kind = TK_DOT; return }
+    if c == 64 { t.kind = TK_AT; return }
+    if c == 60 { t.kind = TK_LT; return }
+    if c == 62 { t.kind = TK_GT; return }
+    t.kind = TK_EOF
+}

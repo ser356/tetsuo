@@ -13,6 +13,10 @@ typedef enum {
     IR_BINOP,
     IR_CMPEQ,
     IR_CMPNE,
+    IR_CMPLT,
+    IR_CMPLE,
+    IR_CMPGT,
+    IR_CMPGE,
     IR_CALL,
     IR_RET,
     IR_JMP,
@@ -30,6 +34,7 @@ typedef struct Instr {
     uint64_t    imm;
     int         label;
     int         str_id;
+    char        *label_name;
     BinOpKind   binop;
     char        *callee;
     int         *args;

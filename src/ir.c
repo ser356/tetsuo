@@ -139,6 +139,21 @@ static int lower_expr(B *b, Expr *e) {
             op->width = e->lhs->type ? type_width(e->lhs->type) : 4;
             return s;
         }
+        case EX_LT: case EX_LE: case EX_GT: case EX_GE: {
+            int la = lower_expr(b, e->lhs);
+            int lb = lower_expr(b, e->rhs);
+            int s = new_slot(b, e->type);
+            IrOp op_kind = IR_CMPLT;
+            if (e->kind == EX_LE) op_kind = IR_CMPLE;
+            else if (e->kind == EX_GT) op_kind = IR_CMPGT;
+            else if (e->kind == EX_GE) op_kind = IR_CMPGE;
+            Instr *op = ins(b, op_kind);
+            op->dst = s;
+            op->a = la;
+            op->b = lb;
+            op->width = e->lhs->type ? type_width(e->lhs->type) : 4;
+            return s;
+        }
         case EX_STRLIT:
             fprintf(stderr, "ir: literal de cadena solo admitido como init de 'let'\n");
             exit(1);
@@ -151,6 +166,13 @@ static int lower_expr(B *b, Expr *e) {
             Instr *op = ins(b, IR_ADDR_LOCAL);
             op->dst = s;
             op->local = e->inner->var_index;
+            return s;
+        }
+        case EX_EXTERN: {
+            int s = new_slot(b, e->type);
+            Instr *op = ins(b, IR_LABEL_ADDR);
+            op->dst = s;
+            op->label_name = e->callee;
             return s;
         }
     }
@@ -217,9 +239,14 @@ static void lower_stmt(B *b, Stmt *s) {
             return;
         }
         case ST_RETURN: {
-            int v = lower_expr(b, s->ret_val);
-            Instr *r = ins(b, IR_RET);
-            r->a = v;
+            if (s->ret_val) {
+                int v = lower_expr(b, s->ret_val);
+                Instr *r = ins(b, IR_RET);
+                r->a = v;
+            } else {
+                Instr *r = ins(b, IR_RET);
+                r->a = -1;
+            }
             return;
         }
         case ST_LOOP: {
@@ -320,9 +347,11 @@ static int collect_uses(Instr *i, int uses[16]) {
         case IR_STORE_MEM:   uses[nu++] = i->a; uses[nu++] = i->b; break;
         case IR_BINOP:
         case IR_CMPEQ:
-        case IR_CMPNE:       uses[nu++] = i->a; uses[nu++] = i->b; break;
+        case IR_CMPNE:
+        case IR_CMPLT: case IR_CMPLE: case IR_CMPGT: case IR_CMPGE:
+                             uses[nu++] = i->a; uses[nu++] = i->b; break;
         case IR_JZ:          uses[nu++] = i->a; break;
-        case IR_RET:         uses[nu++] = i->a; break;
+        case IR_RET:         if (i->a >= 0) uses[nu++] = i->a; break;
         case IR_CALL:
             for (int k = 0; k < i->nargs; k++) uses[nu++] = i->args[k];
             break;
@@ -341,6 +370,7 @@ static int instr_dst(Instr *i) {
         case IR_BINOP:
         case IR_CMPEQ:
         case IR_CMPNE:
+        case IR_CMPLT: case IR_CMPLE: case IR_CMPGT: case IR_CMPGE:
         case IR_CALL:
             return i->dst;
         default:
