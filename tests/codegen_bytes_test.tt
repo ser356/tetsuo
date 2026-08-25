@@ -1,0 +1,23 @@
+bss CGB_SRC: 8192
+
+fun main() -> u32 {
+    let prog_src: str = 'fun add(a: u64, b: u64) -> u64 { return a + b } fun main() -> u64 { let s: str = \'Z\' let c: u64 = s.ptr[0] if c != 90 { return 7 } let t: u64 = add(40, 2) if t != 42 { return 8 } return t }'
+    let src: *u8 = CGB_SRC
+    let n: u64 = prog_src.len
+    mem_copy(src, prog_src.ptr, n)
+
+    let ast_ar: *Arena = ast_init()
+    let ir_ar: *Arena = ir_init()
+    let prog: *Program = parse(ast_ar, src, n)
+    let irhead: *IrFn = lower(ir_ar, prog)
+    codegen_bytes(prog, irhead)
+
+    let path: str = '/tmp/tt_cgb\0'
+    let fd: u64 = io_open_write(path.ptr)
+    if fd == 0 { return 1 }
+    let clen: u64 = cb_pos()
+    let entry: *u64 = CG_ENTRY
+    emit_macho_code(fd, prog, clen, entry[0])
+    io_close(fd)
+    return 0
+}

@@ -22,7 +22,8 @@ def die(m):
 def main():
     if len(sys.argv) < 3:
         die("uso: check_macho.py <bin> <exit_code>")
-    path = sys.argv[1]; want_exit = int(sys.argv[2])
+    path = sys.argv[1]
+    want_exit = None if sys.argv[2] == "-" else int(sys.argv[2])
     data = open(path, "rb").read()
     if len(data) < 32:
         die("fichero demasiado corto")
@@ -62,6 +63,9 @@ def main():
     if sig is None: die("sin LC_CODE_SIGNATURE")
 
     # cuerpo exit(code): movz x0,#code ; movz x16,#1 ; svc #0x80
+    if want_exit is None:
+        _check_signature(data, sig, entryoff, path)
+        return
     body = struct.unpack_from("<III", data, entryoff)
     exp0 = 0xd2800000 | ((want_exit & 0xffff) << 5) | 0   # movz x0,#code
     exp1 = 0xd2800000 | ((1 & 0xffff) << 5) | 16          # movz x16,#1
@@ -70,6 +74,9 @@ def main():
     if body[1] != exp1: die("body[1]=%#x != movz x16,#1 (%#x)" % (body[1], exp1))
     if body[2] != exp2: die("body[2]=%#x != svc #0x80 (%#x)" % (body[2], exp2))
 
+    _check_signature(data, sig, entryoff, path)
+
+def _check_signature(data, sig, entryoff, path):
     # firma
     dataoff, datasize = sig
     if dataoff + datasize > len(data): die("firma fuera del fichero")
@@ -107,8 +114,8 @@ def main():
             die("hash de pagina %d no coincide\n  calc=%s\n  cd  =%s" %
                 (slot, h.hex(), stored.hex()))
 
-    print("CHECK-MACHO OK: %s exit=%d, %d slots, ident=%r, codeLimit=%#x, %d bytes" %
-          (path, want_exit, nCode, ident, codeLimit, len(data)))
+    print("CHECK-MACHO OK: %s, %d slots, ident=%r, codeLimit=%#x, %d bytes" %
+          (path, nCode, ident, codeLimit, len(data)))
     sys.exit(0)
 
 if __name__ == "__main__":

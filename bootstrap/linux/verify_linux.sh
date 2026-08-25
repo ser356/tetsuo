@@ -72,11 +72,26 @@ if [[ -f lib/sha256.tt && -f tests/sha256_test.tt ]]; then
     smoke "$BUILD/sha256_combined.tt" 0 "sha256_test"
 fi
 
-# 24.d/24.e/24.f Mach-O writer + firma ad-hoc: emite binario y lo valida el checker
+# 24.d/24.f Mach-O writer + firma ad-hoc: emite binario y lo valida el checker
 if [[ -f src/macho.tt && -f tests/macho42_test.tt && -f "$HARNESS/check_macho.py" ]]; then
     cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/sha256.tt src/asm.tt src/macho.tt tests/macho42_test.tt > "$BUILD/macho42_combined.tt"
     smoke "$BUILD/macho42_combined.tt" 0 "macho42_test"
     python3 "$HARNESS/check_macho.py" /tmp/tt_macho42 42 || fail "check_macho.py rechazo /tmp/tt_macho42"
+fi
+
+# 24.e codegen a bytes: stage1 compila un programa (con llamadas, comparaciones
+# y un literal de cadena) directamente a un Mach-O firmado; el binario se ejecuta
+# bajo qemu (saltando a main, ver macho_run.py) y devuelve 42.
+if [[ -f src/codegen_bytes.tt && -f tests/codegen_bytes_test.tt && -f "$HARNESS/macho_run.py" ]]; then
+    rm -f /tmp/tt_cgb
+    cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt src/lexer.tt \
+        src/parser.tt src/ir.tt src/codegen.tt lib/sha256.tt src/asm.tt src/macho.tt \
+        src/codegen_bytes.tt tests/codegen_bytes_test.tt > "$BUILD/cgb_combined.tt"
+    smoke "$BUILD/cgb_combined.tt" 0 "codegen_bytes_test"
+    python3 "$HARNESS/check_macho.py" /tmp/tt_cgb - || fail "check_macho.py rechazo /tmp/tt_cgb"
+    rc=0
+    python3 "$HARNESS/macho_run.py" /tmp/tt_cgb || rc=$?
+    [[ $rc -eq 42 ]] || fail "codegen_bytes: el binario emitido devolvio $rc, esperado 42"
 fi
 
 echo "VERIFY-LINUX OK (fixpoint bit a bit + smokes disponibles)"

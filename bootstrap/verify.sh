@@ -203,11 +203,18 @@ rc=0
 bash tests/macos_build.sh tests/sha256_test.tt > /tmp/tt_verify.log 2>&1 || rc=$?
 [[ $rc -eq 0 ]] || fail "sha256_test.tt exit=$rc esperado 0; log:\n$(cat /tmp/tt_verify.log)"
 
-# hito 24.d/e/f: Mach-O firmado ad-hoc. Emite el binario exit(42); en macOS nativo
+# hito 24.d/f: Mach-O firmado ad-hoc. Emite el binario exit(42); en macOS nativo
 # se ejecuta directo (cero herramientas externas) y devuelve 42.
 rc=0
 bash tests/macho_build.sh > /tmp/tt_verify.log 2>&1 || rc=$?
 [[ $rc -eq 42 ]] || fail "macho_build.sh exit=$rc esperado 42; log:\n$(cat /tmp/tt_verify.log)"
+
+# hito 24.e: codegen a bytes. stage1 compila un programa (llamadas, comparaciones,
+# literal de cadena) a un Mach-O firmado directamente en bytes; el binario corre
+# nativo en macOS y devuelve 42.
+rc=0
+bash tests/codegen_bytes_build.sh > /tmp/tt_verify.log 2>&1 || rc=$?
+[[ $rc -eq 42 ]] || fail "codegen_bytes_build.sh exit=$rc esperado 42; log:\n$(cat /tmp/tt_verify.log)"
 # codegen stage1 hito 17.4: emit_instr para IR_MOVI(dst=0,imm=99)+IR_RET(a=0) con reg_of[0]=0 y epi_label=7
 # esperado "    movz    x9, #0x0063\n    mov     x0, x9\n    b       .L7\n" = 24+19+16 = 59 bytes
 rc=0
