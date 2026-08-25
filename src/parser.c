@@ -80,8 +80,11 @@ static void skip_semi(P *p) {
     while (accept(p, TK_SEMI)) {}
 }
 
+/* Resuelve al 'let' mas reciente ya parseado: dos 'let' con el mismo
+   nombre en ramas distintas reciben slots distintos, y cada uso debe
+   leer el slot de SU declaracion, no el de la primera coincidencia. */
 static int lookup_local(Func *f, const char *s, size_t n) {
-    for (int i = 0; i < f->nlocals; i++) {
+    for (int i = f->nlocals - 1; i >= 0; i--) {
         size_t k = strlen(f->locals[i].name);
         if (k == n && memcmp(s, f->locals[i].name, k) == 0) return i;
     }
