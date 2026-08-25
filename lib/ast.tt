@@ -1,8 +1,8 @@
-bss AST_BUF: 8388608
+bss AST_BUF: 16777216
 bss AST_ARENA_STORE: 24
 
 fun ast_init() -> *Arena {
     let a: *Arena = AST_ARENA_STORE
-    arena_init(a, AST_BUF, 8388608)
+    arena_init(a, AST_BUF, 16777216)
     return a
 }

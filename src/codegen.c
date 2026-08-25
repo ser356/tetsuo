@@ -297,8 +297,14 @@ static void emit_fn(FILE *out, IrFn *fn, int epilogue_label) {
     fprintf(out, ":\n");
     fprintf(out, "    stp     x29, x30, [sp, #-16]!\n");
     fprintf(out, "    mov     x29, sp\n");
-    if (fn->frame_bytes > 0)
-        fprintf(out, "    sub     sp, sp, #%d\n", fn->frame_bytes);
+    if (fn->frame_bytes > 0) {
+        if (fn->frame_bytes <= 4095) {
+            fprintf(out, "    sub     sp, sp, #%d\n", fn->frame_bytes);
+        } else {
+            emit_movi_reg(out, "x16", (uint64_t)fn->frame_bytes);
+            fprintf(out, "    sub     sp, sp, x16\n");
+        }
+    }
 
     for (int k = 0; k < fn->nparams; k++) {
         int w = param_width(fn->param_types[k]);
@@ -313,8 +319,14 @@ static void emit_fn(FILE *out, IrFn *fn, int epilogue_label) {
     for (Instr *i = fn->head; i; i = i->next) emit_instr(out, fn, i, epilogue_label);
 
     fprintf(out, ".L%d:\n", epilogue_label);
-    if (fn->frame_bytes > 0)
-        fprintf(out, "    add     sp, sp, #%d\n", fn->frame_bytes);
+    if (fn->frame_bytes > 0) {
+        if (fn->frame_bytes <= 4095) {
+            fprintf(out, "    add     sp, sp, #%d\n", fn->frame_bytes);
+        } else {
+            emit_movi_reg(out, "x16", (uint64_t)fn->frame_bytes);
+            fprintf(out, "    add     sp, sp, x16\n");
+        }
+    }
     fprintf(out, "    ldp     x29, x30, [sp], #16\n");
     fprintf(out, "    ret\n");
 }

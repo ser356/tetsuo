@@ -15,7 +15,7 @@ fun main() -> u32 {
     ro[0] = 0
     fn.reg_of = ro
     fn.frame_bytes = 16
-    fn.ret_type = nil
+    fn.ret_type = mk_prim(ar, T_U64)
 
     let mi: *Ins = mk_ins(ar, IR_MOVI)
     mi.dst = 0
