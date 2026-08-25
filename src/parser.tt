@@ -77,6 +77,8 @@ const OP_DIV: u64 = 3
 const OP_AND: u64 = 4
 const OP_OR:  u64 = 5
 const OP_XOR: u64 = 6
+const OP_SHL: u64 = 7
+const OP_SHR: u64 = 8
 
 struct Expr {
     kind:         u64,
@@ -694,6 +696,8 @@ fun bin_prec(k: u32) -> u64 {
     if k == TK_SLASH  { return 6 }
     if k == TK_PLUS   { return 5 }
     if k == TK_MINUS  { return 5 }
+    if k == TK_LSHIFT { return 5 }
+    if k == TK_RSHIFT { return 5 }
     if k == TK_AMP    { return 4 }
     if k == TK_CARET  { return 3 }
     if k == TK_PIPE   { return 2 }
@@ -721,6 +725,8 @@ fun parse_expr(ar: *Arena, min_prec: u64) -> *Expr {
         if k == TK_AMP    { e.op = OP_AND }
         if k == TK_CARET  { e.op = OP_XOR }
         if k == TK_PIPE   { e.op = OP_OR }
+        if k == TK_LSHIFT { e.op = OP_SHL }
+        if k == TK_RSHIFT { e.op = OP_SHR }
         if k == TK_EQEQ   { e.kind = EX_EQ }
         if k == TK_BANGEQ { e.kind = EX_NE }
         if k == TK_LT     { e.kind = EX_LT }

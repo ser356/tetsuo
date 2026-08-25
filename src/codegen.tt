@@ -248,6 +248,8 @@ fun out_binop_mnemonic(o: *Out, op: u64) {
     if op == OP_AND { let se: str = 'and'; out_bytes(o, se.ptr, se.len); return }
     if op == OP_OR  { let sf: str = 'orr'; out_bytes(o, sf.ptr, sf.len); return }
     if op == OP_XOR { let sg: str = 'eor'; out_bytes(o, sg.ptr, sg.len); return }
+    if op == OP_SHL { let sh: str = 'lsl'; out_bytes(o, sh.ptr, sh.len); return }
+    if op == OP_SHR { let si: str = 'lsr'; out_bytes(o, si.ptr, si.len); return }
 }
 
 fun emit_i_movi(o: *Out, fn: *IrFn, i: *Ins) {

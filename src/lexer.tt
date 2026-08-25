@@ -41,6 +41,8 @@ const TK_COLON: u32   = 39
 const TK_DOT: u32     = 40
 const TK_ARROW: u32   = 41
 const TK_AT: u32      = 42
+const TK_LSHIFT: u32  = 43
+const TK_RSHIFT: u32  = 44
 
 struct Lexer {
     src: *u8,
@@ -288,6 +290,24 @@ fun lex_next(lx: *Lexer, t: *Tok) {
     if c == 62 {
         if peek1(lx) == 61 {
             t.kind = TK_GE
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+    if c == 60 {
+        if peek1(lx) == 60 {
+            t.kind = TK_LSHIFT
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+    if c == 62 {
+        if peek1(lx) == 62 {
+            t.kind = TK_RSHIFT
             t.start = lx.pos
             t.tlen = 2
             lx.pos = lx.pos + 2

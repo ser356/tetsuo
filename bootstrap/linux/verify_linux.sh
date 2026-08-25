@@ -47,4 +47,36 @@ mk_elf "$BUILD/hello_s1.s" "$BUILD/linux/hello"
 out=$(qemu-aarch64 "$BUILD/linux/hello")
 echo "$out" | grep -q "hola desde macOS" || fail "hello stage1 no imprime"
 
-echo "VERIFY-LINUX OK (fixpoint bit a bit)"
+# --- smokes de los hitos Mach-O (24.a..24.f) bajo qemu ---
+smoke() { # $1=combined.tt $2=rc_esperado $3=nombre
+    local rc=0
+    bash "$HARNESS/run_tt.sh" "$1" > /tmp/tt_smoke.log 2>&1 || rc=$?
+    [[ $rc -eq $2 ]] || fail "$3 rc=$rc esperado $2; log:\n$(cat /tmp/tt_smoke.log)"
+}
+
+# 24.a shifts: << y >> binarios (inmediato y registro)
+if [[ -f tests/shifts_test.tt ]]; then
+    cat src/runtime/io.tt lib/str.tt lib/fmt.tt tests/shifts_test.tt > "$BUILD/shifts_combined.tt"
+    smoke "$BUILD/shifts_combined.tt" 0 "shifts_test"
+fi
+
+# 24.b encoder AArch64
+if [[ -f src/asm.tt && -f tests/asm_test.tt ]]; then
+    cat src/runtime/io.tt lib/str.tt lib/fmt.tt src/asm.tt tests/asm_test.tt > "$BUILD/asm_combined.tt"
+    smoke "$BUILD/asm_combined.tt" 0 "asm_test"
+fi
+
+# 24.c SHA-256
+if [[ -f lib/sha256.tt && -f tests/sha256_test.tt ]]; then
+    cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/sha256.tt tests/sha256_test.tt > "$BUILD/sha256_combined.tt"
+    smoke "$BUILD/sha256_combined.tt" 0 "sha256_test"
+fi
+
+# 24.d/24.e/24.f Mach-O writer + firma ad-hoc: emite binario y lo valida el checker
+if [[ -f src/macho.tt && -f tests/macho42_test.tt && -f "$HARNESS/check_macho.py" ]]; then
+    cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/sha256.tt src/asm.tt src/macho.tt tests/macho42_test.tt > "$BUILD/macho42_combined.tt"
+    smoke "$BUILD/macho42_combined.tt" 0 "macho42_test"
+    python3 "$HARNESS/check_macho.py" /tmp/tt_macho42 42 || fail "check_macho.py rechazo /tmp/tt_macho42"
+fi
+
+echo "VERIFY-LINUX OK (fixpoint bit a bit + smokes disponibles)"
