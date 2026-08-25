@@ -4,17 +4,17 @@ cd "$(dirname "$0")/.."
 
 CC=${CC:-clang}
 BUILD=build
-COMPILER=$BUILD/tetsuoc
+COMPILER=$BUILD/main
+SEED=bootstrap/tetsuoc.s
 mkdir -p "$BUILD"
 
 if [[ ! -x $COMPILER ]]; then
-  $CC -std=c11 -O0 -g -Wall -Wextra -Wswitch -Werror \
-      -fsanitize=address,undefined \
-      -o "$COMPILER" src/*.c
+  $CC -c "$SEED" -o "$BUILD/main.o"
+  $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
 COMBINED=$BUILD/fixpoint_combined.tt
-cat tests/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt tests/lexer.tt \
+cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt src/lexer.tt \
     src/parser.tt src/ir.tt src/codegen.tt src/main.tt > "$COMBINED"
 
 # stage0 (C) compila el combined del compilador stage1

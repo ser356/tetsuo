@@ -21,7 +21,7 @@ LOAD_ADDR=0x40000000                  # donde -kernel deposita la imagen en -M v
 
 SRC_DIR=src
 BUILD=build
-COMPILER=$BUILD/tetsuoc
+COMPILER=$BUILD/main
 LINKER_SCRIPT=$BUILD/link.ld
 
 INPUT=tests/hello.tt

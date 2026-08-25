@@ -5,8 +5,8 @@ cd "$(dirname "$0")/.."
 
 fail() { echo "VERIFY FAIL: $1" >&2; exit 1; }
 
-# Forzar rebuild del compilador C: macos_build.sh cachea el binario.
-rm -f build/tetsuoc
+# Forzar rebuild del binario stage1: macos_build.sh cachea build/main.
+rm -f build/main
 
 # argv shim: exit == argc
 rc=0
@@ -213,18 +213,9 @@ for sample in tests/argv.tt tests/hello.tt tests/nil.tt tests/parens.tt tests/si
     [[ $rc -eq 55 ]] || fail "parser stage1 sobre $sample rc=$rc esperado 55; log:\n$(cat /tmp/tt_verify.log)"
 done
 
-# hito 14: equivalencia lexer stage1 (tests/lexer.tt) vs stage0 (--dump-tokens) sobre 6 samples
-# Primer sample tambien compila el binario; el resto reutiliza el compilado.
-for sample in tests/hello.tt tests/argv.tt tests/nil.tt tests/parens.tt tests/sizeof.tt tests/fmt_test.tt; do
-    set +e
-    bash tests/lexer_build.sh "$sample" > /tmp/tt_lexer.log 2>&1
-    s1=$?
-    set -e
-    [[ $s1 -gt 0 && $s1 -lt 250 ]] || fail "lexer stage1 rc fuera de rango sobre $sample: $s1; log:\n$(cat /tmp/tt_lexer.log)"
-    s0=$(./build/tetsuoc --dump-tokens "$sample" 2>/dev/null | wc -l | tr -d ' ')
-    s0_real=$((s0 - 1))
-    [[ $s1 -eq $s0_real ]] || fail "lexer stage1=$s1 vs stage0=$s0_real sobre $sample; log:\n$(cat /tmp/tt_lexer.log)"
-done
+# hito 14 obsoleto tras hito 19.b: la equivalencia lexer stage1<->stage0 se sub-
+# sume en el fixpoint bit-a-bit s0==s1==s2 del hito 19. Ademas requiere src/*.c,
+# que ya no existe en el proceso. Bloque eliminado.
 
 # hito 19: fixpoint completo. stage1 compila macos_hello (msg.ptr/msg.len) y
 # se compila a si mismo; diff bit a bit s0 vs s1 y s1 vs s2.

@@ -3,18 +3,18 @@ set -euo pipefail
 
 CC=${CC:-clang}
 BUILD=build
-COMPILER=$BUILD/tetsuoc
+COMPILER=$BUILD/main
+SEED=bootstrap/tetsuoc.s
 
 mkdir -p "$BUILD"
 
 if [[ ! -x $COMPILER ]]; then
-  $CC -std=c11 -O0 -g -Wall -Wextra -Wswitch -Werror \
-      -fsanitize=address,undefined \
-      -o "$COMPILER" src/*.c
+  $CC -c "$SEED" -o "$BUILD/main.o"
+  $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
 COMBINED=$BUILD/lexer_combined.tt
-cat tests/io.tt lib/str.tt tests/lexer.tt tests/lexer_main.tt > "$COMBINED"
+cat src/runtime/io.tt lib/str.tt src/lexer.tt tests/lexer_main.tt > "$COMBINED"
 
 "$COMPILER" --target=macos "$COMBINED" -o "$BUILD/lexer_test.s"
 $CC -c "$BUILD/lexer_test.s" -o "$BUILD/lexer_test.o"

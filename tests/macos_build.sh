@@ -3,7 +3,8 @@ set -euo pipefail
 
 CC=${CC:-clang}
 BUILD=build
-COMPILER=$BUILD/tetsuoc
+COMPILER=$BUILD/main
+SEED=bootstrap/tetsuoc.s
 INPUT=${1:-tests/macos_hello.tt}
 BASE=$BUILD/$(basename "${INPUT%.*}")
 shift || true
@@ -12,17 +13,16 @@ ARGS=("$@")
 mkdir -p "$BUILD"
 
 if [[ ! -x $COMPILER ]]; then
-  $CC -std=c11 -O0 -g -Wall -Wextra -Wswitch -Werror \
-      -fsanitize=address,undefined \
-      -o "$COMPILER" src/*.c
+  $CC -c "$SEED" -o "$BUILD/main.o"
+  $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
-IO_LIB=tests/io.tt
+IO_LIB=src/runtime/io.tt
 STR_LIB=lib/str.tt
 FMT_LIB=lib/fmt.tt
 VEC_LIB=lib/vec.tt
 AST_LIB=lib/ast.tt
-LEXER_LIB=tests/lexer.tt
+LEXER_LIB=src/lexer.tt
 PARSER_LIB=src/parser.tt
 IR_LIB=src/ir.tt
 CODEGEN_LIB=src/codegen.tt
