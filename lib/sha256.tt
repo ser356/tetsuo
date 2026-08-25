@@ -1,0 +1,209 @@
+// SHA-256 sobre 32 bits emulados en u64 (enmascarado a 0xffffffff).
+// sha256(msg, mlen, out) escribe 32 bytes de hash big-endian en out.
+
+bss SHA_K: 512
+bss SHA_W: 512
+bss SHA_H: 64
+bss SHA_BLK: 64
+
+fun sha_rotr(x: u64, n: u64) -> u64 {
+    return (x >> n | x << (32 - n)) & 4294967295
+}
+
+fun sha_k_init() {
+    let kp: *u64 = SHA_K
+    kp[0] = 1116352408
+    kp[1] = 1899447441
+    kp[2] = 3049323471
+    kp[3] = 3921009573
+    kp[4] = 961987163
+    kp[5] = 1508970993
+    kp[6] = 2453635748
+    kp[7] = 2870763221
+    kp[8] = 3624381080
+    kp[9] = 310598401
+    kp[10] = 607225278
+    kp[11] = 1426881987
+    kp[12] = 1925078388
+    kp[13] = 2162078206
+    kp[14] = 2614888103
+    kp[15] = 3248222580
+    kp[16] = 3835390401
+    kp[17] = 4022224774
+    kp[18] = 264347078
+    kp[19] = 604807628
+    kp[20] = 770255983
+    kp[21] = 1249150122
+    kp[22] = 1555081692
+    kp[23] = 1996064986
+    kp[24] = 2554220882
+    kp[25] = 2821834349
+    kp[26] = 2952996808
+    kp[27] = 3210313671
+    kp[28] = 3336571891
+    kp[29] = 3584528711
+    kp[30] = 113926993
+    kp[31] = 338241895
+    kp[32] = 666307205
+    kp[33] = 773529912
+    kp[34] = 1294757372
+    kp[35] = 1396182291
+    kp[36] = 1695183700
+    kp[37] = 1986661051
+    kp[38] = 2177026350
+    kp[39] = 2456956037
+    kp[40] = 2730485921
+    kp[41] = 2820302411
+    kp[42] = 3259730800
+    kp[43] = 3345764771
+    kp[44] = 3516065817
+    kp[45] = 3600352804
+    kp[46] = 4094571909
+    kp[47] = 275423344
+    kp[48] = 430227734
+    kp[49] = 506948616
+    kp[50] = 659060556
+    kp[51] = 883997877
+    kp[52] = 958139571
+    kp[53] = 1322822218
+    kp[54] = 1537002063
+    kp[55] = 1747873779
+    kp[56] = 1955562222
+    kp[57] = 2024104815
+    kp[58] = 2227730452
+    kp[59] = 2361852424
+    kp[60] = 2428436474
+    kp[61] = 2756734187
+    kp[62] = 3204031479
+    kp[63] = 3329325298
+}
+
+fun sha_h_init() {
+    let hp: *u64 = SHA_H
+    hp[0] = 1779033703
+    hp[1] = 3144134277
+    hp[2] = 1013904242
+    hp[3] = 2773480762
+    hp[4] = 1359893119
+    hp[5] = 2600822924
+    hp[6] = 528734635
+    hp[7] = 1541459225
+}
+
+fun sha_w32be(p: *u8) -> u64 {
+    let b0: u64 = p[0]
+    let b1: u64 = p[1]
+    let b2: u64 = p[2]
+    let b3: u64 = p[3]
+    return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+}
+
+fun sha_put_be64(p: *u8, off: u64, v: u64) {
+    p[off + 0] = (v >> 56) & 255
+    p[off + 1] = (v >> 48) & 255
+    p[off + 2] = (v >> 40) & 255
+    p[off + 3] = (v >> 32) & 255
+    p[off + 4] = (v >> 24) & 255
+    p[off + 5] = (v >> 16) & 255
+    p[off + 6] = (v >> 8) & 255
+    p[off + 7] = v & 255
+}
+
+fun sha256_block(blk: *u8) {
+    let wp: *u64 = SHA_W
+    let kp: *u64 = SHA_K
+    let hp: *u64 = SHA_H
+    let t: u64 = 0
+    while t < 16 {
+        wp[t] = sha_w32be(blk + t * 4)
+        t = t + 1
+    }
+    t = 16
+    while t < 64 {
+        let w15: u64 = wp[t - 15]
+        let s0: u64 = (sha_rotr(w15, 7) ^ sha_rotr(w15, 18) ^ (w15 >> 3)) & 4294967295
+        let w2: u64 = wp[t - 2]
+        let s1: u64 = (sha_rotr(w2, 17) ^ sha_rotr(w2, 19) ^ (w2 >> 10)) & 4294967295
+        wp[t] = (wp[t - 16] + s0 + wp[t - 7] + s1) & 4294967295
+        t = t + 1
+    }
+    let a: u64 = hp[0]
+    let b: u64 = hp[1]
+    let c: u64 = hp[2]
+    let d: u64 = hp[3]
+    let e: u64 = hp[4]
+    let f: u64 = hp[5]
+    let g: u64 = hp[6]
+    let h: u64 = hp[7]
+    t = 0
+    while t < 64 {
+        let be: u64 = (sha_rotr(e, 6) ^ sha_rotr(e, 11) ^ sha_rotr(e, 25)) & 4294967295
+        let ch: u64 = ((e & f) ^ ((e ^ 4294967295) & g)) & 4294967295
+        let t1: u64 = (h + be + ch + kp[t] + wp[t]) & 4294967295
+        let ba: u64 = (sha_rotr(a, 2) ^ sha_rotr(a, 13) ^ sha_rotr(a, 22)) & 4294967295
+        let mj: u64 = ((a & b) ^ (a & c) ^ (b & c)) & 4294967295
+        let t2: u64 = (ba + mj) & 4294967295
+        h = g
+        g = f
+        f = e
+        e = (d + t1) & 4294967295
+        d = c
+        c = b
+        b = a
+        a = (t1 + t2) & 4294967295
+        t = t + 1
+    }
+    hp[0] = (hp[0] + a) & 4294967295
+    hp[1] = (hp[1] + b) & 4294967295
+    hp[2] = (hp[2] + c) & 4294967295
+    hp[3] = (hp[3] + d) & 4294967295
+    hp[4] = (hp[4] + e) & 4294967295
+    hp[5] = (hp[5] + f) & 4294967295
+    hp[6] = (hp[6] + g) & 4294967295
+    hp[7] = (hp[7] + h) & 4294967295
+}
+
+fun sha256(msg: *u8, mlen: u64, out: *u8) {
+    sha_k_init()
+    sha_h_init()
+    let full: u64 = mlen / 64
+    let i: u64 = 0
+    while i < full {
+        sha256_block(msg + i * 64)
+        i = i + 1
+    }
+    let rem: u64 = mlen - full * 64
+    let bp: *u8 = SHA_BLK
+    let j: u64 = 0
+    while j < rem {
+        bp[j] = msg[full * 64 + j]
+        j = j + 1
+    }
+    bp[rem] = 128
+    j = rem + 1
+    while j < 64 {
+        bp[j] = 0
+        j = j + 1
+    }
+    let bitlen: u64 = mlen * 8
+    if rem >= 56 {
+        sha256_block(bp)
+        j = 0
+        while j < 64 {
+            bp[j] = 0
+            j = j + 1
+        }
+    }
+    sha_put_be64(bp, 56, bitlen)
+    sha256_block(bp)
+    let hp: *u64 = SHA_H
+    let o: u64 = 0
+    while o < 8 {
+        let v: u64 = hp[o]
+        out[o * 4 + 0] = (v >> 24) & 255
+        out[o * 4 + 1] = (v >> 16) & 255
+        out[o * 4 + 2] = (v >> 8) & 255
+        out[o * 4 + 3] = v & 255
+        o = o + 1
+    }
+}
