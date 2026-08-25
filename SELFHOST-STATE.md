@@ -24,7 +24,30 @@ Tests smoke añadidos al `bootstrap/verify.sh`:
 - `macos_hello.tt` imprime + exit=0
 - Equivalencia numérica lexer stage1↔stage0 sobre 6 samples reales
 
-## Hito 15.7-8 PAUSADO — bug bloqueante
+## Hito 15.7-8 — bug bloqueante RESUELTO (2026-08-25)
+
+**Causa raíz encontrada y arreglada en stage0** (`src/parser.c`,
+`lookup_local`): `add_local` crea un slot nuevo por cada `let`, pero
+`lookup_local` devolvía la **primera** coincidencia por nombre. En
+`parse_primary` de stage1 hay un `let e` por rama (7 en total): la rama
+TK_IDENT inicializaba SU slot (local 13) pero `e.var_start = …`,
+`e.var_len = …` y `return e` resolvían al `e` de la rama TK_NUM (local 3),
+sin inicializar en esa ruta → store sobre puntero basura → SEGV. Encaja con
+los tres repros: `return 1` usa la rama NUM (coherente); `let x…; return x`
+deja local 3 con un Expr válido del parseo del `0` (no crashea, pero devolvía
+el Expr equivocado); `return a` a secas deja local 3 con basura.
+
+Fix: `lookup_local` recorre ahora de atrás hacia adelante → cada uso resuelve
+a la declaración más reciente que lo precede (shadowing léxico). Verificado
+con `--dump-ast` sobre el combinado del parser: los usos pasan de local 3 a
+local 13; el diff de AST pre/post fix solo toca `parse_primary`, `parse_stmt`
+y `parse_unary` (las funciones con `let` duplicados). Pendiente en máquina
+macOS arm64: re-ejecutar `bash tests/parser_build.sh tests/argv.tt` y añadir
+el bloque 15.7-8 a `bootstrap/verify.sh`.
+
+El detalle original de la investigación se conserva abajo.
+
+## Hito 15.7-8 PAUSADO — bug bloqueante (histórico)
 
 ### Estado
 - `tests/parser_main.tt` **reescrito** argv-driven (main lee `argv[1]`, carga archivo en `PARSER_BUF` de 64 KB, llama `parse()`, cuenta `nfuncs+nconsts+nbsses+nstructs` iterando `.next`, `io_exit(total)`).

@@ -242,18 +242,49 @@ Los patrones de esta sección no son opinión: son la única forma que
 tiene stage1 de reproducir el comportamiento de stage0 sin tipos con
 signo, sin `sizeof` y sin resolución adelantada explícita.
 
-### Puntero nulo = literal `0`
+### Puntero nulo = literal `0` (y `nil` como azúcar)
 
-Verificado en `tests/nil.tt`: `let p: *T = 0` y `p == 0` compilan y se
-comportan como esperamos. No se introduce palabra reservada `nil`. La
-comparación es siempre por igualdad:
+Verificado en `tests/nil.tt` y `tests/nil2.tt`: `let p: *T = 0` y `p == 0`
+compilan y se comportan como esperamos. La palabra reservada `nil` existe ya
+y es azúcar exacta del literal `0` — usa `nil` en contexto de puntero y `0`
+en contexto numérico. La comparación es siempre por igualdad:
 
 ```
-if p == 0 { return }        // ok
-if p != 0 { ... }           // ok
+if p == nil { return }      // ok
+if p != nil { ... }         // ok
 if p < 0 { ... }            // PROHIBIDO — todas las comparaciones son
                             // sin signo, esto siempre es falso
 ```
+
+### Un `let` por rama: shadowing a la declaración más reciente
+
+Sin ámbito de bloque, el patrón del parser stage1 es declarar la misma local
+en cada rama excluyente:
+
+```
+if k == TK_NUM {
+    let e: *Expr = mk_expr(ar, EX_INT)
+    e.ival = t.ival
+    return e
+}
+if k == TK_IDENT {
+    let e: *Expr = mk_expr(ar, EX_VAR)
+    e.var_start = name_start
+    return e
+}
+```
+
+Cada `let` crea un slot propio y cada uso resuelve a la declaración más
+reciente que lo precede en el texto (`lookup_local` busca de atrás hacia
+adelante). Regla de higiene: usa el patrón solo en ramas que terminan en
+`return`/`break`; después de un bloque con `let x` interno, el nombre `x`
+sigue haciendo sombra en el resto de la función y su slot puede estar sin
+inicializar si la rama no se ejecutó.
+
+(Histórico: hasta el fix del hito 15.7-8, `lookup_local` resolvía a la
+*primera* declaración: el `let e` de una rama posterior escribía su slot
+nuevo pero `e.campo` leía el slot de la primera rama, sin inicializar —
+el segfault del parser stage1 con `return IDENT`.)
 
 ### Centinelas: índices base 1
 
