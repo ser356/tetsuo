@@ -75,3 +75,20 @@ fun out_hex4(o: *Out, v: u64) {
     out_nibble(o, d2)
     out_nibble(o, d3)
 }
+
+bss ERR_STORAGE: 64
+bss ERR_BUF: 4096
+
+fun die_line(msg: *u8, mlen: u64, line: u64) {
+    let o: *Out = ERR_STORAGE
+    out_init(o, 2, ERR_BUF, 4096)
+    let s: str = 'error linea '
+    out_bytes(o, s.ptr, s.len)
+    out_u64(o, line)
+    let s2: str = ': '
+    out_bytes(o, s2.ptr, s2.len)
+    out_bytes(o, msg, mlen)
+    out_byte(o, 10)
+    out_flush(o)
+    io_exit(2)
+}

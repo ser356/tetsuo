@@ -1,0 +1,2 @@
+import 'tests/import_a.tt'
+fun main() -> u64 { return a() + 1 }

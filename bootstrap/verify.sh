@@ -181,6 +181,12 @@ bash tests/codegen_e2e_build.sh > /tmp/tt_verify.log 2>&1 || rc=$?
 rc=0
 bash tests/main_e2e_build.sh > /tmp/tt_verify.log 2>&1 || rc=$?
 [[ $rc -eq 42 ]] || fail "main_e2e exit=$rc esperado 42; log:\n$(cat /tmp/tt_verify.log)"
+
+# hito 23: import 'path' preprocessor. tests/import_b.tt hace import de import_a.tt
+# que define a(); main() devuelve a()+1 = 42
+rc=0
+bash tests/import_build.sh > /tmp/tt_verify.log 2>&1 || rc=$?
+[[ $rc -eq 42 ]] || fail "import_build.sh exit=$rc esperado 42; log:\n$(cat /tmp/tt_verify.log)"
 # codegen stage1 hito 17.4: emit_instr para IR_MOVI(dst=0,imm=99)+IR_RET(a=0) con reg_of[0]=0 y epi_label=7
 # esperado "    movz    x9, #0x0063\n    mov     x0, x9\n    b       .L7\n" = 24+19+16 = 59 bytes
 rc=0

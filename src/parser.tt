@@ -104,6 +104,11 @@ bss STR_HEAD: 8
 bss STR_COUNT: 8
 bss STR_TAIL: 8
 
+fun die_here(msg: *u8, mlen: u64) {
+    let t: *Tok = TOK_CUR
+    die_line(msg, mlen, t.tline)
+}
+
 struct StrLit {
     id:    u64,
     bytes: *u8,
@@ -457,7 +462,10 @@ fun parse_primary(ar: *Arena) -> *Expr {
                 if ps_kind() != TK_RPAREN { ps_expect(TK_COMMA) }
             }
             ps_expect(TK_RPAREN)
-            if n > 8 { io_exit(93) }
+            if n > 8 {
+                let m93: str = 'demasiados args (>8)'
+                die_here(m93.ptr, m93.len)
+            }
             e.nargs = n
             let syskw: str = 'syscall'
             if bytes_eq_at(name_start, name_len, syskw.ptr, 7) == 1 {
@@ -514,7 +522,8 @@ fun parse_primary(ar: *Arena) -> *Expr {
         ps_advance()
         return e
     }
-    io_exit(80)
+    let m80: str = 'expresion primaria invalida'
+    die_here(m80.ptr, m80.len)
     return nil
 }
 
@@ -524,7 +533,10 @@ fun parse_postfix(ar: *Arena) -> *Expr {
         let k: u32 = ps_kind()
         if k == TK_DOT {
             ps_advance()
-            if ps_kind() != TK_IDENT { io_exit(91) }
+            if ps_kind() != TK_IDENT {
+                let m91: str = 'se esperaba identificador tras .'
+                die_here(m91.ptr, m91.len)
+            }
             let t: *Tok = TOK_CUR
             let fstart: u64 = t.start
             let flen: u64 = t.tlen
@@ -560,7 +572,10 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                         if d != nil {
                             if e.kind == EX_VAR {
                                 let fi: u64 = struct_field_index(d, fstart, flen)
-                                if fi >= d.nfields { io_exit(95) }
+                                if fi >= d.nfields {
+                                    let m95a: str = 'campo desconocido en struct'
+                                    die_here(m95a.ptr, m95a.len)
+                                }
                                 let fe3: *Expr = mk_expr(ar, EX_VAR)
                                 fe3.var_index = e.var_index + fi
                                 fe3.type = struct_field_type(d, fi)
@@ -578,7 +593,10 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                                 let d2: *StructDecl = it.decl
                                 if d2 != nil {
                                     let fi2: u64 = struct_field_index(d2, fstart, flen)
-                                    if fi2 >= d2.nfields { io_exit(95) }
+                                    if fi2 >= d2.nfields {
+                                        let m95b: str = 'campo desconocido en struct'
+                                        die_here(m95b.ptr, m95b.len)
+                                    }
                                     let ft: *Type = struct_field_type(d2, fi2)
                                     let off_e: *Expr = mk_expr(ar, EX_INT)
                                     off_e.ival = fi2 * 8
@@ -599,15 +617,24 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                     }
                 }
             }
-            if handled == 0 { io_exit(91) }
+            if handled == 0 {
+                let mh: str = 'postfix no soportado'
+                die_here(mh.ptr, mh.len)
+            }
         } else {
             if k == TK_LBRACK {
                 ps_advance()
                 let idx: *Expr = parse_expr(ar, 1)
                 ps_expect(TK_RBRACK)
                 let bty: *Type = e.type
-                if bty == nil { io_exit(92) }
-                if bty.kind != T_PTR { io_exit(92) }
+                if bty == nil {
+                    let mb1: str = 'deref sobre expresion sin tipo'
+                    die_here(mb1.ptr, mb1.len)
+                }
+                if bty.kind != T_PTR {
+                    let mb2: str = 'deref sobre no-puntero'
+                    die_here(mb2.ptr, mb2.len)
+                }
                 let sz: u64 = type_width(bty.inner)
                 let scaled: *Expr = idx
                 if sz != 1 {
@@ -740,7 +767,10 @@ fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
 }
 
 fun ps_expect(k: u32) {
-    if ps_kind() != k { io_exit(81) }
+    if ps_kind() != k {
+        let m81: str = 'se esperaba token'
+        die_here(m81.ptr, m81.len)
+    }
     ps_advance()
 }
 
@@ -761,7 +791,10 @@ fun parse_type(ar: *Arena) -> *Type {
         let inner: *Type = parse_type(ar)
         return mk_ptr(ar, inner)
     }
-    if ps_kind() != TK_IDENT { io_exit(82) }
+    if ps_kind() != TK_IDENT {
+        let m82: str = 'se esperaba tipo'
+        die_here(m82.ptr, m82.len)
+    }
     let t: *Tok = TOK_CUR
     let u8kw:  str = 'u8'
     let u32kw: str = 'u32'
@@ -803,7 +836,10 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
     if k == TK_LET {
         ps_advance()
         let t: *Tok = TOK_CUR
-        if ps_kind() != TK_IDENT { io_exit(83) }
+        if ps_kind() != TK_IDENT {
+            let m83: str = 'let requiere identificador'
+            die_here(m83.ptr, m83.len)
+        }
         let s: *Stmt = mk_stmt(ar, ST_LET)
         s.name_start = t.start
         s.name_len = t.tlen
@@ -899,7 +935,10 @@ fun mk_program(ar: *Arena) -> *Program {
 
 fun parse_fun(ar: *Arena) -> *Func {
     ps_expect(TK_FUN)
-    if ps_kind() != TK_IDENT { io_exit(84) }
+    if ps_kind() != TK_IDENT {
+        let m84: str = 'fun requiere identificador'
+        die_here(m84.ptr, m84.len)
+    }
     let t: *Tok = TOK_CUR
     let f: *Func = arena_take(ar, 72)
     f.name_start = t.start
@@ -917,7 +956,10 @@ fun parse_fun(ar: *Arena) -> *Func {
     let phead: *Param = nil
     let ptail: *Param = nil
     while ps_kind() != TK_RPAREN {
-        if ps_kind() != TK_IDENT { io_exit(85) }
+        if ps_kind() != TK_IDENT {
+            let m85: str = 'parametro requiere identificador'
+            die_here(m85.ptr, m85.len)
+        }
         let pt: *Tok = TOK_CUR
         let p: *Param = arena_take(ar, 32)
         p.name_start = pt.start
@@ -950,7 +992,10 @@ fun parse_fun(ar: *Arena) -> *Func {
 
 fun parse_const_decl(ar: *Arena) -> *ConstItem {
     ps_expect(TK_CONST)
-    if ps_kind() != TK_IDENT { io_exit(86) }
+    if ps_kind() != TK_IDENT {
+        let m86a: str = 'const requiere identificador'
+        die_here(m86a.ptr, m86a.len)
+    }
     let t: *Tok = TOK_CUR
     let c: *ConstItem = arena_take(ar, 40)
     c.name_start = t.start
@@ -960,7 +1005,10 @@ fun parse_const_decl(ar: *Arena) -> *ConstItem {
     ps_expect(TK_COLON)
     c.type = parse_type(ar)
     ps_expect(TK_EQ)
-    if ps_kind() != TK_NUM { io_exit(86) }
+    if ps_kind() != TK_NUM {
+        let m86b: str = 'const requiere valor entero'
+        die_here(m86b.ptr, m86b.len)
+    }
     let nt: *Tok = TOK_CUR
     c.value = nt.ival
     ps_advance()
@@ -969,7 +1017,10 @@ fun parse_const_decl(ar: *Arena) -> *ConstItem {
 
 fun parse_bss_decl(ar: *Arena) -> *BssItem {
     ps_expect(TK_BSS)
-    if ps_kind() != TK_IDENT { io_exit(87) }
+    if ps_kind() != TK_IDENT {
+        let m87: str = 'bss requiere identificador'
+        die_here(m87.ptr, m87.len)
+    }
     let t: *Tok = TOK_CUR
     let b: *BssItem = arena_take(ar, 32)
     b.name_start = t.start
@@ -977,7 +1028,10 @@ fun parse_bss_decl(ar: *Arena) -> *BssItem {
     b.next = nil
     ps_advance()
     ps_expect(TK_COLON)
-    if ps_kind() != TK_NUM { io_exit(88) }
+    if ps_kind() != TK_NUM {
+        let m88: str = 'bss requiere tamaño'
+        die_here(m88.ptr, m88.len)
+    }
     let nt: *Tok = TOK_CUR
     b.size = nt.ival
     ps_advance()
@@ -986,7 +1040,10 @@ fun parse_bss_decl(ar: *Arena) -> *BssItem {
 
 fun parse_struct_decl(ar: *Arena) -> *StructDecl {
     ps_expect(TK_STRUCT)
-    if ps_kind() != TK_IDENT { io_exit(89) }
+    if ps_kind() != TK_IDENT {
+        let m89: str = 'struct requiere identificador'
+        die_here(m89.ptr, m89.len)
+    }
     let t: *Tok = TOK_CUR
     let sd: *StructDecl = arena_take(ar, 40)
     sd.name_start = t.start
@@ -1009,7 +1066,10 @@ fun parse_struct_decl(ar: *Arena) -> *StructDecl {
     let fhead: *Field = nil
     let ftail: *Field = nil
     while ps_kind() != TK_RBRACE {
-        if ps_kind() != TK_IDENT { io_exit(90) }
+        if ps_kind() != TK_IDENT {
+            let m90: str = 'campo requiere identificador'
+            die_here(m90.ptr, m90.len)
+        }
         let ft: *Tok = TOK_CUR
         let fd: *Field = arena_take(ar, 32)
         fd.name_start = ft.start

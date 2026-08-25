@@ -1,0 +1,128 @@
+bss MO_OUT_BUF: 32768
+bss MO_OUT_STORAGE: 64
+
+fun out_u32_le(o: *Out, v: u64) {
+    let b0: u64 = v - (v / 256) * 256
+    let v1: u64 = v / 256
+    let b1: u64 = v1 - (v1 / 256) * 256
+    let v2: u64 = v1 / 256
+    let b2: u64 = v2 - (v2 / 256) * 256
+    let b3: u64 = v2 / 256
+    out_byte(o, b0)
+    out_byte(o, b1)
+    out_byte(o, b2)
+    out_byte(o, b3)
+}
+
+fun out_u64_le(o: *Out, v: u64) {
+    let lo: u64 = v - (v / 4294967296) * 4294967296
+    let hi: u64 = v / 4294967296
+    out_u32_le(o, lo)
+    out_u32_le(o, hi)
+}
+
+fun out_zeros(o: *Out, n: u64) {
+    let i: u64 = 0
+    while i < n {
+        out_byte(o, 0)
+        i = i + 1
+    }
+}
+
+fun out_segname(o: *Out, name: *u8, nlen: u64) {
+    let i: u64 = 0
+    while i < nlen {
+        out_byte(o, name[i])
+        i = i + 1
+    }
+    while i < 16 {
+        out_byte(o, 0)
+        i = i + 1
+    }
+}
+
+fun write_macho_exit42(o: *Out) {
+    out_u32_le(o, 4277009103)
+    out_u32_le(o, 16777228)
+    out_u32_le(o, 0)
+    out_u32_le(o, 2)
+    out_u32_le(o, 5)
+    out_u32_le(o, 304)
+    out_u32_le(o, 2097285)
+    out_u32_le(o, 0)
+
+    out_u32_le(o, 25)
+    out_u32_le(o, 72)
+    let pz: str = '__PAGEZERO'
+    out_segname(o, pz.ptr, pz.len)
+    out_u64_le(o, 0)
+    out_u64_le(o, 4294967296)
+    out_u64_le(o, 0)
+    out_u64_le(o, 0)
+    out_u32_le(o, 0)
+    out_u32_le(o, 0)
+    out_u32_le(o, 0)
+    out_u32_le(o, 0)
+
+    out_u32_le(o, 25)
+    out_u32_le(o, 152)
+    let tx: str = '__TEXT'
+    out_segname(o, tx.ptr, tx.len)
+    out_u64_le(o, 4294967296)
+    out_u64_le(o, 16384)
+    out_u64_le(o, 0)
+    out_u64_le(o, 16384)
+    out_u32_le(o, 7)
+    out_u32_le(o, 5)
+    out_u32_le(o, 1)
+    out_u32_le(o, 0)
+
+    let secn: str = '__text'
+    out_segname(o, secn.ptr, secn.len)
+    out_segname(o, tx.ptr, tx.len)
+    out_u64_le(o, 4294971392)
+    out_u64_le(o, 12)
+    out_u32_le(o, 4096)
+    out_u32_le(o, 2)
+    out_u32_le(o, 0)
+    out_u32_le(o, 0)
+    out_u32_le(o, 2147484672)
+    out_u32_le(o, 0)
+    out_u32_le(o, 0)
+    out_u32_le(o, 0)
+
+    out_u32_le(o, 14)
+    out_u32_le(o, 32)
+    out_u32_le(o, 12)
+    let dyld: str = '/usr/lib/dyld'
+    let di: u64 = 0
+    while di < dyld.len {
+        out_byte(o, dyld.ptr[di])
+        di = di + 1
+    }
+    while di < 20 {
+        out_byte(o, 0)
+        di = di + 1
+    }
+
+    out_u32_le(o, 50)
+    out_u32_le(o, 24)
+    out_u32_le(o, 1)
+    out_u32_le(o, 720896)
+    out_u32_le(o, 720896)
+    out_u32_le(o, 0)
+
+    out_u32_le(o, 2147483688)
+    out_u32_le(o, 24)
+    out_u64_le(o, 4096)
+    out_u64_le(o, 0)
+
+    let hdr_end: u64 = 336
+    out_zeros(o, 4096 - hdr_end)
+
+    out_u32_le(o, 3531605312)
+    out_u32_le(o, 3531604016)
+    out_u32_le(o, 3556773889)
+
+    out_zeros(o, 16384 - 4096 - 12)
+}

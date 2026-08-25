@@ -295,7 +295,10 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
             }
             i = i + 1
         }
-        if actual > 8 { io_exit(94) }
+        if actual > 8 {
+            let m94: str = 'demasiados params (>8)'
+            die_line(m94.ptr, m94.len, 0)
+        }
         let dst4: u64 = ir_new_slot(b, e.type)
         let ci: *Ins = mk_ins(b.ar, IR_CALL)
         ci.dst = dst4
@@ -460,7 +463,10 @@ fun lower_stmt(b: *B, s: *Stmt) {
         return
     }
     if s.kind == ST_BREAK {
-        if b.break_top == 0 { io_exit(90) }
+        if b.break_top == 0 {
+            let m90b: str = 'break fuera de loop'
+            die_line(m90b.ptr, m90b.len, 0)
+        }
         let bs3: *u64 = b.break_stack
         let dst: u64 = bs3[b.break_top - 1]
         ir_emit_jmp(b, dst)
@@ -775,4 +781,54 @@ fun lower(ar: *Arena, prog: *Program) -> *IrFn {
         sf = sf.next
     }
     return head
+}
+
+fun dump_ir(o: *Out, funcs: *IrFn) {
+    let lx: *Lexer = LX_STATE
+    let fn: *IrFn = funcs
+    while fn != nil {
+        let sf: str = 'fn '
+        out_bytes(o, sf.ptr, sf.len)
+        out_bytes(o, lx.src + fn.name_start, fn.name_len)
+        let sp: str = ' nparams='
+        out_bytes(o, sp.ptr, sp.len)
+        out_u64(o, fn.nparams)
+        let ss: str = ' nslots='
+        out_bytes(o, ss.ptr, ss.len)
+        out_u64(o, fn.nslots)
+        let sfb: str = ' frame_bytes='
+        out_bytes(o, sfb.ptr, sfb.len)
+        out_u64(o, fn.frame_bytes)
+        out_byte(o, 10)
+        let it: *Ins = fn.head
+        while it != nil {
+            let so: str = '  op='
+            out_bytes(o, so.ptr, so.len)
+            out_u64(o, it.op)
+            let sd: str = ' dst='
+            out_bytes(o, sd.ptr, sd.len)
+            out_u64(o, it.dst)
+            let sa: str = ' a='
+            out_bytes(o, sa.ptr, sa.len)
+            out_u64(o, it.a)
+            let sb: str = ' b='
+            out_bytes(o, sb.ptr, sb.len)
+            out_u64(o, it.b)
+            let sll: str = ' local='
+            out_bytes(o, sll.ptr, sll.len)
+            out_u64(o, it.local)
+            let si: str = ' imm='
+            out_bytes(o, si.ptr, si.len)
+            out_u64(o, it.imm)
+            let slb: str = ' label='
+            out_bytes(o, slb.ptr, slb.len)
+            out_u64(o, it.label)
+            let sst: str = ' str_id='
+            out_bytes(o, sst.ptr, sst.len)
+            out_u64(o, it.str_id)
+            out_byte(o, 10)
+            it = it.next
+        }
+        fn = fn.next
+    }
 }

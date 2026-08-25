@@ -1,0 +1,11 @@
+fun main() -> u32 {
+    let path: str = '/tmp/tt_macho42\0'
+    let fd: u64 = io_open_write(path.ptr)
+    if fd == 0 { return 1 }
+    let o: *Out = MO_OUT_STORAGE
+    out_init(o, fd, MO_OUT_BUF, 32768)
+    write_macho_exit42(o)
+    out_flush(o)
+    io_close(fd)
+    return 0
+}

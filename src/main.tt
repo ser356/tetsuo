@@ -1,6 +1,155 @@
 bss SRC_BUF: 262144
 bss OUT_BUF: 65536
 bss OUT_STORAGE: 64
+bss DUMP_TOK_STORE: 40
+bss PP_OUT: 524288
+bss PP_OUT_LEN: 8
+bss PP_ARENA_STORE: 24
+bss PP_ARENA_BUF: 4194304
+bss PP_SEEN_COUNT: 8
+bss PP_SEEN_PTRS: 256
+bss PP_SEEN_LENS: 256
+
+fun pp_arena_init() -> *Arena {
+    let a: *Arena = PP_ARENA_STORE
+    arena_init(a, PP_ARENA_BUF, 4194304)
+    return a
+}
+
+fun pp_seen(pth: *u8, plen: u64) -> u64 {
+    let cnt_p: *u64 = PP_SEEN_COUNT
+    let cnt: u64 = cnt_p[0]
+    let paths: **u8 = PP_SEEN_PTRS
+    let lens: *u64 = PP_SEEN_LENS
+    let i: u64 = 0
+    while i < cnt {
+        if lens[i] == plen {
+            if bytes_eq(paths[i], pth, plen) == 1 { return 1 }
+        }
+        i = i + 1
+    }
+    return 0
+}
+
+fun pp_mark(pth: *u8, plen: u64) {
+    let cnt_p: *u64 = PP_SEEN_COUNT
+    let cnt: u64 = cnt_p[0]
+    let paths: **u8 = PP_SEEN_PTRS
+    let lens: *u64 = PP_SEEN_LENS
+    paths[cnt] = pth
+    lens[cnt] = plen
+    cnt_p[0] = cnt + 1
+}
+
+fun pp_out_append(bytes: *u8, n: u64) {
+    let lp: *u64 = PP_OUT_LEN
+    let cur: u64 = lp[0]
+    let dst: *u8 = PP_OUT
+    let i: u64 = 0
+    while i < n {
+        dst[cur + i] = bytes[i]
+        i = i + 1
+    }
+    lp[0] = cur + n
+}
+
+fun is_import_line(src: *u8, off: u64, srclen: u64) -> u64 {
+    let kw: str = 'import '
+    if off + 7 > srclen { return 0 }
+    let i: u64 = 0
+    while i < 7 {
+        if src[off + i] != kw.ptr[i] { return 0 }
+        i = i + 1
+    }
+    return 1
+}
+
+fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
+    if pp_seen(path, plen) == 1 { return }
+    let pcopy: *u8 = arena_take(ar, plen + 1)
+    let pi: u64 = 0
+    while pi < plen {
+        pcopy[pi] = path[pi]
+        pi = pi + 1
+    }
+    pcopy[plen] = 0
+    pp_mark(pcopy, plen)
+    let buf: *u8 = arena_take(ar, 131072)
+    let fd: u64 = io_open_read(pcopy)
+    if fd == 0 { return }
+    let total: u64 = 0
+    loop {
+        let n: u64 = io_read(fd, buf + total, 131072 - total)
+        if n == 0 { break }
+        total = total + n
+    }
+    io_close(fd)
+    let src: *u8 = buf
+    let i: u64 = 0
+    while i < total {
+        let line_start: u64 = i
+        while i < total {
+            if src[i] == 10 { break }
+            i = i + 1
+        }
+        let line_end: u64 = i
+        if is_import_line(src, line_start, total) == 1 {
+            let q1: u64 = line_start + 7
+            while q1 < line_end {
+                if src[q1] == 39 { break }
+                q1 = q1 + 1
+            }
+            if q1 < line_end {
+                let q2: u64 = q1 + 1
+                while q2 < line_end {
+                    if src[q2] == 39 { break }
+                    q2 = q2 + 1
+                }
+                if q2 < line_end {
+                    let plen2: u64 = q2 - q1 - 1
+                    let ipath: *u8 = arena_take(ar, plen2 + 1)
+                    let j: u64 = 0
+                    while j < plen2 {
+                        ipath[j] = src[q1 + 1 + j]
+                        j = j + 1
+                    }
+                    ipath[plen2] = 0
+                    pp_expand(ar, ipath, plen2)
+                }
+            }
+        } else {
+            pp_out_append(src + line_start, line_end - line_start)
+            let nlbuf: *u8 = src + line_end
+            if line_end < total {
+                pp_out_append(nlbuf, 1)
+            }
+        }
+        if i < total { i = i + 1 }
+    }
+}
+
+fun dump_tokens(o: *Out, src: *u8, srclen: u64) {
+    let lx: *Lexer = LX_STATE
+    lex_init(lx, src, srclen)
+    let t: *Tok = DUMP_TOK_STORE
+    loop {
+        lex_next(lx, t)
+        let sk: str = 'kind='
+        out_bytes(o, sk.ptr, sk.len)
+        out_u64(o, t.kind)
+        let ss: str = ' start='
+        out_bytes(o, ss.ptr, ss.len)
+        out_u64(o, t.start)
+        let sl: str = ' len='
+        out_bytes(o, sl.ptr, sl.len)
+        out_u64(o, t.tlen)
+        let sn: str = ' line='
+        out_bytes(o, sn.ptr, sn.len)
+        out_u64(o, t.tline)
+        out_byte(o, 10)
+        if t.kind == TK_EOF { break }
+    }
+}
 
 fun read_all(path: *u8, buf: *u8, cap: u64) -> u64 {
     let fd: u64 = io_open_read(path)
@@ -15,17 +164,78 @@ fun read_all(path: *u8, buf: *u8, cap: u64) -> u64 {
     return total
 }
 
+fun bytes_eq_lit(a: *u8, b: *u8, n: u64) -> u64 {
+    let i: u64 = 0
+    while i < n {
+        if a[i] != b[i] { return 0 }
+        i = i + 1
+    }
+    return 1
+}
+
+fun cstr_eq(a: *u8, lit: *u8, n: u64) -> u64 {
+    let i: u64 = 0
+    while i < n {
+        if a[i] != lit[i] { return 0 }
+        i = i + 1
+    }
+    if a[n] != 0 { return 0 }
+    return 1
+}
+
 fun main(argc: u64, argv: **u8) -> u32 {
+    if argc < 3 { return 2 }
+
+    let a1: *u8 = argv[1]
+    let flag_tok: str = '--dump-tokens'
+    let flag_ir: str = '--dump-ir'
+    let is_dump_tok: u64 = cstr_eq(a1, flag_tok.ptr, flag_tok.len)
+    let is_dump_ir: u64 = cstr_eq(a1, flag_ir.ptr, flag_ir.len)
+
+    if is_dump_tok == 1 {
+        let path: *u8 = argv[2]
+        let n: u64 = read_all(path, SRC_BUF, 262144)
+        if n == 0 { return 3 }
+        let o: *Out = OUT_STORAGE
+        out_init(o, 1, OUT_BUF, 65536)
+        dump_tokens(o, SRC_BUF, n)
+        out_flush(o)
+        return 0
+    }
+    if is_dump_ir == 1 {
+        let path: *u8 = argv[2]
+        let n: u64 = read_all(path, SRC_BUF, 262144)
+        if n == 0 { return 3 }
+        let ast_ar: *Arena = ast_init()
+        let ir_ar: *Arena = ir_init()
+        let prog: *Program = parse(ast_ar, SRC_BUF, n)
+        let irhead: *IrFn = lower(ir_ar, prog)
+        let o: *Out = OUT_STORAGE
+        out_init(o, 1, OUT_BUF, 65536)
+        dump_ir(o, irhead)
+        out_flush(o)
+        return 0
+    }
+
     if argc < 4 { return 2 }
     let input: *u8 = argv[argc - 3]
     let output: *u8 = argv[argc - 1]
 
-    let n: u64 = read_all(input, SRC_BUF, 262144)
+    let pp_ar: *Arena = pp_arena_init()
+    let plen_in: u64 = 0
+    loop {
+        if input[plen_in] == 0 { break }
+        plen_in = plen_in + 1
+    }
+    pp_expand(pp_ar, input, plen_in)
+    let ppl: *u64 = PP_OUT_LEN
+    let n: u64 = ppl[0]
     if n == 0 { return 3 }
+    let src: *u8 = PP_OUT
 
     let ast_ar: *Arena = ast_init()
     let ir_ar: *Arena = ir_init()
-    let prog: *Program = parse(ast_ar, SRC_BUF, n)
+    let prog: *Program = parse(ast_ar, src, n)
     let irhead: *IrFn = lower(ir_ar, prog)
 
     let fd: u64 = io_open_write(output)
