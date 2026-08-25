@@ -1,128 +1,264 @@
-bss MO_OUT_BUF: 32768
-bss MO_OUT_STORAGE: 64
+// Emisor de Mach-O AArch64 firmado ad-hoc, sin herramientas externas.
+// Construye la imagen completa en memoria (MO_IMG), calcula los hashes SHA-256
+// de cada pagina de 4KB y embebe el CS_SuperBlob en __LINKEDIT.
+//
+// Layout (page16 = 0x4000):
+//   [0]      mach_header_64 (32B)
+//   [32]     10 load commands (sizeofcmds = 520B) -> LC_END = 552
+//   [552]    __text: cuerpo exit(code) (12B)
+//   ...      relleno cero hasta 0x4000
+//   [0x4000] __LINKEDIT: CS_SuperBlob (firma)
+//
+// Depende de asm.tt (encoders del cuerpo) y lib/sha256.tt (hashes).
 
-fun out_u32_le(o: *Out, v: u64) {
-    let b0: u64 = v - (v / 256) * 256
-    let v1: u64 = v / 256
-    let b1: u64 = v1 - (v1 / 256) * 256
-    let v2: u64 = v1 / 256
-    let b2: u64 = v2 - (v2 / 256) * 256
-    let b3: u64 = v2 / 256
-    out_byte(o, b0)
-    out_byte(o, b1)
-    out_byte(o, b2)
-    out_byte(o, b3)
+bss MO_IMG: 20000
+bss MO_CUR: 8
+
+fun mc_get() -> u64 {
+    let p: *u64 = MO_CUR
+    return p[0]
 }
 
-fun out_u64_le(o: *Out, v: u64) {
-    let lo: u64 = v - (v / 4294967296) * 4294967296
-    let hi: u64 = v / 4294967296
-    out_u32_le(o, lo)
-    out_u32_le(o, hi)
+fun mc_set(v: u64) {
+    let p: *u64 = MO_CUR
+    p[0] = v
 }
 
-fun out_zeros(o: *Out, n: u64) {
+fun e8(img: *u8, v: u64) {
+    let c: u64 = mc_get()
+    img[c] = v & 255
+    mc_set(c + 1)
+}
+
+// little-endian 32/64
+fun e32(img: *u8, v: u64) {
+    e8(img, v)
+    e8(img, v >> 8)
+    e8(img, v >> 16)
+    e8(img, v >> 24)
+}
+
+fun e64(img: *u8, v: u64) {
+    e32(img, v)
+    e32(img, v >> 32)
+}
+
+// big-endian 32/64 (firma)
+fun eb32(img: *u8, v: u64) {
+    e8(img, v >> 24)
+    e8(img, v >> 16)
+    e8(img, v >> 8)
+    e8(img, v)
+}
+
+fun eb64(img: *u8, v: u64) {
+    eb32(img, v >> 32)
+    eb32(img, v)
+}
+
+fun ezeros(img: *u8, n: u64) {
     let i: u64 = 0
     while i < n {
-        out_byte(o, 0)
+        e8(img, 0)
         i = i + 1
     }
 }
 
-fun out_segname(o: *Out, name: *u8, nlen: u64) {
+// nombre de 16 bytes (segmento/seccion), rellenado con ceros
+fun ename16(img: *u8, name: *u8, nlen: u64) {
     let i: u64 = 0
     while i < nlen {
-        out_byte(o, name[i])
+        e8(img, name[i])
         i = i + 1
     }
     while i < 16 {
-        out_byte(o, 0)
+        e8(img, 0)
         i = i + 1
     }
 }
 
-fun write_macho_exit42(o: *Out) {
-    out_u32_le(o, 4277009103)
-    out_u32_le(o, 16777228)
-    out_u32_le(o, 0)
-    out_u32_le(o, 2)
-    out_u32_le(o, 5)
-    out_u32_le(o, 304)
-    out_u32_le(o, 2097285)
-    out_u32_le(o, 0)
+fun emit_macho_signed(fd: u64, exit_code: u64) {
+    let img: *u8 = MO_IMG
+    mc_set(0)
 
-    out_u32_le(o, 25)
-    out_u32_le(o, 72)
+    // --- mach_header_64 ---
+    e32(img, 4277009103)   // magic MH_MAGIC_64 0xfeedfacf
+    e32(img, 16777228)     // cputype CPU_TYPE_ARM64 0x0100000c
+    e32(img, 0)            // cpusubtype ARM64_ALL
+    e32(img, 2)            // filetype MH_EXECUTE
+    e32(img, 10)           // ncmds
+    e32(img, 520)          // sizeofcmds
+    e32(img, 2097285)      // flags NOUNDEFS|DYLDLINK|TWOLEVEL|PIE (0x200085)
+    e32(img, 0)            // reserved
+
+    // --- LC_SEGMENT_64 __PAGEZERO (72B) ---
+    e32(img, 25)           // LC_SEGMENT_64
+    e32(img, 72)
     let pz: str = '__PAGEZERO'
-    out_segname(o, pz.ptr, pz.len)
-    out_u64_le(o, 0)
-    out_u64_le(o, 4294967296)
-    out_u64_le(o, 0)
-    out_u64_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
+    ename16(img, pz.ptr, pz.len)
+    e64(img, 0)            // vmaddr
+    e64(img, 4294967296)   // vmsize 0x100000000
+    e64(img, 0)            // fileoff
+    e64(img, 0)            // filesize
+    e32(img, 0)            // maxprot
+    e32(img, 0)            // initprot
+    e32(img, 0)            // nsects
+    e32(img, 0)            // flags
 
-    out_u32_le(o, 25)
-    out_u32_le(o, 152)
+    // --- LC_SEGMENT_64 __TEXT (72 + 80 = 152B) ---
+    e32(img, 25)
+    e32(img, 152)
     let tx: str = '__TEXT'
-    out_segname(o, tx.ptr, tx.len)
-    out_u64_le(o, 4294967296)
-    out_u64_le(o, 16384)
-    out_u64_le(o, 0)
-    out_u64_le(o, 16384)
-    out_u32_le(o, 7)
-    out_u32_le(o, 5)
-    out_u32_le(o, 1)
-    out_u32_le(o, 0)
+    ename16(img, tx.ptr, tx.len)
+    e64(img, 4294967296)   // vmaddr 0x100000000
+    e64(img, 16384)        // vmsize 0x4000
+    e64(img, 0)            // fileoff
+    e64(img, 16384)        // filesize 0x4000
+    e32(img, 7)            // maxprot rwx
+    e32(img, 5)            // initprot r-x
+    e32(img, 1)            // nsects
+    e32(img, 0)            // flags
+    //   section __text
+    let sn: str = '__text'
+    ename16(img, sn.ptr, sn.len)
+    ename16(img, tx.ptr, tx.len)
+    e64(img, 4294967848)   // addr 0x100000228 (0x100000000 + 552)
+    e64(img, 12)           // size
+    e32(img, 552)          // offset (fileoff del cuerpo = entryoff)
+    e32(img, 2)            // align 2^2 = 4
+    e32(img, 0)            // reloff
+    e32(img, 0)            // nreloc
+    e32(img, 2147484672)   // flags PURE_INSTRUCTIONS|SOME_INSTRUCTIONS 0x80000400
+    e32(img, 0)            // reserved1
+    e32(img, 0)            // reserved2
+    e32(img, 0)            // reserved3
 
-    let secn: str = '__text'
-    out_segname(o, secn.ptr, secn.len)
-    out_segname(o, tx.ptr, tx.len)
-    out_u64_le(o, 4294971392)
-    out_u64_le(o, 12)
-    out_u32_le(o, 4096)
-    out_u32_le(o, 2)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 2147484672)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
+    // --- LC_SEGMENT_64 __LINKEDIT (72B) ---
+    e32(img, 25)
+    e32(img, 72)
+    let le: str = '__LINKEDIT'
+    ename16(img, le.ptr, le.len)
+    e64(img, 4294983680)   // vmaddr 0x100004000
+    e64(img, 16384)        // vmsize 0x4000
+    e64(img, 16384)        // fileoff 0x4000
+    e64(img, 238)          // filesize (tamano de la firma)
+    e32(img, 3)            // maxprot rw-
+    e32(img, 1)            // initprot r--
+    e32(img, 0)            // nsects
+    e32(img, 0)            // flags
 
-    out_u32_le(o, 14)
-    out_u32_le(o, 32)
-    out_u32_le(o, 12)
-    let dyld: str = '/usr/lib/dyld'
+    // --- LC_LOAD_DYLINKER (32B) ---
+    e32(img, 14)           // LC_LOAD_DYLINKER
+    e32(img, 32)
+    e32(img, 12)           // name offset
+    let dy: str = '/usr/lib/dyld'
     let di: u64 = 0
-    while di < dyld.len {
-        out_byte(o, dyld.ptr[di])
+    while di < dy.len {
+        e8(img, dy.ptr[di])
         di = di + 1
     }
     while di < 20 {
-        out_byte(o, 0)
+        e8(img, 0)
         di = di + 1
     }
 
-    out_u32_le(o, 50)
-    out_u32_le(o, 24)
-    out_u32_le(o, 1)
-    out_u32_le(o, 720896)
-    out_u32_le(o, 720896)
-    out_u32_le(o, 0)
+    // --- LC_SYMTAB (24B) ---  nsyms=0, apunta al inicio de __LINKEDIT
+    e32(img, 2)            // LC_SYMTAB
+    e32(img, 24)
+    e32(img, 16384)        // symoff
+    e32(img, 0)            // nsyms
+    e32(img, 16384)        // stroff
+    e32(img, 0)            // strsize
 
-    out_u32_le(o, 2147483688)
-    out_u32_le(o, 24)
-    out_u64_le(o, 4096)
-    out_u64_le(o, 0)
+    // --- LC_DYSYMTAB (80B) todo cero ---
+    e32(img, 11)           // LC_DYSYMTAB
+    e32(img, 80)
+    ezeros(img, 72)
 
-    let hdr_end: u64 = 336
-    out_zeros(o, 4096 - hdr_end)
+    // --- LC_UUID (24B) ---
+    e32(img, 27)           // LC_UUID
+    e32(img, 24)
+    e32(img, 305419896)    // 0x12345678
+    e32(img, 2309737967)   // 0x89abcdef
+    e32(img, 19088743)     // 0x01234567
+    e32(img, 2596069104)   // 0x9abcdef0
 
-    out_u32_le(o, 3531605312)
-    out_u32_le(o, 3531604016)
-    out_u32_le(o, 3556773889)
+    // --- LC_BUILD_VERSION (24B) ---
+    e32(img, 50)           // LC_BUILD_VERSION
+    e32(img, 24)
+    e32(img, 1)            // platform macOS
+    e32(img, 720896)       // minos 11.0.0 (0x0b0000)
+    e32(img, 720896)       // sdk 11.0.0
+    e32(img, 0)            // ntools
 
-    out_zeros(o, 16384 - 4096 - 12)
+    // --- LC_MAIN (24B) ---
+    e32(img, 2147483688)   // LC_MAIN 0x80000028
+    e32(img, 24)
+    e64(img, 552)          // entryoff
+    e64(img, 0)            // stacksize
+
+    // --- LC_CODE_SIGNATURE (16B) ---
+    e32(img, 29)           // LC_CODE_SIGNATURE 0x1d
+    e32(img, 16)
+    e32(img, 16384)        // dataoff (inicio firma)
+    e32(img, 238)          // datasize
+
+    // --- cuerpo __text en offset 552: exit(exit_code) ---
+    e32(img, enc_movz(0, exit_code, 0))   // movz x0, #code
+    e32(img, enc_movz(16, 1, 0))          // movz x16, #1
+    e32(img, enc_svc(128))                // svc #0x80
+
+    // relleno cero hasta 0x4000
+    let cur: u64 = mc_get()
+    ezeros(img, 16384 - cur)
+
+    // --- CS_SuperBlob en 0x4000 ---
+    // SuperBlob header (12B) + 1 index (8B) = 20B, luego CodeDirectory.
+    eb32(img, 0xfade0cc0)  // magic CSMAGIC_EMBEDDED_SIGNATURE
+    eb32(img, 238)         // length total del SuperBlob
+    eb32(img, 1)           // count
+    eb32(img, 0)           // index[0].type = CSSLOT_CODEDIRECTORY
+    eb32(img, 20)          // index[0].offset (relativo al SuperBlob)
+
+    // CS_CodeDirectory (version 0x20400). Header 88B + ident 2B + 4*32 hashes.
+    eb32(img, 0xfade0c02)  // magic CSMAGIC_CODEDIRECTORY
+    eb32(img, 218)         // length del CodeDirectory
+    eb32(img, 132096)      // version 0x20400
+    eb32(img, 2)           // flags CS_ADHOC
+    eb32(img, 90)          // hashOffset (88 header + 2 ident)
+    eb32(img, 88)          // identOffset
+    eb32(img, 0)           // nSpecialSlots
+    eb32(img, 4)           // nCodeSlots
+    eb32(img, 16384)       // codeLimit 0x4000
+    e8(img, 32)            // hashSize
+    e8(img, 2)             // hashType SHA-256
+    e8(img, 0)             // platform
+    e8(img, 12)            // pageSize log2(4096)
+    eb32(img, 0)           // spare2
+    eb32(img, 0)           // scatterOffset
+    eb32(img, 0)           // teamOffset
+    eb32(img, 0)           // spare3
+    eb64(img, 0)           // codeLimit64
+    eb64(img, 0)           // execSegBase (fileoff de __TEXT)
+    eb64(img, 16384)       // execSegLimit (filesize de __TEXT)
+    eb64(img, 1)           // execSegFlags CS_EXECSEG_MAIN_BINARY
+
+    // ident "a\0"
+    e8(img, 97)
+    e8(img, 0)
+
+    // huecos de los 4 hashes (reservar 128 bytes; se rellenan tras hashear)
+    ezeros(img, 128)
+
+    // hashOffset absoluto en el fichero:
+    //   dataoff(16384) + cd_off_en_SB(20) + hashOffset_en_CD(90) = 16494
+    let hbase: u64 = 16494
+    let slot: u64 = 0
+    while slot < 4 {
+        sha256(img + slot * 4096, 4096, img + hbase + slot * 32)
+        slot = slot + 1
+    }
+
+    // escribe la imagen completa: 0x4000 + 238 = 16622 bytes
+    io_write(fd, img, 16622)
 }
