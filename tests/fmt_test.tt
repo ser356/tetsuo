@@ -1,0 +1,12 @@
+bss FMT_BUF: 32
+bss EXPECT: 4
+bss OUT_STORAGE: 64
+
+fun main() -> u32 {
+    let o: *Out = OUT_STORAGE
+    out_init(o, 0, FMT_BUF, 32)
+    out_u64(o, 42)
+    EXPECT[0] = 52
+    EXPECT[1] = 50
+    return bytes_eq(FMT_BUF, EXPECT, 2) * 4
+}

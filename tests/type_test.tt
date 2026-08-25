@@ -1,0 +1,8 @@
+fun main() -> u32 {
+    let ar: *Arena = ast_init()
+    let inner: *Type = mk_prim(ar, T_U32)
+    let t: *Type = mk_ptr(ar, inner)
+    let w: u64 = type_width(t)
+    let ik: u64 = t.inner.kind
+    return w + ik
+}

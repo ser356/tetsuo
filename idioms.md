@@ -235,3 +235,71 @@ compila igual pero `svc #0x80` sin handler cuelga la máquina.
 - Un fichero = una "biblioteca" (uart.tt, io.tt); el usuario concatena.
 - `fun` sin `->` cuando no devuelve valor; `main() -> u32` en macos
   (el runner comprueba el exit code), `main()` a secas en virt.
+
+## Convenciones para el autohospedaje (stage1)
+
+Los patrones de esta sección no son opinión: son la única forma que
+tiene stage1 de reproducir el comportamiento de stage0 sin tipos con
+signo, sin `sizeof` y sin resolución adelantada explícita.
+
+### Puntero nulo = literal `0`
+
+Verificado en `tests/nil.tt`: `let p: *T = 0` y `p == 0` compilan y se
+comportan como esperamos. No se introduce palabra reservada `nil`. La
+comparación es siempre por igualdad:
+
+```
+if p == 0 { return }        // ok
+if p != 0 { ... }           // ok
+if p < 0 { ... }            // PROHIBIDO — todas las comparaciones son
+                            // sin signo, esto siempre es falso
+```
+
+### Centinelas: índices base 1
+
+stage0 (C) usa `-1` como "sin asignar" en `reg_of`, `last_use`,
+`def_idx` y campos similares. Como tetsuo no tiene tipos con signo,
+`-1` se convertiría en `0xFFFF…FFFF` y cualquier `<` invertiría el
+sentido de las comparaciones. Solución mecánica al traducir:
+
+| stage0 (C)             | stage1 (tetsuo)              |
+| ---------------------- | ---------------------------- |
+| `reg_of[s] = -1`       | `reg_of[s] = 0`              |
+| `reg_of[s] = r`        | `reg_of[s] = r + 1`          |
+| `if reg_of[s] >= 0`    | `if reg_of[s] != 0`          |
+| `x_pool[reg_of[s]]`    | `x_pool[reg_of[s] - 1]`      |
+| `last_use[s] = -1`     | `last_use[s] = 0`, índices   |
+|                        | de instrucción base 1        |
+
+Regla: cualquier tabla que en stage0 use `-1` como "vacío" pasa a
+usar `0` en stage1, y los índices reales se desplazan en 1.
+
+### Tamaños de struct: `sizeof(T)`
+
+El compilador resuelve `sizeof(T)` en tiempo de parse a través de
+`type_width`. Vale para primitivos, punteros y structs declarados:
+
+```
+let n:  u64 = sizeof(u64)     // 8
+let sp: u64 = sizeof(*u8)     // 8
+let sn: u64 = sizeof(N)       // 8 * numero de campos de N
+```
+
+Layout actual del backend: todos los campos ocupan hueco de 8 bytes,
+así que `sizeof(N)` = `nfields(N) * 8`. Cuando el layout cambie, la
+constante se recalcula sola sin tocar código de usuario.
+
+### Un fichero = un conjunto mutuamente recursivo
+
+Verificado en `tests/io.tt`: `arena_take` llama a `io_exit` definido
+más abajo en el mismo fichero. `parse` completa el reconocimiento de
+todo el fichero antes de resolver nombres, de modo que dentro de un
+mismo `.tt` el orden de las funciones es libre.
+
+Corolario práctico: el parser descendente recursivo del stage1 vive
+en un único `parser.tt` porque `parse_expr` ↔ `parse_primary` es
+mutuamente recursiva. La recursión **entre ficheros** distintos sí
+está prohibida: `io.tt`, `str.tt`, `fmt.tt`, `vec.tt`, `lexer.tt`,
+`parser.tt`, `ir.tt`, `codegen.tt`, `main.tt` se concatenan en ese
+orden y toda referencia hacia atrás debe cerrarse dentro del mismo
+fichero.

@@ -1,19 +1,11 @@
-fun main() -> u32 {
-    let ar: Arena
-    arena_init(&ar, IO_BUF, 65536)
-    let buf: *u8 = arena_take(&ar, 16384)
-    let ruta: str = 'tests/hello.tt\0'
-    let fd: u64 = io_open_read(ruta.ptr)
-    let n: u64 = io_read(fd, buf, 16384)
+bss PARSER_BUF: 65536
+
+fun main(argc: u64, argv: **u8) -> u32 {
+    let ruta: *u8 = argv[1]
+    let fd: u64 = io_open_read(ruta)
+    let n: u64 = io_read(fd, PARSER_BUF, 65536)
     io_close(fd)
-
-    let lx: Lexer
-    lex_init(&lx, buf, n)
-
-    let ps: PState
-    ps_init(&ps, &lx)
-
-    let count: u64 = dump_all_sigs(&ps, buf)
-    io_exit(count)
-    return 0
+    let ar: *Arena = ast_init()
+    let p: *Program = parse(ar, PARSER_BUF, n)
+    return 55
 }

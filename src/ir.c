@@ -468,3 +468,65 @@ IrFn *lower(Program *prog) {
     }
     return head;
 }
+
+static const char *IR_OP_NAMES[] = {
+    "MOVI","LABEL_ADDR","ADDR_LOCAL","LOAD_LOCAL","STORE_LOCAL",
+    "LOAD_MEM","STORE_MEM","BINOP",
+    "CMPEQ","CMPNE","CMPLT","CMPLE","CMPGT","CMPGE",
+    "CALL","RET","JMP","JZ","LABEL",
+};
+static const char *IR_BINOP_NAMES[] = {
+    "ADD","SUB","MUL","DIV","AND","OR","XOR",
+};
+
+static void dump_ir_type(FILE *out, const Type *t) {
+    if (!t) { fputs("?", out); return; }
+    switch (t->kind) {
+        case T_U8:  fputs("u8", out); return;
+        case T_U32: fputs("u32", out); return;
+        case T_U64: fputs("u64", out); return;
+        case T_STR: fputs("str", out); return;
+        case T_PTR: fputc('*', out); dump_ir_type(out, t->inner); return;
+        case T_STRUCT:
+            fputs("struct ", out);
+            fputs(t->decl ? t->decl->name : "?", out);
+            return;
+    }
+    fputs("?", out);
+}
+
+void dump_ir(FILE *out, IrFn *funcs) {
+    fputs("ir\n", out);
+    for (IrFn *fn = funcs; fn; fn = fn->next) {
+        fprintf(out, "  fn %s nparams=%d nlocals=%d nslots=%d frame=%d ret=",
+                fn->name, fn->nparams, fn->nlocals, fn->nslots, fn->frame_bytes);
+        dump_ir_type(out, fn->ret_type);
+        fputc('\n', out);
+        for (int k = 0; k < fn->nslots; k++) {
+            fprintf(out, "    slot %d type=", k);
+            dump_ir_type(out, fn->slot_types ? fn->slot_types[k] : NULL);
+            if (fn->reg_of)    fprintf(out, " reg=%d", fn->reg_of[k]);
+            if (fn->last_use)  fprintf(out, " last_use=%d", fn->last_use[k]);
+            fputc('\n', out);
+        }
+        int idx = 0;
+        for (Instr *i = fn->head; i; i = i->next, idx++) {
+            fprintf(out, "    %d %s dst=%d a=%d b=%d local=%d width=%d imm=%llu label=%d str_id=%d",
+                    idx, IR_OP_NAMES[i->op],
+                    i->dst, i->a, i->b, i->local, i->width,
+                    (unsigned long long)i->imm, i->label, i->str_id);
+            if (i->op == IR_BINOP) fprintf(out, " binop=%s", IR_BINOP_NAMES[i->binop]);
+            if (i->callee)     fprintf(out, " callee=%s", i->callee);
+            if (i->label_name) fprintf(out, " label_name=%s", i->label_name);
+            if (i->nargs > 0) {
+                fputs(" args=[", out);
+                for (int k = 0; k < i->nargs; k++) {
+                    if (k) fputc(',', out);
+                    fprintf(out, "%d", i->args[k]);
+                }
+                fputc(']', out);
+            }
+            fputc('\n', out);
+        }
+    }
+}

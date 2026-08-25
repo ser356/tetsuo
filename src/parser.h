@@ -160,3 +160,6 @@ typedef struct StrLit {
 Program *parse(const char *src);
 Type    *mk_ptr(Type *inner);
 Type    *mk_prim(PrimType k);
+
+#include <stdio.h>
+void dump_ast(FILE *out, Program *prog);

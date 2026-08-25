@@ -1,0 +1,12 @@
+struct N {
+    kind: u32,
+    next: *N,
+}
+
+fun main() -> u32 {
+    let p: *N = nil
+    if p == nil {
+        return 7
+    }
+    return 0
+}

@@ -194,6 +194,22 @@ static Expr *parse_primary(P *p) {
         advance(p);
         return e;
     }
+    if (p->cur.kind == TK_NIL) {
+        Expr *e = mk_expr(EX_INT);
+        e->ival = 0;
+        e->type = mk_prim(T_U64);
+        advance(p);
+        return e;
+    }
+    if (accept(p, TK_SIZEOF)) {
+        expect(p, TK_LPAREN, "se esperaba '(' tras 'sizeof'");
+        Type *t = parse_type(p);
+        expect(p, TK_RPAREN, "se esperaba ')' tras tipo en 'sizeof'");
+        Expr *e = mk_expr(EX_INT);
+        e->ival = (uint64_t)type_width(t);
+        e->type = mk_prim(T_U64);
+        return e;
+    }
     if (p->cur.kind == TK_STRING) {
         Expr *e = mk_expr(EX_STRLIT);
         e->str_bytes = p->cur.str_bytes;
@@ -469,7 +485,9 @@ static Stmt *parse_stmt(P *p) {
     }
     if (accept(p, TK_IF)) {
         Stmt *s = mk_stmt(ST_IF);
+        int had_paren = accept(p, TK_LPAREN);
         s->cond = parse_expr(p, 0);
+        if (had_paren) expect(p, TK_RPAREN, "se esperaba ')' tras condicion de 'if'");
         s->body = parse_block(p);
         if (accept(p, TK_ELSE)) {
             if (p->cur.kind == TK_IF) {
@@ -487,7 +505,9 @@ static Stmt *parse_stmt(P *p) {
     }
     if (accept(p, TK_WHILE)) {
         Stmt *s = mk_stmt(ST_WHILE);
+        int had_paren = accept(p, TK_LPAREN);
         s->cond = parse_expr(p, 0);
+        if (had_paren) expect(p, TK_RPAREN, "se esperaba ')' tras condicion de 'while'");
         s->body = parse_block(p);
         return s;
     }
@@ -678,4 +698,157 @@ Program *parse(const char *src) {
     }
     if (!p.prog->funcs) { fprintf(stderr, "parser: sin funciones\n"); exit(1); }
     return p.prog;
+}
+
+static const char *EXPR_KIND_NAMES[] = {
+    "INT","VAR","CALL","DEREF","BIN","EQ","NE","LT","LE","GT","GE","STRLIT","ADDR","EXTERN",
+};
+static const char *STMT_KIND_NAMES[] = {
+    "LET","STORE","ASSIGN","LOOP","WHILE","IF","BREAK","RETURN","EXPR",
+};
+static const char *BINOP_NAMES[] = {
+    "ADD","SUB","MUL","DIV","AND","OR","XOR",
+};
+
+static void dump_type(FILE *out, const Type *t) {
+    if (!t) { fputs("?", out); return; }
+    switch (t->kind) {
+        case T_U8:  fputs("u8", out); return;
+        case T_U32: fputs("u32", out); return;
+        case T_U64: fputs("u64", out); return;
+        case T_STR: fputs("str", out); return;
+        case T_PTR: fputc('*', out); dump_type(out, t->inner); return;
+        case T_STRUCT:
+            fputs("struct ", out);
+            fputs(t->decl ? t->decl->name : "?", out);
+            return;
+    }
+    fputs("?", out);
+}
+
+static void indent(FILE *out, int depth) {
+    for (int k = 0; k < depth; k++) fputs("  ", out);
+}
+
+static void dump_expr(FILE *out, const Expr *e, int depth) {
+    indent(out, depth);
+    if (!e) { fputs("expr NULL\n", out); return; }
+    fprintf(out, "expr %s type=", EXPR_KIND_NAMES[e->kind]);
+    dump_type(out, e->type);
+    switch (e->kind) {
+        case EX_INT:
+            fprintf(out, " ival=%llu\n", (unsigned long long)e->ival);
+            return;
+        case EX_VAR:
+            fprintf(out, " local=%d\n", e->var_index);
+            return;
+        case EX_STRLIT:
+            fprintf(out, " str_id=%d len=%zu\n", e->str_id, e->str_len);
+            return;
+        case EX_ADDR:
+            fprintf(out, " label=%s\n", e->label_name ? e->label_name : "?");
+            return;
+        case EX_EXTERN:
+            fprintf(out, " label=%s\n", e->label_name ? e->label_name : "?");
+            return;
+        case EX_CALL:
+            fprintf(out, " callee=%s nargs=%d\n", e->callee ? e->callee : "?", e->nargs);
+            for (int k = 0; k < e->nargs; k++) dump_expr(out, e->args[k], depth + 1);
+            return;
+        case EX_DEREF:
+            fputc('\n', out);
+            dump_expr(out, e->inner, depth + 1);
+            return;
+        case EX_BIN:
+            fprintf(out, " op=%s\n", BINOP_NAMES[e->op]);
+            dump_expr(out, e->lhs, depth + 1);
+            dump_expr(out, e->rhs, depth + 1);
+            return;
+        case EX_EQ: case EX_NE: case EX_LT: case EX_LE: case EX_GT: case EX_GE:
+            fputc('\n', out);
+            dump_expr(out, e->lhs, depth + 1);
+            dump_expr(out, e->rhs, depth + 1);
+            return;
+    }
+    fputc('\n', out);
+}
+
+static void dump_stmt(FILE *out, const Stmt *s, int depth) {
+    for (; s; s = s->next) {
+        indent(out, depth);
+        fprintf(out, "stmt %s", STMT_KIND_NAMES[s->kind]);
+        switch (s->kind) {
+            case ST_LET:
+                fprintf(out, " local=%d\n", s->let_local);
+                if (s->let_init) { indent(out, depth + 1); fputs("init:\n", out); dump_expr(out, s->let_init, depth + 2); }
+                break;
+            case ST_STORE:
+                fputc('\n', out);
+                indent(out, depth + 1); fputs("ptr:\n", out); dump_expr(out, s->store_ptr, depth + 2);
+                indent(out, depth + 1); fputs("val:\n", out); dump_expr(out, s->store_val, depth + 2);
+                break;
+            case ST_ASSIGN:
+                fprintf(out, " local=%d\n", s->assign_local);
+                indent(out, depth + 1); fputs("val:\n", out); dump_expr(out, s->assign_val, depth + 2);
+                break;
+            case ST_LOOP:
+                fputc('\n', out);
+                indent(out, depth + 1); fputs("body:\n", out); dump_stmt(out, s->body, depth + 2);
+                break;
+            case ST_WHILE:
+                fputc('\n', out);
+                indent(out, depth + 1); fputs("cond:\n", out); dump_expr(out, s->cond, depth + 2);
+                indent(out, depth + 1); fputs("body:\n", out); dump_stmt(out, s->body, depth + 2);
+                break;
+            case ST_IF:
+                fputc('\n', out);
+                indent(out, depth + 1); fputs("cond:\n", out); dump_expr(out, s->cond, depth + 2);
+                indent(out, depth + 1); fputs("body:\n", out); dump_stmt(out, s->body, depth + 2);
+                if (s->else_body) { indent(out, depth + 1); fputs("else:\n", out); dump_stmt(out, s->else_body, depth + 2); }
+                break;
+            case ST_BREAK:
+                fputc('\n', out);
+                break;
+            case ST_RETURN:
+                fputc('\n', out);
+                if (s->ret_val) { indent(out, depth + 1); fputs("val:\n", out); dump_expr(out, s->ret_val, depth + 2); }
+                break;
+            case ST_EXPR:
+                fputc('\n', out);
+                dump_expr(out, s->expr, depth + 1);
+                break;
+        }
+    }
+}
+
+void dump_ast(FILE *out, Program *prog) {
+    fputs("program\n", out);
+    for (ConstItem *c = prog->consts; c; c = c->next) {
+        fprintf(out, "  const %s type=", c->name);
+        dump_type(out, c->type);
+        fprintf(out, " value=%llu\n", (unsigned long long)c->value);
+    }
+    for (BssItem *b = prog->bsses; b; b = b->next) {
+        fprintf(out, "  bss %s size=%llu\n", b->name, (unsigned long long)b->size);
+    }
+    for (StructDecl *d = prog->structs; d; d = d->next) {
+        fprintf(out, "  struct %s nfields=%d\n", d->name, d->nfields);
+        for (int k = 0; k < d->nfields; k++) {
+            fprintf(out, "    field %s type=", d->fields[k].name);
+            dump_type(out, d->fields[k].type);
+            fputc('\n', out);
+        }
+    }
+    for (Func *f = prog->funcs; f; f = f->next) {
+        fprintf(out, "  func %s nparams=%d nlocals=%d ret=", f->name, f->nparams, f->nlocals);
+        dump_type(out, f->ret_type);
+        fputc('\n', out);
+        for (int k = 0; k < f->nlocals; k++) {
+            fprintf(out, "    local %d %s type=", k, f->locals[k].name ? f->locals[k].name : "");
+            dump_type(out, f->locals[k].type);
+            fputc('\n', out);
+        }
+        fputs("    body:\n", out);
+        dump_stmt(out, f->body, 3);
+    }
 }

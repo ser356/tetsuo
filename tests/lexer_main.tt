@@ -130,10 +130,10 @@ struct Buf1K {
 }
 
 
-fun main() -> u32 {
+fun main(argc: u64, argv: **u8) -> u32 {
     let buf: Buf1K
-    let ruta: str = 'tests/hello.tt\0'
-    let fd: u64 = io_open_read(ruta.ptr)
+    let ruta: *u8 = argv[1]
+    let fd: u64 = io_open_read(ruta)
     let n: u64 = io_read(fd, &buf, 1024)
 
     let lx: Lexer

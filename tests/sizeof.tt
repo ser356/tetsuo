@@ -1,0 +1,8 @@
+struct N {
+    a: u64,
+    b: u64,
+}
+
+fun main() -> u32 {
+    return sizeof(N)
+}

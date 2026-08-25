@@ -1,0 +1,11 @@
+bss BUF_SRC: 16
+bss BUF_DST: 16
+
+fun main() -> u32 {
+    BUF_SRC[0] = 72
+    BUF_SRC[1] = 111
+    BUF_SRC[2] = 108
+    BUF_SRC[3] = 97
+    mem_copy(BUF_DST, BUF_SRC, 4)
+    return bytes_eq(BUF_SRC, BUF_DST, 4) * 3
+}

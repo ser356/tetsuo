@@ -9,35 +9,38 @@ const TK_LOOP: u32    = 7
 const TK_WHILE: u32   = 8
 const TK_BREAK: u32   = 9
 const TK_STRUCT: u32  = 10
-const TK_IDENT: u32   = 11
-const TK_NUM: u32     = 12
-const TK_STRING: u32  = 13
-const TK_LPAREN: u32  = 14
-const TK_RPAREN: u32  = 15
-const TK_LBRACE: u32  = 16
-const TK_RBRACE: u32  = 17
-const TK_LBRACK: u32  = 18
-const TK_RBRACK: u32  = 19
-const TK_STAR: u32    = 20
-const TK_PLUS: u32    = 21
-const TK_MINUS: u32   = 22
-const TK_SLASH: u32   = 23
-const TK_AMP: u32     = 24
-const TK_PIPE: u32    = 25
-const TK_CARET: u32   = 26
-const TK_EQ: u32      = 27
-const TK_EQEQ: u32    = 28
-const TK_BANGEQ: u32  = 29
-const TK_LT: u32      = 30
-const TK_LE: u32      = 31
-const TK_GT: u32      = 32
-const TK_GE: u32      = 33
-const TK_SEMI: u32    = 34
-const TK_COMMA: u32   = 35
-const TK_COLON: u32   = 36
-const TK_DOT: u32     = 37
-const TK_ARROW: u32   = 38
-const TK_AT: u32      = 39
+const TK_BSS: u32     = 11
+const TK_NIL: u32     = 12
+const TK_SIZEOF: u32  = 13
+const TK_IDENT: u32   = 14
+const TK_NUM: u32     = 15
+const TK_STRING: u32  = 16
+const TK_LPAREN: u32  = 17
+const TK_RPAREN: u32  = 18
+const TK_LBRACE: u32  = 19
+const TK_RBRACE: u32  = 20
+const TK_LBRACK: u32  = 21
+const TK_RBRACK: u32  = 22
+const TK_STAR: u32    = 23
+const TK_PLUS: u32    = 24
+const TK_MINUS: u32   = 25
+const TK_SLASH: u32   = 26
+const TK_AMP: u32     = 27
+const TK_PIPE: u32    = 28
+const TK_CARET: u32   = 29
+const TK_EQ: u32      = 30
+const TK_EQEQ: u32    = 31
+const TK_BANGEQ: u32  = 32
+const TK_LT: u32      = 33
+const TK_LE: u32      = 34
+const TK_GT: u32      = 35
+const TK_GE: u32      = 36
+const TK_SEMI: u32    = 37
+const TK_COMMA: u32   = 38
+const TK_COLON: u32   = 39
+const TK_DOT: u32     = 40
+const TK_ARROW: u32   = 41
+const TK_AT: u32      = 42
 
 struct Lexer {
     src: *u8,
@@ -136,15 +139,6 @@ fun skip_ws(lx: *Lexer) {
     }
 }
 
-fun bytes_eq(a: *u8, b: *u8, n: u64) -> u32 {
-    let i: u64 = 0
-    while i < n {
-        if a[i] != b[i] { return 0 }
-        i = i + 1
-    }
-    return 1
-}
-
 fun kw_kind(src: *u8, len: u64) -> u32 {
     let kw_fun: str    = 'fun'
     let kw_let: str    = 'let'
@@ -156,9 +150,14 @@ fun kw_kind(src: *u8, len: u64) -> u32 {
     let kw_while: str  = 'while'
     let kw_break: str  = 'break'
     let kw_struct: str = 'struct'
+    let kw_bss: str    = 'bss'
+    let kw_nil: str    = 'nil'
+    let kw_sizeof: str = 'sizeof'
     if len == 3 {
         if bytes_eq(src, kw_fun.ptr, 3) == 1 { return TK_FUN }
         if bytes_eq(src, kw_let.ptr, 3) == 1 { return TK_LET }
+        if bytes_eq(src, kw_bss.ptr, 3) == 1 { return TK_BSS }
+        if bytes_eq(src, kw_nil.ptr, 3) == 1 { return TK_NIL }
     }
     if len == 5 {
         if bytes_eq(src, kw_const.ptr, 5) == 1 { return TK_CONST }
@@ -168,6 +167,7 @@ fun kw_kind(src: *u8, len: u64) -> u32 {
     if len == 6 {
         if bytes_eq(src, kw_return.ptr, 6) == 1 { return TK_RETURN }
         if bytes_eq(src, kw_struct.ptr, 6) == 1 { return TK_STRUCT }
+        if bytes_eq(src, kw_sizeof.ptr, 6) == 1 { return TK_SIZEOF }
     }
     if len == 2 {
         if bytes_eq(src, kw_if.ptr, 2) == 1 { return TK_IF }

@@ -1,0 +1,29 @@
+struct Vec {
+    data: *u8,
+    len:  u64,
+    cap:  u64,
+    esz:  u64,
+}
+
+fun vec_init(v: *Vec, esz: u64, buf: *u8, cap: u64) {
+    v.data = buf
+    v.len  = 0
+    v.cap  = cap
+    v.esz  = esz
+}
+
+fun vec_push(ar: *Arena, v: *Vec, elem: *u8) {
+    if v.len == v.cap {
+        let nc: u64 = v.cap * 2
+        let nd: *u8 = arena_take(ar, nc * v.esz)
+        mem_copy(nd, v.data, v.len * v.esz)
+        v.data = nd
+        v.cap = nc
+    }
+    mem_copy(v.data + v.len * v.esz, elem, v.esz)
+    v.len = v.len + 1
+}
+
+fun vec_get(v: *Vec, i: u64) -> *u8 {
+    return v.data + i * v.esz
+}

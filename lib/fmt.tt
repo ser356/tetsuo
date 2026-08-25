@@ -1,0 +1,56 @@
+bss DIGITS: 32
+
+struct Out {
+    fd:  u64,
+    buf: *u8,
+    pos: u64,
+    cap: u64,
+}
+
+fun out_init(o: *Out, fd: u64, buf: *u8, cap: u64) {
+    o.fd = fd
+    o.buf = buf
+    o.pos = 0
+    o.cap = cap
+}
+
+fun out_flush(o: *Out) {
+    if o.pos > 0 {
+        io_write(o.fd, o.buf, o.pos)
+        o.pos = 0
+    }
+}
+
+fun out_byte(o: *Out, c: u8) {
+    if o.pos >= o.cap {
+        out_flush(o)
+    }
+    o.buf[o.pos] = c
+    o.pos = o.pos + 1
+}
+
+fun out_bytes(o: *Out, p: *u8, n: u64) {
+    let i: u64 = 0
+    while i < n {
+        out_byte(o, p[i])
+        i = i + 1
+    }
+}
+
+fun out_u64(o: *Out, v: u64) {
+    if v == 0 {
+        out_byte(o, 48)
+        return
+    }
+    let n: u64 = 0
+    while v > 0 {
+        let q: u64 = v / 10
+        DIGITS[n] = 48 + (v - q * 10)
+        v = q
+        n = n + 1
+    }
+    while n > 0 {
+        n = n - 1
+        out_byte(o, DIGITS[n])
+    }
+}

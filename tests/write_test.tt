@@ -1,0 +1,43 @@
+bss PATH: 32
+bss MSG: 4
+
+fun main() -> u32 {
+    PATH[0]  = 47
+    PATH[1]  = 116
+    PATH[2]  = 109
+    PATH[3]  = 112
+    PATH[4]  = 47
+    PATH[5]  = 116
+    PATH[6]  = 101
+    PATH[7]  = 116
+    PATH[8]  = 115
+    PATH[9]  = 117
+    PATH[10] = 111
+    PATH[11] = 95
+    PATH[12] = 119
+    PATH[13] = 114
+    PATH[14] = 105
+    PATH[15] = 116
+    PATH[16] = 101
+    PATH[17] = 95
+    PATH[18] = 116
+    PATH[19] = 101
+    PATH[20] = 115
+    PATH[21] = 116
+    PATH[22] = 46
+    PATH[23] = 116
+    PATH[24] = 120
+    PATH[25] = 116
+    PATH[26] = 0
+
+    MSG[0] = 118
+    MSG[1] = 101
+    MSG[2] = 99
+    MSG[3] = 10
+
+    let fd: u64 = io_open_write(PATH)
+    if fd >= 256 { return 1 }
+    io_write(fd, MSG, 4)
+    io_close(fd)
+    return 0
+}

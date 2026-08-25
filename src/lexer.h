@@ -1,10 +1,13 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef enum {
     TK_EOF,
     TK_FUN, TK_LET, TK_CONST, TK_RETURN, TK_IF, TK_ELSE, TK_LOOP, TK_WHILE, TK_BREAK, TK_STRUCT, TK_BSS,
+    TK_NIL,
+    TK_SIZEOF,
     TK_IDENT,
     TK_NUM,
     TK_STRING,
@@ -36,3 +39,4 @@ typedef struct {
 
 void lex_init(Lexer *lx, const char *src);
 Tok  lex_next(Lexer *lx);
+void dump_tokens(FILE *out, const char *src);

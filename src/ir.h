@@ -58,3 +58,6 @@ typedef struct IrFn {
 } IrFn;
 
 IrFn *lower(Program *prog);
+
+#include <stdio.h>
+void dump_ir(FILE *out, IrFn *funcs);

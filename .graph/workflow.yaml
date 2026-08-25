@@ -42,7 +42,7 @@ nodes:
 
   verify:
     type: shell
-    command: "pytest -q"
+    command: "bash bootstrap/verify.sh"
     timeout: 10m
     routes:
       exit_zero: pass

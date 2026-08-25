@@ -1,0 +1,18 @@
+fun bytes_eq(a: *u8, b: *u8, n: u64) -> u32 {
+    let i: u64 = 0
+    while i < n {
+        if a[i] != b[i] {
+            return 0
+        }
+        i = i + 1
+    }
+    return 1
+}
+
+fun mem_copy(dst: *u8, src: *u8, n: u64) {
+    let i: u64 = 0
+    while i < n {
+        dst[i] = src[i]
+        i = i + 1
+    }
+}

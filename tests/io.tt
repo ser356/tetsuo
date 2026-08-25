@@ -1,4 +1,4 @@
-bss IO_BUF: 65536
+bss IO_BUF: 16777216
 
 struct Arena {
     base: *u8,
@@ -13,13 +13,21 @@ fun arena_init(a: *Arena, base: *u8, cap: u64) {
 }
 
 fun arena_take(a: *Arena, n: u64) -> *u8 {
+    let aligned: u64 = ((n + 7) / 8) * 8
+    if a.pos + aligned > a.cap {
+        io_exit(70)
+    }
     let p: *u8 = a.base + a.pos
-    a.pos = a.pos + n
+    a.pos = a.pos + aligned
     return p
 }
 
 fun io_open_read(path: *u8) -> u64 {
     return syscall(5, path, 0, 0)
+}
+
+fun io_open_write(path: *u8) -> u64 {
+    return syscall(5, path, 0x601, 420)
 }
 
 fun io_read(fd: u64, buf: *u8, cap: u64) -> u64 {

@@ -83,6 +83,14 @@ static void emit_text_section(FILE *out) {
     else                       fprintf(out, "    .section .text.boot\n");
 }
 
+static void emit_macos_start(FILE *out) {
+    fprintf(out, "    .globl   _tt_start\n");
+    fprintf(out, "_tt_start:\n");
+    fprintf(out, "    bl      _main\n");
+    fprintf(out, "    mov     x16, #1\n");
+    fprintf(out, "    svc     #0x80\n");
+}
+
 static const char *binop_mnemonic(BinOpKind op) {
     switch (op) {
         case OP_ADD: return "add";
@@ -315,7 +323,7 @@ void codegen(FILE *out, Target tgt, Program *prog, IrFn *funcs) {
     g_target = tgt;
 
     if (tgt == TGT_VIRT) emit_start(out);
-    else                 emit_text_section(out);
+    else                 { emit_text_section(out); emit_macos_start(out); }
 
     int max_label = 0;
     for (IrFn *fn = funcs; fn; fn = fn->next) {

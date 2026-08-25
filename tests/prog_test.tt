@@ -1,0 +1,42 @@
+bss SRC: 64
+
+fun main() -> u32 {
+    SRC[0]  = 102
+    SRC[1]  = 117
+    SRC[2]  = 110
+    SRC[3]  = 32
+    SRC[4]  = 109
+    SRC[5]  = 97
+    SRC[6]  = 105
+    SRC[7]  = 110
+    SRC[8]  = 40
+    SRC[9]  = 41
+    SRC[10] = 32
+    SRC[11] = 45
+    SRC[12] = 62
+    SRC[13] = 32
+    SRC[14] = 117
+    SRC[15] = 54
+    SRC[16] = 52
+    SRC[17] = 32
+    SRC[18] = 123
+    SRC[19] = 32
+    SRC[20] = 114
+    SRC[21] = 101
+    SRC[22] = 116
+    SRC[23] = 117
+    SRC[24] = 114
+    SRC[25] = 110
+    SRC[26] = 32
+    SRC[27] = 52
+    SRC[28] = 50
+    SRC[29] = 32
+    SRC[30] = 125
+    let ar: *Arena = ast_init()
+    let p: *Program = parse(ar, SRC, 31)
+    if p == nil { return 91 }
+    if p.funcs == nil { return 92 }
+    if p.funcs.body == nil { return 93 }
+    if p.funcs.body.ret_val == nil { return 94 }
+    return p.funcs.body.ret_val.ival
+}

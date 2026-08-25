@@ -1,0 +1,23 @@
+bss AR_STORAGE:   24
+bss VEC_STORAGE:  32
+bss ELEM_STORAGE:  8
+
+fun main() -> u32 {
+    let ar: *Arena = AR_STORAGE
+    arena_init(ar, IO_BUF, 16777216)
+
+    let v: *Vec = VEC_STORAGE
+    let head: *u8 = arena_take(ar, 8)
+    vec_init(v, 8, head, 1)
+
+    let e: *u64 = ELEM_STORAGE
+    @e = 10
+    vec_push(ar, v, ELEM_STORAGE)
+    @e = 20
+    vec_push(ar, v, ELEM_STORAGE)
+    @e = 30
+    vec_push(ar, v, ELEM_STORAGE)
+
+    let slot: *u64 = vec_get(v, 1)
+    return @slot
+}

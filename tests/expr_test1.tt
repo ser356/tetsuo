@@ -1,0 +1,13 @@
+bss SRC: 8
+
+fun main() -> u32 {
+    SRC[0] = 49
+    SRC[1] = 43
+    SRC[2] = 50
+    SRC[3] = 42
+    SRC[4] = 51
+    let ar: *Arena = ast_init()
+    ps_init(SRC, 5)
+    let e: *Expr = parse_expr(ar, 1)
+    return (e.kind * 10 + e.op) * 10 + e.rhs.op
+}

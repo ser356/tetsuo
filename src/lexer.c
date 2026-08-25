@@ -93,6 +93,8 @@ Tok lex_next(Lexer *lx) {
         else if (kw_match(t.start, t.len, "break"))  t.kind = TK_BREAK;
         else if (kw_match(t.start, t.len, "struct")) t.kind = TK_STRUCT;
         else if (kw_match(t.start, t.len, "bss"))    t.kind = TK_BSS;
+        else if (kw_match(t.start, t.len, "nil"))    t.kind = TK_NIL;
+        else if (kw_match(t.start, t.len, "sizeof")) t.kind = TK_SIZEOF;
         else                                          t.kind = TK_IDENT;
         return t;
     }
@@ -201,4 +203,52 @@ Tok lex_next(Lexer *lx) {
         default:  die_lex(t.line, "caracter inesperado");
     }
     return t;
+}
+
+static const char *KIND_NAMES[] = {
+    "EOF",
+    "FUN","LET","CONST","RETURN","IF","ELSE","LOOP","WHILE","BREAK","STRUCT","BSS",
+    "NIL","SIZEOF",
+    "IDENT","NUM","STRING",
+    "LPAREN","RPAREN","LBRACE","RBRACE","LBRACK","RBRACK",
+    "STAR","PLUS","MINUS","SLASH",
+    "AMP","PIPE","CARET",
+    "EQ","EQEQ","BANGEQ",
+    "LT","LE","GT","GE",
+    "SEMI","COMMA","COLON","DOT",
+    "ARROW","AT",
+};
+
+void dump_tokens(FILE *out, const char *src) {
+    Lexer lx;
+    lex_init(&lx, src);
+    const char *cursor = src;
+    const char *line_start = src;
+    for (;;) {
+        Tok t = lex_next(&lx);
+        while (cursor < t.start) {
+            if (*cursor == '\n') line_start = cursor + 1;
+            cursor++;
+        }
+        int col = (int)(t.start - line_start) + 1;
+        fprintf(out, "%d %d %s", t.line, col, KIND_NAMES[t.kind]);
+        if (t.kind == TK_IDENT) {
+            fprintf(out, " %.*s", (int)t.len, t.start);
+        } else if (t.kind == TK_NUM) {
+            fprintf(out, " %llu", (unsigned long long)t.ival);
+        } else if (t.kind == TK_STRING) {
+            fputs(" \"", out);
+            for (size_t k = 0; k < t.str_len; k++) {
+                unsigned char c = (unsigned char)t.str_bytes[k];
+                if (c == '\\' || c == '"') fprintf(out, "\\%c", c);
+                else if (c == '\n') fputs("\\n", out);
+                else if (c == '\t') fputs("\\t", out);
+                else if (c >= 32 && c < 127) fputc(c, out);
+                else fprintf(out, "\\x%02x", c);
+            }
+            fputc('"', out);
+        }
+        fputc('\n', out);
+        if (t.kind == TK_EOF) break;
+    }
 }

@@ -1,0 +1,648 @@
+const T_U8: u64 = 0
+const T_U32: u64 = 1
+const T_U64: u64 = 2
+const T_PTR: u64 = 3
+const T_STR: u64 = 4
+const T_STRUCT: u64 = 5
+
+struct Type {
+    kind:  u64,
+    inner: *Type,
+    decl:  *u8,
+}
+
+fun mk_prim(ar: *Arena, kind: u64) -> *Type {
+    let t: *Type = arena_take(ar, 24)
+    t.kind = kind
+    t.inner = nil
+    t.decl = nil
+    return t
+}
+
+fun mk_ptr(ar: *Arena, inner: *Type) -> *Type {
+    let t: *Type = arena_take(ar, 24)
+    t.kind = T_PTR
+    t.inner = inner
+    t.decl = nil
+    return t
+}
+
+fun type_width(t: *Type) -> u64 {
+    if t.kind == T_U8  { return 1 }
+    if t.kind == T_U32 { return 4 }
+    if t.kind == T_U64 { return 8 }
+    if t.kind == T_PTR { return 8 }
+    if t.kind == T_STR { return 16 }
+    return 8
+}
+
+const EX_INT:    u64 = 0
+const EX_VAR:    u64 = 1
+const EX_CALL:   u64 = 2
+const EX_DEREF:  u64 = 3
+const EX_BIN:    u64 = 4
+const EX_EQ:     u64 = 5
+const EX_NE:     u64 = 6
+const EX_LT:     u64 = 7
+const EX_LE:     u64 = 8
+const EX_GT:     u64 = 9
+const EX_GE:     u64 = 10
+const EX_STRLIT: u64 = 11
+const EX_ADDR:   u64 = 12
+const EX_EXTERN: u64 = 13
+
+const OP_ADD: u64 = 0
+const OP_SUB: u64 = 1
+const OP_MUL: u64 = 2
+const OP_DIV: u64 = 3
+const OP_AND: u64 = 4
+const OP_OR:  u64 = 5
+const OP_XOR: u64 = 6
+
+struct Expr {
+    kind:         u64,
+    type:         *Type,
+    ival:         u64,
+    var_start:    u64,
+    var_len:      u64,
+    inner:        *Expr,
+    lhs:          *Expr,
+    rhs:          *Expr,
+    op:           u64,
+    args:         **Expr,
+    nargs:        u64,
+    callee_start: u64,
+    callee_len:   u64,
+    str_bytes:    *u8,
+    str_len:      u64,
+}
+
+bss LX_STATE: 32
+bss TOK_CUR:  40
+
+fun ps_init(src: *u8, srclen: u64) {
+    let lx: *Lexer = LX_STATE
+    lex_init(lx, src, srclen)
+    let t: *Tok = TOK_CUR
+    lex_next(lx, t)
+}
+
+fun ps_advance() {
+    let lx: *Lexer = LX_STATE
+    let t: *Tok = TOK_CUR
+    lex_next(lx, t)
+}
+
+fun ps_kind() -> u32 {
+    let t: *Tok = TOK_CUR
+    return t.kind
+}
+
+fun mk_expr(ar: *Arena, kind: u64) -> *Expr {
+    let e: *Expr = arena_take(ar, 120)
+    e.kind = kind
+    e.type = nil
+    e.ival = 0
+    e.var_start = 0
+    e.var_len = 0
+    e.inner = nil
+    e.lhs = nil
+    e.rhs = nil
+    e.op = 0
+    e.args = nil
+    e.nargs = 0
+    e.callee_start = 0
+    e.callee_len = 0
+    e.str_bytes = nil
+    e.str_len = 0
+    return e
+}
+
+fun parse_primary(ar: *Arena) -> *Expr {
+    let t: *Tok = TOK_CUR
+    let k: u32 = t.kind
+    if k == TK_NUM {
+        let e: *Expr = mk_expr(ar, EX_INT)
+        e.ival = t.ival
+        ps_advance()
+        return e
+    }
+    if k == TK_NIL {
+        let e: *Expr = mk_expr(ar, EX_INT)
+        e.ival = 0
+        ps_advance()
+        return e
+    }
+    if k == TK_SIZEOF {
+        ps_advance()
+        ps_expect(TK_LPAREN)
+        let ty: *Type = parse_type(ar)
+        ps_expect(TK_RPAREN)
+        let e: *Expr = mk_expr(ar, EX_INT)
+        e.ival = type_width(ty)
+        return e
+    }
+    if k == TK_LPAREN {
+        ps_advance()
+        let e: *Expr = parse_expr(ar, 1)
+        ps_expect(TK_RPAREN)
+        return e
+    }
+    if k == TK_IDENT {
+        let name_start: u64 = t.start
+        let name_len:   u64 = t.tlen
+        ps_advance()
+        if ps_kind() == TK_LPAREN {
+            ps_advance()
+            let e: *Expr = mk_expr(ar, EX_CALL)
+            e.callee_start = name_start
+            e.callee_len   = name_len
+            let n: u64 = 0
+            while ps_kind() != TK_RPAREN {
+                let arg: *Expr = parse_expr(ar, 1)
+                n = n + 1
+                if ps_kind() != TK_RPAREN { ps_expect(TK_COMMA) }
+            }
+            ps_expect(TK_RPAREN)
+            e.nargs = n
+            return e
+        }
+        let e: *Expr = mk_expr(ar, EX_VAR)
+        e.var_start = name_start
+        e.var_len = name_len
+        return e
+    }
+    if k == TK_STRING {
+        let e: *Expr = mk_expr(ar, EX_STRLIT)
+        ps_advance()
+        return e
+    }
+    io_exit(80)
+    return nil
+}
+
+fun parse_postfix(ar: *Arena) -> *Expr {
+    let e: *Expr = parse_primary(ar)
+    while 1 == 1 {
+        let k: u32 = ps_kind()
+        if k == TK_DOT {
+            ps_advance()
+            if ps_kind() != TK_IDENT { io_exit(91) }
+            let t: *Tok = TOK_CUR
+            let fe: *Expr = mk_expr(ar, EX_VAR)
+            fe.var_start = t.start
+            fe.var_len = t.tlen
+            fe.inner = e
+            ps_advance()
+            e = fe
+        } else {
+            if k == TK_LBRACK {
+                ps_advance()
+                let idx: *Expr = parse_expr(ar, 1)
+                ps_expect(TK_RBRACK)
+                let ie: *Expr = mk_expr(ar, EX_DEREF)
+                ie.inner = e
+                ie.rhs = idx
+                e = ie
+            } else {
+                return e
+            }
+        }
+    }
+    return e
+}
+
+fun parse_unary(ar: *Arena) -> *Expr {
+    let k: u32 = ps_kind()
+    if k == TK_AT {
+        ps_advance()
+        let inner: *Expr = parse_unary(ar)
+        let e: *Expr = mk_expr(ar, EX_DEREF)
+        e.inner = inner
+        return e
+    }
+    if k == TK_AMP {
+        ps_advance()
+        let inner: *Expr = parse_unary(ar)
+        let e: *Expr = mk_expr(ar, EX_ADDR)
+        e.inner = inner
+        return e
+    }
+    return parse_postfix(ar)
+}
+
+fun bin_prec(k: u32) -> u64 {
+    if k == TK_STAR   { return 6 }
+    if k == TK_SLASH  { return 6 }
+    if k == TK_PLUS   { return 5 }
+    if k == TK_MINUS  { return 5 }
+    if k == TK_AMP    { return 4 }
+    if k == TK_CARET  { return 3 }
+    if k == TK_PIPE   { return 2 }
+    if k == TK_EQEQ   { return 1 }
+    if k == TK_BANGEQ { return 1 }
+    if k == TK_LT     { return 1 }
+    if k == TK_LE     { return 1 }
+    if k == TK_GT     { return 1 }
+    if k == TK_GE     { return 1 }
+    return 0
+}
+
+fun parse_expr(ar: *Arena, min_prec: u64) -> *Expr {
+    let lhs: *Expr = parse_unary(ar)
+    while bin_prec(ps_kind()) >= min_prec {
+        let k: u32 = ps_kind()
+        let pr: u64 = bin_prec(k)
+        ps_advance()
+        let rhs: *Expr = parse_expr(ar, pr + 1)
+        let e: *Expr = mk_expr(ar, EX_BIN)
+        if k == TK_STAR   { e.op = OP_MUL }
+        if k == TK_SLASH  { e.op = OP_DIV }
+        if k == TK_PLUS   { e.op = OP_ADD }
+        if k == TK_MINUS  { e.op = OP_SUB }
+        if k == TK_AMP    { e.op = OP_AND }
+        if k == TK_CARET  { e.op = OP_XOR }
+        if k == TK_PIPE   { e.op = OP_OR }
+        if k == TK_EQEQ   { e.kind = EX_EQ }
+        if k == TK_BANGEQ { e.kind = EX_NE }
+        if k == TK_LT     { e.kind = EX_LT }
+        if k == TK_LE     { e.kind = EX_LE }
+        if k == TK_GT     { e.kind = EX_GT }
+        if k == TK_GE     { e.kind = EX_GE }
+        e.lhs = lhs
+        e.rhs = rhs
+        lhs = e
+    }
+    return lhs
+}
+
+const ST_LET:    u64 = 0
+const ST_STORE:  u64 = 1
+const ST_ASSIGN: u64 = 2
+const ST_LOOP:   u64 = 3
+const ST_WHILE:  u64 = 4
+const ST_IF:     u64 = 5
+const ST_BREAK:  u64 = 6
+const ST_RETURN: u64 = 7
+const ST_EXPR:   u64 = 8
+
+struct Stmt {
+    kind:       u64,
+    name_start: u64,
+    name_len:   u64,
+    type:       *Type,
+    init:       *Expr,
+    cond:       *Expr,
+    body:       *Stmt,
+    else_body:  *Stmt,
+    ret_val:    *Expr,
+    expr:       *Expr,
+    next:       *Stmt,
+}
+
+fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
+    let s: *Stmt = arena_take(ar, 88)
+    s.kind = kind
+    s.name_start = 0
+    s.name_len = 0
+    s.type = nil
+    s.init = nil
+    s.cond = nil
+    s.body = nil
+    s.else_body = nil
+    s.ret_val = nil
+    s.expr = nil
+    s.next = nil
+    return s
+}
+
+fun ps_expect(k: u32) {
+    if ps_kind() != k { io_exit(81) }
+    ps_advance()
+}
+
+fun ps_accept(k: u32) -> u32 {
+    if ps_kind() == k { ps_advance(); return 1 }
+    return 0
+}
+
+fun bytes_eq_at(src_off: u64, tlen: u64, kw: *u8, kwlen: u64) -> u32 {
+    if tlen != kwlen { return 0 }
+    let lx: *Lexer = LX_STATE
+    return bytes_eq(lx.src + src_off, kw, kwlen)
+}
+
+fun parse_type(ar: *Arena) -> *Type {
+    if ps_kind() == TK_STAR {
+        ps_advance()
+        let inner: *Type = parse_type(ar)
+        return mk_ptr(ar, inner)
+    }
+    if ps_kind() != TK_IDENT { io_exit(82) }
+    let t: *Tok = TOK_CUR
+    let u8kw:  str = 'u8'
+    let u32kw: str = 'u32'
+    let u64kw: str = 'u64'
+    let strkw: str = 'str'
+    let result: *Type = nil
+    if bytes_eq_at(t.start, t.tlen, u8kw.ptr, 2) == 1 { result = mk_prim(ar, T_U8) }
+    if bytes_eq_at(t.start, t.tlen, u32kw.ptr, 3) == 1 { result = mk_prim(ar, T_U32) }
+    if bytes_eq_at(t.start, t.tlen, u64kw.ptr, 3) == 1 { result = mk_prim(ar, T_U64) }
+    if bytes_eq_at(t.start, t.tlen, strkw.ptr, 3) == 1 { result = mk_prim(ar, T_STR) }
+    if result == nil { result = mk_prim(ar, T_STRUCT) }
+    ps_advance()
+    return result
+}
+
+fun parse_block(ar: *Arena) -> *Stmt {
+    ps_expect(TK_LBRACE)
+    let head: *Stmt = nil
+    let tail: *Stmt = nil
+    while ps_kind() != TK_RBRACE {
+        let s: *Stmt = parse_stmt(ar)
+        if head == nil { head = s } else { tail.next = s }
+        tail = s
+        while ps_kind() == TK_SEMI { ps_advance() }
+    }
+    ps_expect(TK_RBRACE)
+    return head
+}
+
+fun parse_stmt(ar: *Arena) -> *Stmt {
+    let k: u32 = ps_kind()
+    if k == TK_LET {
+        ps_advance()
+        let t: *Tok = TOK_CUR
+        if ps_kind() != TK_IDENT { io_exit(83) }
+        let s: *Stmt = mk_stmt(ar, ST_LET)
+        s.name_start = t.start
+        s.name_len = t.tlen
+        ps_advance()
+        if ps_accept(TK_COLON) == 1 {
+            s.type = parse_type(ar)
+        }
+        if ps_accept(TK_EQ) == 1 {
+            s.init = parse_expr(ar, 1)
+        }
+        return s
+    }
+    if k == TK_RETURN {
+        ps_advance()
+        let s: *Stmt = mk_stmt(ar, ST_RETURN)
+        if ps_kind() != TK_SEMI {
+            if ps_kind() != TK_RBRACE {
+                s.ret_val = parse_expr(ar, 1)
+            }
+        }
+        return s
+    }
+    if k == TK_IF {
+        ps_advance()
+        let had_paren: u32 = ps_accept(TK_LPAREN)
+        let s: *Stmt = mk_stmt(ar, ST_IF)
+        s.cond = parse_expr(ar, 1)
+        if had_paren == 1 { ps_expect(TK_RPAREN) }
+        s.body = parse_block(ar)
+        if ps_kind() == TK_ELSE {
+            ps_advance()
+            s.else_body = parse_block(ar)
+        }
+        return s
+    }
+    if k == TK_WHILE {
+        ps_advance()
+        let had_paren: u32 = ps_accept(TK_LPAREN)
+        let s: *Stmt = mk_stmt(ar, ST_WHILE)
+        s.cond = parse_expr(ar, 1)
+        if had_paren == 1 { ps_expect(TK_RPAREN) }
+        s.body = parse_block(ar)
+        return s
+    }
+    if k == TK_LOOP {
+        ps_advance()
+        let s: *Stmt = mk_stmt(ar, ST_LOOP)
+        s.body = parse_block(ar)
+        return s
+    }
+    if k == TK_BREAK {
+        ps_advance()
+        return mk_stmt(ar, ST_BREAK)
+    }
+    let e: *Expr = parse_expr(ar, 1)
+    if ps_accept(TK_EQ) == 1 {
+        let rhs: *Expr = parse_expr(ar, 1)
+        let s: *Stmt = mk_stmt(ar, ST_ASSIGN)
+        s.expr = e
+        s.init = rhs
+        return s
+    }
+    let s: *Stmt = mk_stmt(ar, ST_EXPR)
+    s.expr = e
+    return s
+}
+
+struct Param {
+    name_start: u64,
+    name_len:   u64,
+    type:       *Type,
+    next:       *Param,
+}
+
+struct Func {
+    name_start: u64,
+    name_len:   u64,
+    params:     *Param,
+    nparams:    u64,
+    ret_type:   *Type,
+    body:       *Stmt,
+    next:       *Func,
+}
+
+struct ConstItem {
+    name_start: u64,
+    name_len:   u64,
+    type:       *Type,
+    value:      *Expr,
+    next:       *ConstItem,
+}
+
+struct BssItem {
+    name_start: u64,
+    name_len:   u64,
+    size:       u64,
+    next:       *BssItem,
+}
+
+struct Field {
+    name_start: u64,
+    name_len:   u64,
+    type:       *Type,
+    next:       *Field,
+}
+
+struct StructDecl {
+    name_start: u64,
+    name_len:   u64,
+    fields:     *Field,
+    nfields:    u64,
+    next:       *StructDecl,
+}
+
+struct Program {
+    funcs:   *Func,
+    consts:  *ConstItem,
+    bsses:   *BssItem,
+    structs: *StructDecl,
+}
+
+fun mk_program(ar: *Arena) -> *Program {
+    let p: *Program = arena_take(ar, 32)
+    p.funcs = nil
+    p.consts = nil
+    p.bsses = nil
+    p.structs = nil
+    return p
+}
+
+fun parse_fun(ar: *Arena) -> *Func {
+    ps_expect(TK_FUN)
+    if ps_kind() != TK_IDENT { io_exit(84) }
+    let t: *Tok = TOK_CUR
+    let f: *Func = arena_take(ar, 56)
+    f.name_start = t.start
+    f.name_len = t.tlen
+    f.params = nil
+    f.nparams = 0
+    f.ret_type = nil
+    f.body = nil
+    f.next = nil
+    ps_advance()
+    ps_expect(TK_LPAREN)
+    let phead: *Param = nil
+    let ptail: *Param = nil
+    while ps_kind() != TK_RPAREN {
+        if ps_kind() != TK_IDENT { io_exit(85) }
+        let pt: *Tok = TOK_CUR
+        let p: *Param = arena_take(ar, 32)
+        p.name_start = pt.start
+        p.name_len = pt.tlen
+        p.next = nil
+        ps_advance()
+        ps_expect(TK_COLON)
+        p.type = parse_type(ar)
+        if phead == nil { phead = p } else { ptail.next = p }
+        ptail = p
+        f.nparams = f.nparams + 1
+        if ps_kind() != TK_RPAREN { ps_expect(TK_COMMA) }
+    }
+    ps_expect(TK_RPAREN)
+    f.params = phead
+    if ps_kind() == TK_ARROW {
+        ps_advance()
+        f.ret_type = parse_type(ar)
+    }
+    f.body = parse_block(ar)
+    return f
+}
+
+fun parse_const_decl(ar: *Arena) -> *ConstItem {
+    ps_expect(TK_CONST)
+    if ps_kind() != TK_IDENT { io_exit(86) }
+    let t: *Tok = TOK_CUR
+    let c: *ConstItem = arena_take(ar, 40)
+    c.name_start = t.start
+    c.name_len = t.tlen
+    c.next = nil
+    ps_advance()
+    ps_expect(TK_COLON)
+    c.type = parse_type(ar)
+    ps_expect(TK_EQ)
+    c.value = parse_expr(ar, 1)
+    return c
+}
+
+fun parse_bss_decl(ar: *Arena) -> *BssItem {
+    ps_expect(TK_BSS)
+    if ps_kind() != TK_IDENT { io_exit(87) }
+    let t: *Tok = TOK_CUR
+    let b: *BssItem = arena_take(ar, 32)
+    b.name_start = t.start
+    b.name_len = t.tlen
+    b.next = nil
+    ps_advance()
+    ps_expect(TK_COLON)
+    if ps_kind() != TK_NUM { io_exit(88) }
+    let nt: *Tok = TOK_CUR
+    b.size = nt.ival
+    ps_advance()
+    return b
+}
+
+fun parse_struct_decl(ar: *Arena) -> *StructDecl {
+    ps_expect(TK_STRUCT)
+    if ps_kind() != TK_IDENT { io_exit(89) }
+    let t: *Tok = TOK_CUR
+    let sd: *StructDecl = arena_take(ar, 40)
+    sd.name_start = t.start
+    sd.name_len = t.tlen
+    sd.fields = nil
+    sd.nfields = 0
+    sd.next = nil
+    ps_advance()
+    ps_expect(TK_LBRACE)
+    let fhead: *Field = nil
+    let ftail: *Field = nil
+    while ps_kind() != TK_RBRACE {
+        if ps_kind() != TK_IDENT { io_exit(90) }
+        let ft: *Tok = TOK_CUR
+        let fd: *Field = arena_take(ar, 32)
+        fd.name_start = ft.start
+        fd.name_len = ft.tlen
+        fd.next = nil
+        ps_advance()
+        ps_expect(TK_COLON)
+        fd.type = parse_type(ar)
+        if fhead == nil { fhead = fd } else { ftail.next = fd }
+        ftail = fd
+        sd.nfields = sd.nfields + 1
+        if ps_kind() == TK_COMMA { ps_advance() }
+    }
+    ps_expect(TK_RBRACE)
+    sd.fields = fhead
+    return sd
+}
+
+fun parse(ar: *Arena, src: *u8, srclen: u64) -> *Program {
+    ps_init(src, srclen)
+    let p: *Program = mk_program(ar)
+    let ftail: *Func = nil
+    let ctail: *ConstItem = nil
+    let btail: *BssItem = nil
+    let stail: *StructDecl = nil
+    while ps_kind() != TK_EOF {
+        while ps_kind() == TK_SEMI { ps_advance() }
+        if ps_kind() == TK_EOF { break }
+        let k: u32 = ps_kind()
+        if k == TK_FUN {
+            let f: *Func = parse_fun(ar)
+            if p.funcs == nil { p.funcs = f } else { ftail.next = f }
+            ftail = f
+        }
+        if k == TK_CONST {
+            let c: *ConstItem = parse_const_decl(ar)
+            if p.consts == nil { p.consts = c } else { ctail.next = c }
+            ctail = c
+        }
+        if k == TK_BSS {
+            let b: *BssItem = parse_bss_decl(ar)
+            if p.bsses == nil { p.bsses = b } else { btail.next = b }
+            btail = b
+        }
+        if k == TK_STRUCT {
+            let sd: *StructDecl = parse_struct_decl(ar)
+            if p.structs == nil { p.structs = sd } else { stail.next = sd }
+            stail = sd
+        }
+    }
+    return p
+}
