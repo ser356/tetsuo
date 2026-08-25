@@ -1,10 +1,16 @@
-bss IR_BUF: 4194304
+bss IR_BUF: 16777216
 bss IR_ARENA_STORE: 24
+bss IR_NEXT_LABEL: 8
 
 fun ir_init() -> *Arena {
     let a: *Arena = IR_ARENA_STORE
-    arena_init(a, IR_BUF, 4194304)
+    arena_init(a, IR_BUF, 16777216)
     return a
+}
+
+fun ir_width_of(t: *Type, dflt: u64) -> u64 {
+    if t == nil { return dflt }
+    return type_width(t)
 }
 
 const IR_MOVI:        u64 = 0
@@ -150,8 +156,9 @@ fun ir_new_slot(b: *B, ty: *Type) -> u64 {
 }
 
 fun ir_new_label(b: *B) -> u64 {
-    let l: u64 = b.next_label
-    b.next_label = l + 1
+    let p: *u64 = IR_NEXT_LABEL
+    let l: u64 = p[0]
+    p[0] = l + 1
     return l
 }
 
@@ -188,7 +195,8 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         let l: *Ins = mk_ins(b.ar, IR_LOAD_LOCAL)
         l.dst = dst
         l.local = e.var_index
-        l.width = 8
+        let sts: **Type = b.slot_types
+        l.width = ir_width_of(sts[e.var_index], 8)
         ir_emit(b.f, l)
         return dst
     }
@@ -209,7 +217,7 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         op.a = la
         op.b = lb
         op.binop = e.op
-        op.width = 8
+        op.width = ir_width_of(e.type, 4)
         ir_emit(b.f, op)
         return dst
     }
@@ -234,27 +242,67 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         let ld: *Ins = mk_ins(b.ar, IR_LOAD_MEM)
         ld.dst = dst3
         ld.a = addr
-        ld.width = 8
+        ld.width = ir_width_of(e.type, 8)
         ir_emit(b.f, ld)
         return dst3
+    }
+    if e.kind == EX_EXTERN {
+        let dst5: u64 = ir_new_slot(b, e.type)
+        let xa: *Ins = mk_ins(b.ar, IR_LABEL_ADDR)
+        xa.dst = dst5
+        xa.callee_start = e.callee_start
+        xa.callee_len = e.callee_len
+        ir_emit(b.f, xa)
+        return dst5
     }
     if e.kind == EX_CALL {
         let n: u64 = e.nargs
         let src: **Expr = e.args
-        let arg_slots: *u64 = arena_take(b.ar, n * 8)
+        let cap: u64 = n * 16
+        if cap == 0 { cap = 8 }
+        let arg_slots: *u64 = arena_take(b.ar, cap)
+        let actual: u64 = 0
         let i: u64 = 0
         while i < n {
             let ai2: *Expr = src[i]
-            arg_slots[i] = lower_expr(b, ai2)
+            let expand: u64 = 0
+            let at: *Type = ai2.type
+            if at != nil {
+                if at.kind == T_STR {
+                    if ai2.kind == EX_VAR { expand = 1 }
+                }
+            }
+            if expand == 1 {
+                let pslot: u64 = ir_new_slot(b, mk_ptr(b.ar, mk_prim(b.ar, T_U8)))
+                let lp: *Ins = mk_ins(b.ar, IR_LOAD_LOCAL)
+                lp.dst = pslot
+                lp.local = ai2.var_index
+                lp.width = 8
+                ir_emit(b.f, lp)
+                arg_slots[actual] = pslot
+                actual = actual + 1
+                let lslot: u64 = ir_new_slot(b, mk_prim(b.ar, T_U64))
+                let ll: *Ins = mk_ins(b.ar, IR_LOAD_LOCAL)
+                ll.dst = lslot
+                ll.local = ai2.var_index + 1
+                ll.width = 8
+                ir_emit(b.f, ll)
+                arg_slots[actual] = lslot
+                actual = actual + 1
+            } else {
+                arg_slots[actual] = lower_expr(b, ai2)
+                actual = actual + 1
+            }
             i = i + 1
         }
+        if actual > 8 { io_exit(94) }
         let dst4: u64 = ir_new_slot(b, e.type)
         let ci: *Ins = mk_ins(b.ar, IR_CALL)
         ci.dst = dst4
         ci.callee_start = e.callee_start
         ci.callee_len = e.callee_len
         ci.args = arg_slots
-        ci.nargs = n
+        ci.nargs = actual
         ir_emit(b.f, ci)
         return dst4
     }
@@ -269,7 +317,8 @@ fun lower_cmp(b: *B, e: *Expr, opk: u64) -> u64 {
     ci.dst = dst
     ci.a = la
     ci.b = lb
-    ci.width = 8
+    let le: *Expr = e.lhs
+    ci.width = ir_width_of(le.type, 4)
     ir_emit(b.f, ci)
     return dst
 }
@@ -277,11 +326,44 @@ fun lower_cmp(b: *B, e: *Expr, opk: u64) -> u64 {
 fun lower_stmt(b: *B, s: *Stmt) {
     if s.kind == ST_LET {
         if s.init != nil {
+            let sts: **Type = b.slot_types
+            let lty: *Type = sts[s.local_index]
+            let is_strlet: u64 = 0
+            if lty != nil {
+                if lty.kind == T_STR {
+                    let ie: *Expr = s.init
+                    if ie.kind == EX_STRLIT { is_strlet = 1 }
+                }
+            }
+            if is_strlet == 1 {
+                let ie2: *Expr = s.init
+                let ptr_slot: u64 = ir_new_slot(b, mk_ptr(b.ar, mk_prim(b.ar, T_U8)))
+                let la: *Ins = mk_ins(b.ar, IR_LABEL_ADDR)
+                la.dst = ptr_slot
+                la.str_id = ie2.str_id
+                ir_emit(b.f, la)
+                let sp: *Ins = mk_ins(b.ar, IR_STORE_LOCAL)
+                sp.local = s.local_index
+                sp.a = ptr_slot
+                sp.width = 8
+                ir_emit(b.f, sp)
+                let len_slot: u64 = ir_new_slot(b, mk_prim(b.ar, T_U64))
+                let m: *Ins = mk_ins(b.ar, IR_MOVI)
+                m.dst = len_slot
+                m.imm = ie2.str_len
+                ir_emit(b.f, m)
+                let sl: *Ins = mk_ins(b.ar, IR_STORE_LOCAL)
+                sl.local = s.local_index + 1
+                sl.a = len_slot
+                sl.width = 8
+                ir_emit(b.f, sl)
+                return
+            }
             let v: u64 = lower_expr(b, s.init)
             let st: *Ins = mk_ins(b.ar, IR_STORE_LOCAL)
             st.local = s.local_index
             st.a = v
-            st.width = 8
+            st.width = ir_width_of(lty, 8)
             ir_emit(b.f, st)
         }
         return
@@ -292,7 +374,8 @@ fun lower_stmt(b: *B, s: *Stmt) {
             let st: *Ins = mk_ins(b.ar, IR_STORE_LOCAL)
             st.local = s.local_index
             st.a = v
-            st.width = 8
+            let sts2: **Type = b.slot_types
+            st.width = ir_width_of(sts2[s.local_index], 8)
             ir_emit(b.f, st)
         }
         return
@@ -304,23 +387,28 @@ fun lower_stmt(b: *B, s: *Stmt) {
         sm.a = addr
         sm.b = val
         sm.width = 8
+        let pe: *Expr = s.expr
+        let pty: *Type = pe.type
+        if pty != nil {
+            if pty.kind == T_PTR {
+                sm.width = ir_width_of(pty.inner, 8)
+            }
+        }
         ir_emit(b.f, sm)
         return
     }
     if s.kind == ST_RETURN {
-        let v: u64 = 0
         if s.ret_val != nil {
-            v = lower_expr(b, s.ret_val)
-        } else {
-            v = ir_new_slot(b, nil)
-            let m: *Ins = mk_ins(b.ar, IR_MOVI)
-            m.dst = v
-            m.imm = 0
-            ir_emit(b.f, m)
+            let v: u64 = lower_expr(b, s.ret_val)
+            let r: *Ins = mk_ins(b.ar, IR_RET)
+            r.a = v
+            ir_emit(b.f, r)
+            return
         }
-        let r: *Ins = mk_ins(b.ar, IR_RET)
-        r.a = v
-        ir_emit(b.f, r)
+        let r2: *Ins = mk_ins(b.ar, IR_RET)
+        r2.a = 0
+        r2.imm = 1
+        ir_emit(b.f, r2)
         return
     }
     if s.kind == ST_EXPR {
@@ -329,17 +417,14 @@ fun lower_stmt(b: *B, s: *Stmt) {
     }
     if s.kind == ST_IF {
         let c: u64 = lower_expr(b, s.cond)
-        if s.else_body == nil {
-            let l_end: u64 = ir_new_label(b)
-            ir_emit_jz(b, c, l_end)
-            lower_block(b, s.body)
-            ir_emit_label(b, l_end)
-            return
-        }
         let l_else: u64 = ir_new_label(b)
-        let l_end2: u64 = ir_new_label(b)
         ir_emit_jz(b, c, l_else)
         lower_block(b, s.body)
+        if s.else_body == nil {
+            ir_emit_label(b, l_else)
+            return
+        }
+        let l_end2: u64 = ir_new_label(b)
         ir_emit_jmp(b, l_end2)
         ir_emit_label(b, l_else)
         lower_block(b, s.else_body)
@@ -392,12 +477,36 @@ fun lower_block(b: *B, head: *Stmt) {
 }
 
 fun lower_one_fn(ar: *Arena, sf: *Func) -> *IrFn {
+    let nloc: u64 = sf.nlocals
+    let locs: **Local = sf.locals
+    let np: u64 = sf.nparams
     let f: *IrFn = mk_ir_fn(ar, sf.name_start, sf.name_len)
-    f.nparams = sf.nparams
+    f.nparams = np
+    f.nlocals = nloc
     f.ret_type = sf.ret_type
     let b: *B = mk_builder(ar, f)
+    b.next_slot = nloc
+    b.max_slot = nloc
+    let sts: **Type = b.slot_types
+    let i: u64 = 0
+    while i < nloc {
+        let lc: *Local = locs[i]
+        sts[i] = lc.type
+        i = i + 1
+    }
+    let ptb: u64 = np * 8
+    if ptb == 0 { ptb = 8 }
+    let pts: **Type = arena_take(ar, ptb)
+    i = 0
+    while i < np {
+        let lc2: *Local = locs[i]
+        pts[i] = lc2.type
+        i = i + 1
+    }
+    f.param_types = pts
     lower_block(b, sf.body)
     f.nslots = b.max_slot
+    f.slot_types = b.slot_types
     return f
 }
 
@@ -484,8 +593,11 @@ fun collect_uses(i: *Ins, uses: *u64) -> u64 {
         return 1
     }
     if i.op == IR_RET {
-        uses[0] = i.a
-        return 1
+        if i.imm == 0 {
+            uses[0] = i.a
+            return 1
+        }
+        return 0
     }
     if i.op == IR_CALL {
         let k: u64 = 0
@@ -644,6 +756,8 @@ fun finalize_frame(fn: *IrFn) {
 }
 
 fun lower(ar: *Arena, prog: *Program) -> *IrFn {
+    let lc: *u64 = IR_NEXT_LABEL
+    lc[0] = 0
     let head: *IrFn = nil
     let tail: *IrFn = nil
     let sf: *Func = prog.funcs

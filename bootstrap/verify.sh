@@ -226,4 +226,10 @@ for sample in tests/hello.tt tests/argv.tt tests/nil.tt tests/parens.tt tests/si
     [[ $s1 -eq $s0_real ]] || fail "lexer stage1=$s1 vs stage0=$s0_real sobre $sample; log:\n$(cat /tmp/tt_lexer.log)"
 done
 
+# hito 19: fixpoint completo. stage1 compila macos_hello (msg.ptr/msg.len) y
+# se compila a si mismo; diff bit a bit s0 vs s1 y s1 vs s2.
+rc=0
+bash tests/fixpoint_build.sh > /tmp/tt_verify.log 2>&1 || rc=$?
+[[ $rc -eq 0 ]] || fail "fixpoint rc=$rc; log:\n$(cat /tmp/tt_verify.log)"
+
 echo "VERIFY OK"
