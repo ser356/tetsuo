@@ -14,10 +14,7 @@ if [[ ! -x $COMPILER ]]; then
 fi
 
 INPUT_TT=${1:-tests/hello.tt}
-COMBINED=$BUILD/parser_combined.tt
-cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt src/lexer.tt src/parser.tt tests/parser_main.tt > "$COMBINED"
-
-"$COMPILER" --target=macos "$COMBINED" -o "$BUILD/parser_test.s"
+"$COMPILER" --target=macos tests/parser_entry.tt -o "$BUILD/parser_test.s"
 $CC -c "$BUILD/parser_test.s" -o "$BUILD/parser_test.o"
 $CC -e _main -o "$BUILD/parser_test" "$BUILD/parser_test.o"
 

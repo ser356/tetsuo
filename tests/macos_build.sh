@@ -17,28 +17,17 @@ if [[ ! -x $COMPILER ]]; then
   $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
-IO_LIB=src/runtime/io.tt
-STR_LIB=lib/str.tt
-FMT_LIB=lib/fmt.tt
-VEC_LIB=lib/vec.tt
-AST_LIB=lib/ast.tt
-LEXER_LIB=src/lexer.tt
-PARSER_LIB=src/parser.tt
-IR_LIB=src/ir.tt
-CODEGEN_LIB=src/codegen.tt
-if [[ -f $IO_LIB && $INPUT != $IO_LIB ]]; then
-  COMBINED=$BUILD/combined_macos.tt
-  cat "$IO_LIB" > "$COMBINED"
-  [[ -f $STR_LIB && $INPUT != $STR_LIB ]] && cat "$STR_LIB" >> "$COMBINED"
-  [[ -f $FMT_LIB && $INPUT != $FMT_LIB ]] && cat "$FMT_LIB" >> "$COMBINED"
-  [[ -f $VEC_LIB && $INPUT != $VEC_LIB ]] && cat "$VEC_LIB" >> "$COMBINED"
-  [[ -f $AST_LIB && $INPUT != $AST_LIB ]] && cat "$AST_LIB" >> "$COMBINED"
-  [[ -f $LEXER_LIB && $INPUT != $LEXER_LIB ]] && cat "$LEXER_LIB" >> "$COMBINED"
-  [[ -f $PARSER_LIB && $INPUT != $PARSER_LIB ]] && cat "$PARSER_LIB" >> "$COMBINED"
-  [[ -f $IR_LIB && $INPUT != $IR_LIB ]] && cat "$IR_LIB" >> "$COMBINED"
-  [[ -f $CODEGEN_LIB && $INPUT != $CODEGEN_LIB ]] && cat "$CODEGEN_LIB" >> "$COMBINED"
-  cat "$INPUT" >> "$COMBINED"
-  "$COMPILER" --target=macos "$COMBINED" -o "$BASE.s"
+LIBS=(src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt \
+      src/lexer.tt src/parser.tt src/ir.tt src/codegen.tt \
+      lib/sha256.tt src/asm.tt src/macho.tt src/codegen_bytes.tt)
+if [[ -f ${LIBS[0]} && $INPUT != ${LIBS[0]} ]]; then
+  ENTRY=$BUILD/entry_macos.tt
+  : > "$ENTRY"
+  for L in "${LIBS[@]}"; do
+    [[ -f $L && $INPUT != $L ]] && echo "import '$L'" >> "$ENTRY"
+  done
+  echo "import '$INPUT'" >> "$ENTRY"
+  "$COMPILER" --target=macos "$ENTRY" -o "$BASE.s"
 else
   "$COMPILER" --target=macos "$INPUT" -o "$BASE.s"
 fi

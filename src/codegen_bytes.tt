@@ -26,6 +26,8 @@ bss CG_FIX: 393216      // fixups: (pos, kind, target) x u64
 bss CG_FIXN: 8
 bss CG_STROFF: 65536    // str_id -> offset de byte del literal en CB
 bss CG_ENTRY: 8         // offset de _tt_start (entry)
+bss CG_PROG: 8          // *Program (para resolver bss por nombre en fixups)
+bss CG_BSSOFF: 8192     // bss_index -> offset dentro de __DATA (u64s)
 
 // kinds de fixup
 const FX_B: u64    = 0   // b   .Llabel     (imm26)
@@ -364,9 +366,10 @@ fun cgb_i_call(fn: *IrFn, i: *Ins, funcs: *IrFn) {
 fun cgb_i_label_addr(fn: *IrFn, i: *Ins) {
     let xd: u64 = cgb_dst_x(fn, i.dst)
     if i.callee_len > 0 {
-        fix_add(cb_pos(), FX_ADRPB, i.dst)
+        let bidx: u64 = cgb_bss_index_by_name(cgb_prog_get(), i.callee_start, i.callee_len)
+        fix_add(cb_pos(), FX_ADRPB, bidx)
         cb_word(enc_adrp(xd, 0))
-        fix_add(cb_pos(), FX_PGOFB, i.dst)
+        fix_add(cb_pos(), FX_PGOFB, bidx)
         cb_word(enc_add_pageoff(xd, xd, 0))
         cgb_spill(fn, i.dst, xd)
         return
@@ -577,6 +580,7 @@ fun cgb_stroff_get(id: u64) -> u64 {
 // Driver: emite _tt_start + funciones en CB, resuelve saltos internos.
 // Devuelve (via CG_ENTRY) el offset de entrada; deja CB_POS = tamano del codigo.
 fun codegen_bytes(prog: *Program, funcs: *IrFn) {
+    cgb_prog_set(prog)
     set_target(TGT_MACOS)
     cb_set(0)
     let fn0: *u64 = CG_FIXN
@@ -719,4 +723,141 @@ fun fn_index_by_name(funcs: *IrFn, name: *u8, nlen: u64) -> u64 {
         fn = fn.next
     }
     return 0
+}
+
+// --- Soporte bss (hito 24.g Session A) ---
+
+fun cgb_prog_set(p: *Program) {
+    let s: **Program = CG_PROG
+    s[0] = p
+}
+
+fun cgb_prog_get() -> *Program {
+    let s: **Program = CG_PROG
+    return s[0]
+}
+
+fun cgb_bss_off_set(idx: u64, off: u64) {
+    let p: *u64 = CG_BSSOFF
+    p[idx] = off
+}
+
+fun cgb_bss_off_get(idx: u64) -> u64 {
+    let p: *u64 = CG_BSSOFF
+    return p[idx]
+}
+
+fun cgb_bss_layout(prog: *Program) -> u64 {
+    let it: *BssItem = prog.bsses
+    let idx: u64 = 0
+    let cursor: u64 = 0
+    while it != nil {
+        cgb_bss_off_set(idx, cursor)
+        cursor = cursor + ((it.size + 7) / 8) * 8
+        idx = idx + 1
+        it = it.next
+    }
+    if cursor == 0 { return 0 }
+    return ((cursor + 16383) / 16384) * 16384
+}
+
+fun cgb_bss_index_by_name(prog: *Program, s: u64, n: u64) -> u64 {
+    let lx: *Lexer = LX_STATE
+    let it: *BssItem = prog.bsses
+    let idx: u64 = 0
+    while it != nil {
+        if it.name_len == n {
+            if bytes_eq(lx.src + it.name_start, lx.src + s, n) == 1 {
+                return idx
+            }
+        }
+        idx = idx + 1
+        it = it.next
+    }
+    return 0
+}
+
+fun mo_string_layout_bss(prog: *Program, code_len: u64) -> u64 {
+    let cursor: u64 = 704 + code_len
+    let it: *StrLit = prog.strs
+    while it != nil {
+        cursor = mo_align8(cursor)
+        cgb_stroff_set(it.id, cursor)
+        cursor = cursor + it.slen + 1
+        it = it.next
+    }
+    return cursor - 704
+}
+
+fun mo_resolve_strings_bss() {
+    let n: *u64 = CG_FIXN
+    let f: *u64 = CG_FIX
+    let count: u64 = n[0]
+    let i: u64 = 0
+    while i < count {
+        let pos: u64 = f[i * 3 + 0]
+        let kind: u64 = f[i * 3 + 1]
+        let target: u64 = f[i * 3 + 2]
+        if kind == FX_ADRP {
+            let instr: u64 = 704 + pos
+            let tgt: u64 = cgb_stroff_get(target)
+            let imm21: u64 = (tgt / 4096) - (instr / 4096)
+            let lo: u64 = imm21 & 3
+            let hi: u64 = imm21 >> 2
+            img_or(instr, (lo << 29) | (hi << 5))
+        }
+        if kind == FX_PGOF {
+            let instr2: u64 = 704 + pos
+            let tgt2: u64 = cgb_stroff_get(target)
+            img_or(instr2, (tgt2 & 4095) << 10)
+        }
+        if kind == FX_ADRPB {
+            let instr3: u64 = 704 + pos
+            let bpage: u64 = (16384 + cgb_bss_off_get(target)) / 4096
+            let ipage: u64 = instr3 / 4096
+            let imm21b: u64 = bpage - ipage
+            let lob: u64 = imm21b & 3
+            let hib: u64 = imm21b >> 2
+            img_or(instr3, (lob << 29) | (hib << 5))
+        }
+        if kind == FX_PGOFB {
+            let instr4: u64 = 704 + pos
+            let bvaddr: u64 = 16384 + cgb_bss_off_get(target)
+            img_or(instr4, (bvaddr & 4095) << 10)
+        }
+        i = i + 1
+    }
+}
+
+fun emit_macho_code_bss(fd: u64, prog: *Program, code_len: u64, entry_off: u64, bss_vmsize: u64) {
+    let img: *u8 = MO_IMG
+    let tsize: u64 = mo_string_layout_bss(prog, code_len)
+    let text_pages: u64 = ((704 + tsize + 16383) / 16384)
+    mc_set(0)
+    mo_emit_headers_bss(img, tsize, text_pages, entry_off, bss_vmsize)
+    let cb: *u8 = CB
+    let bi: u64 = 0
+    while bi < code_len {
+        e8(img, cb[bi])
+        bi = bi + 1
+    }
+    let it: *StrLit = prog.strs
+    while it != nil {
+        let off: u64 = cgb_stroff_get(it.id)
+        while mc_get() < off {
+            e8(img, 0)
+        }
+        let k: u64 = 0
+        while k < it.slen {
+            e8(img, it.bytes[k])
+            k = k + 1
+        }
+        e8(img, 0)
+        it = it.next
+    }
+    mo_resolve_strings_bss()
+    let cur: u64 = mc_get()
+    let text_end: u64 = text_pages * 16384
+    ezeros(img, text_end - cur)
+    mo_sign_and_write_n(fd, img, text_pages)
 }

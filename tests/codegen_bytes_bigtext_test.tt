@@ -1,0 +1,37 @@
+bss BT_SRC: 32768
+
+fun main() -> u32 {
+    let src: *u8 = BT_SRC
+    let pos: u64 = 0
+
+    let head: str = 'fun main() -> u64 { let s: str = \''
+    mem_copy(src + pos, head.ptr, head.len)
+    pos = pos + head.len
+
+    let i: u64 = 0
+    while i < 20000 {
+        src[pos + i] = 65
+        i = i + 1
+    }
+    pos = pos + 20000
+
+    let tail: str = '\' let c: u64 = s.ptr[100] return c }'
+    mem_copy(src + pos, tail.ptr, tail.len)
+    pos = pos + tail.len
+
+    let ast_ar: *Arena = ast_init()
+    let ir_ar: *Arena = ir_init()
+    let prog: *Program = parse(ast_ar, src, pos)
+    let irhead: *IrFn = lower(ir_ar, prog)
+    let bvsz: u64 = cgb_bss_layout(prog)
+    codegen_bytes(prog, irhead)
+
+    let path: str = '/tmp/tt_cgb_bigtext\0'
+    let fd: u64 = io_open_write(path.ptr)
+    if fd == 0 { return 1 }
+    let clen: u64 = cb_pos()
+    let entry: *u64 = CG_ENTRY
+    emit_macho_code_bss(fd, prog, clen, entry[0], bvsz)
+    io_close(fd)
+    return 0
+}

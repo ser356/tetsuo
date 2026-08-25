@@ -11,7 +11,7 @@
 //
 // Depende de asm.tt (encoders del cuerpo) y lib/sha256.tt (hashes).
 
-bss MO_IMG: 20000
+bss MO_IMG: 1048576
 bss MO_CUR: 8
 
 fun mc_get() -> u64 {
@@ -224,20 +224,30 @@ fun emit_macho_image(fd: u64, code_ptr: *u8, code_len: u64, entry_off: u64) {
 
 // escribe el CS_SuperBlob, calcula los hashes de pagina y vuelca a fichero
 fun mo_sign_and_write(fd: u64, img: *u8) {
+    mo_sign_and_write_n(fd, img, 1)
+}
+
+// variante parametrizada por text_pages (paginas virtuales de 16KB).
+// nHashes = text_pages * 4 (paginas de 4KB dentro de __text para SHA-256).
+fun mo_sign_and_write_n(fd: u64, img: *u8, text_pages: u64) {
+    let n_hashes: u64 = text_pages * 4
+    let cd_len: u64 = 88 + 2 + n_hashes * 32
+    let cs_len: u64 = 20 + cd_len
+    let text_vmsize: u64 = text_pages * 16384
     eb32(img, 0xfade0cc0)
-    eb32(img, 238)
+    eb32(img, cs_len)
     eb32(img, 1)
     eb32(img, 0)
     eb32(img, 20)
     eb32(img, 0xfade0c02)
-    eb32(img, 218)
+    eb32(img, cd_len)
     eb32(img, 132096)
     eb32(img, 2)
     eb32(img, 90)
     eb32(img, 88)
     eb32(img, 0)
-    eb32(img, 4)
-    eb32(img, 16384)
+    eb32(img, n_hashes)
+    eb32(img, text_vmsize)
     e8(img, 32)
     e8(img, 2)
     e8(img, 0)
@@ -248,18 +258,18 @@ fun mo_sign_and_write(fd: u64, img: *u8) {
     eb32(img, 0)
     eb64(img, 0)
     eb64(img, 0)
-    eb64(img, 16384)
+    eb64(img, text_vmsize)
     eb64(img, 1)
     e8(img, 97)
     e8(img, 0)
-    ezeros(img, 128)
-    let hbase2: u64 = 16494
-    let slot2: u64 = 0
-    while slot2 < 4 {
-        sha256(img + slot2 * 4096, 4096, img + hbase2 + slot2 * 32)
-        slot2 = slot2 + 1
+    ezeros(img, n_hashes * 32)
+    let hbase: u64 = text_vmsize + 110
+    let slot: u64 = 0
+    while slot < n_hashes {
+        sha256(img + slot * 4096, 4096, img + hbase + slot * 32)
+        slot = slot + 1
     }
-    io_write(fd, img, 16622)
+    io_write(fd, img, text_vmsize + cs_len)
 }
 
 bss MO_CODE: 64
@@ -282,4 +292,153 @@ fun emit_macho_signed(fd: u64, exit_code: u64) {
     code[10] = (w2 >> 16) & 255
     code[11] = (w2 >> 24) & 255
     emit_macho_image(fd, code, 12, 0)
+}
+
+// --- Path bss (hito 24.g Session A) ---
+// Inyecta LC_SEGMENT_64 __DATA (section __bss S_ZEROFILL) entre __TEXT y
+// __LINKEDIT. Header total: 32 + 72 + 152 + 152 + 72 + 32 + 24 + 80 + 24 +
+// 24 + 24 + 16 = 704 bytes. ncmds=11, sizeofcmds=672. Codigo empieza en
+// file offset 704 (vs 552). Firma sigue en __LINKEDIT sin cambios.
+
+fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u64, bss_vmsize: u64) {
+    let text_vmsize: u64 = text_pages * 16384
+    let data_vmaddr: u64 = 4294967296 + text_vmsize
+    let linkedit_vmaddr: u64 = data_vmaddr + bss_vmsize
+    let cs_datasize: u64 = 110 + text_pages * 128
+
+    e32(img, 4277009103)
+    e32(img, 16777228)
+    e32(img, 0)
+    e32(img, 2)
+    e32(img, 11)
+    e32(img, 672)
+    e32(img, 2097285)
+    e32(img, 0)
+
+    e32(img, 25)
+    e32(img, 72)
+    let pz: str = '__PAGEZERO'
+    ename16(img, pz.ptr, pz.len)
+    e64(img, 0)
+    e64(img, 4294967296)
+    e64(img, 0)
+    e64(img, 0)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 0)
+
+    e32(img, 25)
+    e32(img, 152)
+    let tx: str = '__TEXT'
+    ename16(img, tx.ptr, tx.len)
+    e64(img, 4294967296)
+    e64(img, text_vmsize)
+    e64(img, 0)
+    e64(img, text_vmsize)
+    e32(img, 7)
+    e32(img, 5)
+    e32(img, 1)
+    e32(img, 0)
+    let sn: str = '__text'
+    ename16(img, sn.ptr, sn.len)
+    ename16(img, tx.ptr, tx.len)
+    e64(img, 4294968000)
+    e64(img, text_size)
+    e32(img, 704)
+    e32(img, 2)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 2147484672)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 0)
+
+    e32(img, 25)
+    e32(img, 152)
+    let da: str = '__DATA'
+    ename16(img, da.ptr, da.len)
+    e64(img, data_vmaddr)
+    e64(img, bss_vmsize)
+    e64(img, text_vmsize)
+    e64(img, 0)
+    e32(img, 7)
+    e32(img, 3)
+    e32(img, 1)
+    e32(img, 0)
+    let bn: str = '__bss'
+    ename16(img, bn.ptr, bn.len)
+    ename16(img, da.ptr, da.len)
+    e64(img, data_vmaddr)
+    e64(img, bss_vmsize)
+    e32(img, 0)
+    e32(img, 3)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 1)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 0)
+
+    e32(img, 25)
+    e32(img, 72)
+    let le: str = '__LINKEDIT'
+    ename16(img, le.ptr, le.len)
+    e64(img, linkedit_vmaddr)
+    e64(img, 16384)
+    e64(img, text_vmsize)
+    e64(img, cs_datasize)
+    e32(img, 3)
+    e32(img, 1)
+    e32(img, 0)
+    e32(img, 0)
+
+    e32(img, 14)
+    e32(img, 32)
+    e32(img, 12)
+    let dy: str = '/usr/lib/dyld'
+    let di: u64 = 0
+    while di < dy.len {
+        e8(img, dy.ptr[di])
+        di = di + 1
+    }
+    while di < 20 {
+        e8(img, 0)
+        di = di + 1
+    }
+
+    e32(img, 2)
+    e32(img, 24)
+    e32(img, text_vmsize)
+    e32(img, 0)
+    e32(img, text_vmsize)
+    e32(img, 0)
+
+    e32(img, 11)
+    e32(img, 80)
+    ezeros(img, 72)
+
+    e32(img, 27)
+    e32(img, 24)
+    e32(img, 305419896)
+    e32(img, 2309737967)
+    e32(img, 19088743)
+    e32(img, 2596069104)
+
+    e32(img, 50)
+    e32(img, 24)
+    e32(img, 1)
+    e32(img, 720896)
+    e32(img, 720896)
+    e32(img, 0)
+
+    e32(img, 2147483688)
+    e32(img, 24)
+    e64(img, 704 + entry_off)
+    e64(img, 0)
+
+    e32(img, 29)
+    e32(img, 16)
+    e32(img, text_vmsize)
+    e32(img, cs_datasize)
 }

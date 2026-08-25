@@ -189,8 +189,10 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let a1: *u8 = argv[1]
     let flag_tok: str = '--dump-tokens'
     let flag_ir: str = '--dump-ir'
+    let flag_macho: str = '--emit=macho'
     let is_dump_tok: u64 = cstr_eq(a1, flag_tok.ptr, flag_tok.len)
     let is_dump_ir: u64 = cstr_eq(a1, flag_ir.ptr, flag_ir.len)
+    let is_macho: u64 = cstr_eq(a1, flag_macho.ptr, flag_macho.len)
 
     if is_dump_tok == 1 {
         let path: *u8 = argv[2]
@@ -241,9 +243,17 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let fd: u64 = io_open_write(output)
     if fd == 0 { return 4 }
 
-    let o: *Out = OUT_STORAGE
-    out_init(o, fd, OUT_BUF, 65536)
-    codegen(o, TGT_MACOS, prog, irhead)
+    if is_macho == 1 {
+        let bvsz: u64 = cgb_bss_layout(prog)
+        codegen_bytes(prog, irhead)
+        let clen: u64 = cb_pos()
+        let entry: *u64 = CG_ENTRY
+        emit_macho_code_bss(fd, prog, clen, entry[0], bvsz)
+    } else {
+        let o: *Out = OUT_STORAGE
+        out_init(o, fd, OUT_BUF, 65536)
+        codegen(o, TGT_MACOS, prog, irhead)
+    }
     io_close(fd)
     return 0
 }

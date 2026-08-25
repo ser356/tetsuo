@@ -15,11 +15,7 @@ if [[ ! -x $COMPILER ]]; then
   $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
-COMBINED=$BUILD/macho42_combined.tt
-cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/sha256.tt src/asm.tt src/macho.tt \
-    tests/macho42_test.tt > "$COMBINED"
-
-"$COMPILER" --target=macos "$COMBINED" -o "$BUILD/macho42_emit.s"
+"$COMPILER" --target=macos tests/macho42_entry.tt -o "$BUILD/macho42_emit.s"
 $CC -c "$BUILD/macho42_emit.s" -o "$BUILD/macho42_emit.o"
 $CC -e _tt_start -o "$BUILD/macho42_emit" "$BUILD/macho42_emit.o"
 

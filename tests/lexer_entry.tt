@@ -1,0 +1,4 @@
+import 'src/runtime/io.tt'
+import 'lib/str.tt'
+import 'src/lexer.tt'
+import 'tests/lexer_main.tt'

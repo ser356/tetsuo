@@ -1,0 +1,8 @@
+import 'src/runtime/io.tt'
+import 'lib/str.tt'
+import 'lib/fmt.tt'
+import 'lib/vec.tt'
+import 'lib/ast.tt'
+import 'src/lexer.tt'
+import 'src/parser.tt'
+import 'tests/parser_main.tt'

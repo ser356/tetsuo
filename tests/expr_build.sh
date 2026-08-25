@@ -13,10 +13,7 @@ if [[ ! -x $COMPILER ]]; then
   $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
-COMBINED=$BUILD/expr_combined.tt
-cat src/runtime/io.tt src/lexer.tt tests/expr.tt tests/expr_main.tt > "$COMBINED"
-
-"$COMPILER" --target=macos "$COMBINED" -o "$BUILD/expr_test.s"
+"$COMPILER" --target=macos tests/expr_entry.tt -o "$BUILD/expr_test.s"
 $CC -c "$BUILD/expr_test.s" -o "$BUILD/expr_test.o"
 $CC -e _main -o "$BUILD/expr_test" "$BUILD/expr_test.o"
 

@@ -16,12 +16,7 @@ if [[ ! -x $COMPILER ]]; then
   $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
-COMBINED=$BUILD/cgb_combined.tt
-cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt src/lexer.tt \
-    src/parser.tt src/ir.tt src/codegen.tt lib/sha256.tt src/asm.tt src/macho.tt \
-    src/codegen_bytes.tt tests/codegen_bytes_test.tt > "$COMBINED"
-
-"$COMPILER" --target=macos "$COMBINED" -o "$BUILD/cgb_emit.s"
+"$COMPILER" --target=macos tests/codegen_bytes_entry.tt -o "$BUILD/cgb_emit.s"
 $CC -c "$BUILD/cgb_emit.s" -o "$BUILD/cgb_emit.o"
 $CC -e _tt_start -o "$BUILD/cgb_emit" "$BUILD/cgb_emit.o"
 
