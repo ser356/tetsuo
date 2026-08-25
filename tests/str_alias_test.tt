@@ -1,0 +1,15 @@
+bss O_STORAGE: 64
+bss O_BUF: 512
+
+fun main() -> u32 {
+    let o: *Out = O_STORAGE
+    out_init(o, 1, O_BUF, 512)
+    let s2: str = ':\n    stp     x29, x30, [sp, #-16]!\n    mov     x29, sp\n'
+    out_bytes(o, s2.ptr, s2.len)
+    let s3: str = '    sub     sp, sp, #'
+    out_bytes(o, s3.ptr, s3.len)
+    out_u64(o, 16)
+    out_byte(o, 10)
+    out_flush(o)
+    return 0
+}

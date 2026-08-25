@@ -54,3 +54,24 @@ fun out_u64(o: *Out, v: u64) {
         out_byte(o, DIGITS[n])
     }
 }
+
+fun out_nibble(o: *Out, n: u64) {
+    if n < 10 {
+        out_byte(o, 48 + n)
+        return
+    }
+    out_byte(o, 87 + n)
+}
+
+fun out_hex4(o: *Out, v: u64) {
+    let d0: u64 = v / 4096
+    let r0: u64 = v - d0 * 4096
+    let d1: u64 = r0 / 256
+    let r1: u64 = r0 - d1 * 256
+    let d2: u64 = r1 / 16
+    let d3: u64 = r1 - d2 * 16
+    out_nibble(o, d0)
+    out_nibble(o, d1)
+    out_nibble(o, d2)
+    out_nibble(o, d3)
+}

@@ -1,0 +1,34 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let prog: *Program = mk_program(ar)
+
+    let three: *Expr = mk_expr(ar, EX_INT)
+    three.ival = 3
+    let four: *Expr = mk_expr(ar, EX_INT)
+    four.ival = 4
+    let sum: *Expr = mk_expr(ar, EX_BIN)
+    sum.op = OP_ADD
+    sum.lhs = three
+    sum.rhs = four
+
+    let ret_stmt: *Stmt = mk_stmt(ar, ST_RETURN)
+    ret_stmt.ret_val = sum
+
+    let sf: *Func = arena_take(ar, 56)
+    sf.name_start = 0
+    sf.name_len = 0
+    sf.params = nil
+    sf.nparams = 0
+    sf.ret_type = nil
+    sf.body = ret_stmt
+    sf.next = nil
+    prog.funcs = sf
+
+    let irhead: *IrFn = lower(ar, prog)
+
+    let rc: u64 = 0
+    if irhead.reg_of != nil { rc = rc + 1 }
+    rc = rc + (irhead.frame_bytes / 16)
+
+    return rc
+}

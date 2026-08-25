@@ -1,0 +1,664 @@
+bss IR_BUF: 4194304
+bss IR_ARENA_STORE: 24
+
+fun ir_init() -> *Arena {
+    let a: *Arena = IR_ARENA_STORE
+    arena_init(a, IR_BUF, 4194304)
+    return a
+}
+
+const IR_MOVI:        u64 = 0
+const IR_LABEL_ADDR:  u64 = 1
+const IR_ADDR_LOCAL:  u64 = 2
+const IR_LOAD_LOCAL:  u64 = 3
+const IR_STORE_LOCAL: u64 = 4
+const IR_LOAD_MEM:    u64 = 5
+const IR_STORE_MEM:   u64 = 6
+const IR_BINOP:       u64 = 7
+const IR_CMPEQ:       u64 = 8
+const IR_CMPNE:       u64 = 9
+const IR_CMPLT:       u64 = 10
+const IR_CMPLE:       u64 = 11
+const IR_CMPGT:       u64 = 12
+const IR_CMPGE:       u64 = 13
+const IR_CALL:        u64 = 14
+const IR_RET:         u64 = 15
+const IR_JMP:         u64 = 16
+const IR_JZ:          u64 = 17
+const IR_LABEL:       u64 = 18
+
+struct Ins {
+    op:           u64,
+    dst:          u64,
+    a:            u64,
+    b:            u64,
+    local:        u64,
+    width:        u64,
+    imm:          u64,
+    label:        u64,
+    str_id:       u64,
+    binop:        u64,
+    callee_start: u64,
+    callee_len:   u64,
+    args:         *u64,
+    nargs:        u64,
+    next:         *Ins,
+}
+
+struct IrFn {
+    name_start:  u64,
+    name_len:    u64,
+    nparams:     u64,
+    param_types: **Type,
+    nlocals:     u64,
+    nslots:      u64,
+    slot_types:  **Type,
+    frame_bytes: u64,
+    ret_type:    *Type,
+    reg_of:      *u64,
+    last_use:    *u64,
+    head:        *Ins,
+    tail:        *Ins,
+    next:        *IrFn,
+}
+
+fun mk_ins(ar: *Arena, op: u64) -> *Ins {
+    let i: *Ins = arena_take(ar, 120)
+    i.op = op
+    i.dst = 0
+    i.a = 0
+    i.b = 0
+    i.local = 0
+    i.width = 0
+    i.imm = 0
+    i.label = 0
+    i.str_id = 0
+    i.binop = 0
+    i.callee_start = 0
+    i.callee_len = 0
+    i.args = nil
+    i.nargs = 0
+    i.next = nil
+    return i
+}
+
+fun mk_ir_fn(ar: *Arena, name_start: u64, name_len: u64) -> *IrFn {
+    let f: *IrFn = arena_take(ar, 112)
+    f.name_start = name_start
+    f.name_len = name_len
+    f.nparams = 0
+    f.param_types = nil
+    f.nlocals = 0
+    f.nslots = 0
+    f.slot_types = nil
+    f.frame_bytes = 0
+    f.ret_type = nil
+    f.reg_of = nil
+    f.last_use = nil
+    f.head = nil
+    f.tail = nil
+    f.next = nil
+    return f
+}
+
+fun ir_emit(fn: *IrFn, i: *Ins) {
+    if fn.head == nil {
+        fn.head = i
+        fn.tail = i
+        return
+    }
+    let t: *Ins = fn.tail
+    t.next = i
+    fn.tail = i
+}
+
+struct B {
+    f:           *IrFn,
+    ar:          *Arena,
+    next_slot:   u64,
+    max_slot:    u64,
+    slot_types:  **Type,
+    slot_cap:    u64,
+    next_label:  u64,
+    break_stack: *u64,
+    break_top:   u64,
+}
+
+fun mk_builder(ar: *Arena, fn: *IrFn) -> *B {
+    let b: *B = arena_take(ar, 72)
+    b.f = fn
+    b.ar = ar
+    b.next_slot = 0
+    b.max_slot = 0
+    b.slot_cap = 4096
+    let st: **Type = arena_take(ar, 32768)
+    b.slot_types = st
+    b.next_label = 0
+    let bs: *u64 = arena_take(ar, 128)
+    b.break_stack = bs
+    b.break_top = 0
+    return b
+}
+
+fun ir_new_slot(b: *B, ty: *Type) -> u64 {
+    let dst: u64 = b.next_slot
+    b.next_slot = dst + 1
+    if dst >= b.max_slot { b.max_slot = dst + 1 }
+    let slots: **Type = b.slot_types
+    slots[dst] = ty
+    return dst
+}
+
+fun ir_new_label(b: *B) -> u64 {
+    let l: u64 = b.next_label
+    b.next_label = l + 1
+    return l
+}
+
+fun ir_emit_label(b: *B, l: u64) {
+    let i: *Ins = mk_ins(b.ar, IR_LABEL)
+    i.label = l
+    ir_emit(b.f, i)
+}
+
+fun ir_emit_jmp(b: *B, l: u64) {
+    let i: *Ins = mk_ins(b.ar, IR_JMP)
+    i.label = l
+    ir_emit(b.f, i)
+}
+
+fun ir_emit_jz(b: *B, cond_slot: u64, l: u64) {
+    let i: *Ins = mk_ins(b.ar, IR_JZ)
+    i.a = cond_slot
+    i.label = l
+    ir_emit(b.f, i)
+}
+
+fun lower_expr(b: *B, e: *Expr) -> u64 {
+    if e.kind == EX_INT {
+        let dst: u64 = ir_new_slot(b, e.type)
+        let m: *Ins = mk_ins(b.ar, IR_MOVI)
+        m.dst = dst
+        m.imm = e.ival
+        ir_emit(b.f, m)
+        return dst
+    }
+    if e.kind == EX_VAR {
+        let dst: u64 = ir_new_slot(b, e.type)
+        let l: *Ins = mk_ins(b.ar, IR_LOAD_LOCAL)
+        l.dst = dst
+        l.local = e.var_index
+        l.width = 8
+        ir_emit(b.f, l)
+        return dst
+    }
+    if e.kind == EX_STRLIT {
+        let dst: u64 = ir_new_slot(b, e.type)
+        let la: *Ins = mk_ins(b.ar, IR_LABEL_ADDR)
+        la.dst = dst
+        la.str_id = e.str_id
+        ir_emit(b.f, la)
+        return dst
+    }
+    if e.kind == EX_BIN {
+        let la: u64 = lower_expr(b, e.lhs)
+        let lb: u64 = lower_expr(b, e.rhs)
+        let dst: u64 = ir_new_slot(b, e.type)
+        let op: *Ins = mk_ins(b.ar, IR_BINOP)
+        op.dst = dst
+        op.a = la
+        op.b = lb
+        op.binop = e.op
+        op.width = 8
+        ir_emit(b.f, op)
+        return dst
+    }
+    if e.kind == EX_EQ { return lower_cmp(b, e, IR_CMPEQ) }
+    if e.kind == EX_NE { return lower_cmp(b, e, IR_CMPNE) }
+    if e.kind == EX_LT { return lower_cmp(b, e, IR_CMPLT) }
+    if e.kind == EX_LE { return lower_cmp(b, e, IR_CMPLE) }
+    if e.kind == EX_GT { return lower_cmp(b, e, IR_CMPGT) }
+    if e.kind == EX_GE { return lower_cmp(b, e, IR_CMPGE) }
+    if e.kind == EX_ADDR {
+        let dst2: u64 = ir_new_slot(b, e.type)
+        let ai: *Ins = mk_ins(b.ar, IR_ADDR_LOCAL)
+        ai.dst = dst2
+        let inner: *Expr = e.inner
+        ai.local = inner.var_index
+        ir_emit(b.f, ai)
+        return dst2
+    }
+    if e.kind == EX_DEREF {
+        let addr: u64 = lower_expr(b, e.inner)
+        let dst3: u64 = ir_new_slot(b, e.type)
+        let ld: *Ins = mk_ins(b.ar, IR_LOAD_MEM)
+        ld.dst = dst3
+        ld.a = addr
+        ld.width = 8
+        ir_emit(b.f, ld)
+        return dst3
+    }
+    if e.kind == EX_CALL {
+        let n: u64 = e.nargs
+        let src: **Expr = e.args
+        let arg_slots: *u64 = arena_take(b.ar, n * 8)
+        let i: u64 = 0
+        while i < n {
+            let ai2: *Expr = src[i]
+            arg_slots[i] = lower_expr(b, ai2)
+            i = i + 1
+        }
+        let dst4: u64 = ir_new_slot(b, e.type)
+        let ci: *Ins = mk_ins(b.ar, IR_CALL)
+        ci.dst = dst4
+        ci.callee_start = e.callee_start
+        ci.callee_len = e.callee_len
+        ci.args = arg_slots
+        ci.nargs = n
+        ir_emit(b.f, ci)
+        return dst4
+    }
+    return 0
+}
+
+fun lower_cmp(b: *B, e: *Expr, opk: u64) -> u64 {
+    let la: u64 = lower_expr(b, e.lhs)
+    let lb: u64 = lower_expr(b, e.rhs)
+    let dst: u64 = ir_new_slot(b, e.type)
+    let ci: *Ins = mk_ins(b.ar, opk)
+    ci.dst = dst
+    ci.a = la
+    ci.b = lb
+    ci.width = 8
+    ir_emit(b.f, ci)
+    return dst
+}
+
+fun lower_stmt(b: *B, s: *Stmt) {
+    if s.kind == ST_LET {
+        if s.init != nil {
+            let v: u64 = lower_expr(b, s.init)
+            let st: *Ins = mk_ins(b.ar, IR_STORE_LOCAL)
+            st.local = s.local_index
+            st.a = v
+            st.width = 8
+            ir_emit(b.f, st)
+        }
+        return
+    }
+    if s.kind == ST_ASSIGN {
+        if s.init != nil {
+            let v: u64 = lower_expr(b, s.init)
+            let st: *Ins = mk_ins(b.ar, IR_STORE_LOCAL)
+            st.local = s.local_index
+            st.a = v
+            st.width = 8
+            ir_emit(b.f, st)
+        }
+        return
+    }
+    if s.kind == ST_STORE {
+        let addr: u64 = lower_expr(b, s.expr)
+        let val: u64 = lower_expr(b, s.init)
+        let sm: *Ins = mk_ins(b.ar, IR_STORE_MEM)
+        sm.a = addr
+        sm.b = val
+        sm.width = 8
+        ir_emit(b.f, sm)
+        return
+    }
+    if s.kind == ST_RETURN {
+        let v: u64 = 0
+        if s.ret_val != nil {
+            v = lower_expr(b, s.ret_val)
+        } else {
+            v = ir_new_slot(b, nil)
+            let m: *Ins = mk_ins(b.ar, IR_MOVI)
+            m.dst = v
+            m.imm = 0
+            ir_emit(b.f, m)
+        }
+        let r: *Ins = mk_ins(b.ar, IR_RET)
+        r.a = v
+        ir_emit(b.f, r)
+        return
+    }
+    if s.kind == ST_EXPR {
+        if s.expr != nil { lower_expr(b, s.expr) }
+        return
+    }
+    if s.kind == ST_IF {
+        let c: u64 = lower_expr(b, s.cond)
+        if s.else_body == nil {
+            let l_end: u64 = ir_new_label(b)
+            ir_emit_jz(b, c, l_end)
+            lower_block(b, s.body)
+            ir_emit_label(b, l_end)
+            return
+        }
+        let l_else: u64 = ir_new_label(b)
+        let l_end2: u64 = ir_new_label(b)
+        ir_emit_jz(b, c, l_else)
+        lower_block(b, s.body)
+        ir_emit_jmp(b, l_end2)
+        ir_emit_label(b, l_else)
+        lower_block(b, s.else_body)
+        ir_emit_label(b, l_end2)
+        return
+    }
+    if s.kind == ST_WHILE {
+        let l_top: u64 = ir_new_label(b)
+        let l_end3: u64 = ir_new_label(b)
+        ir_emit_label(b, l_top)
+        let c2: u64 = lower_expr(b, s.cond)
+        ir_emit_jz(b, c2, l_end3)
+        let bs: *u64 = b.break_stack
+        bs[b.break_top] = l_end3
+        b.break_top = b.break_top + 1
+        lower_block(b, s.body)
+        b.break_top = b.break_top - 1
+        ir_emit_jmp(b, l_top)
+        ir_emit_label(b, l_end3)
+        return
+    }
+    if s.kind == ST_LOOP {
+        let l_top2: u64 = ir_new_label(b)
+        let l_end4: u64 = ir_new_label(b)
+        ir_emit_label(b, l_top2)
+        let bs2: *u64 = b.break_stack
+        bs2[b.break_top] = l_end4
+        b.break_top = b.break_top + 1
+        lower_block(b, s.body)
+        b.break_top = b.break_top - 1
+        ir_emit_jmp(b, l_top2)
+        ir_emit_label(b, l_end4)
+        return
+    }
+    if s.kind == ST_BREAK {
+        if b.break_top == 0 { io_exit(90) }
+        let bs3: *u64 = b.break_stack
+        let dst: u64 = bs3[b.break_top - 1]
+        ir_emit_jmp(b, dst)
+        return
+    }
+}
+
+fun lower_block(b: *B, head: *Stmt) {
+    let s: *Stmt = head
+    while s != nil {
+        lower_stmt(b, s)
+        s = s.next
+    }
+}
+
+fun lower_one_fn(ar: *Arena, sf: *Func) -> *IrFn {
+    let f: *IrFn = mk_ir_fn(ar, sf.name_start, sf.name_len)
+    f.nparams = sf.nparams
+    f.ret_type = sf.ret_type
+    let b: *B = mk_builder(ar, f)
+    lower_block(b, sf.body)
+    f.nslots = b.max_slot
+    return f
+}
+
+const NREGS: u64 = 7
+
+fun ir_count_ins(fn: *IrFn) -> u64 {
+    let n: u64 = 0
+    let it: *Ins = fn.head
+    while it != nil {
+        n = n + 1
+        it = it.next
+    }
+    return n
+}
+
+fun ir_has_dst(i: *Ins) -> u64 {
+    if i.op == IR_MOVI { return 1 }
+    if i.op == IR_LABEL_ADDR { return 1 }
+    if i.op == IR_ADDR_LOCAL { return 1 }
+    if i.op == IR_LOAD_LOCAL { return 1 }
+    if i.op == IR_LOAD_MEM { return 1 }
+    if i.op == IR_BINOP { return 1 }
+    if i.op == IR_CMPEQ { return 1 }
+    if i.op == IR_CMPNE { return 1 }
+    if i.op == IR_CMPLT { return 1 }
+    if i.op == IR_CMPLE { return 1 }
+    if i.op == IR_CMPGT { return 1 }
+    if i.op == IR_CMPGE { return 1 }
+    if i.op == IR_CALL { return 1 }
+    return 0
+}
+
+fun collect_uses(i: *Ins, uses: *u64) -> u64 {
+    if i.op == IR_STORE_LOCAL {
+        uses[0] = i.a
+        return 1
+    }
+    if i.op == IR_LOAD_MEM {
+        uses[0] = i.a
+        return 1
+    }
+    if i.op == IR_STORE_MEM {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_BINOP {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_CMPEQ {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_CMPNE {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_CMPLT {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_CMPLE {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_CMPGT {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_CMPGE {
+        uses[0] = i.a
+        uses[1] = i.b
+        return 2
+    }
+    if i.op == IR_JZ {
+        uses[0] = i.a
+        return 1
+    }
+    if i.op == IR_RET {
+        uses[0] = i.a
+        return 1
+    }
+    if i.op == IR_CALL {
+        let k: u64 = 0
+        let args: *u64 = i.args
+        while k < i.nargs {
+            uses[k] = args[k]
+            k = k + 1
+        }
+        return i.nargs
+    }
+    return 0
+}
+
+fun regalloc(ar: *Arena, fn: *IrFn) {
+    let n: u64 = ir_count_ins(fn)
+    let nslots: u64 = fn.nslots
+
+    let arr_bytes: u64 = n * 8
+    if arr_bytes == 0 { arr_bytes = 8 }
+    let arr: **Ins = arena_take(ar, arr_bytes)
+    let it: *Ins = fn.head
+    let idx: u64 = 0
+    while it != nil {
+        arr[idx] = it
+        idx = idx + 1
+        it = it.next
+    }
+
+    let ns_bytes: u64 = nslots * 8
+    if ns_bytes == 0 { ns_bytes = 8 }
+    let last_use: *u64 = arena_take(ar, ns_bytes)
+    let def_idx: *u64 = arena_take(ar, ns_bytes)
+    let cross: *u64 = arena_take(ar, ns_bytes)
+    let s: u64 = 0
+    while s < nslots {
+        last_use[s] = n
+        def_idx[s] = n
+        cross[s] = 0
+        s = s + 1
+    }
+
+    let call_ix_bytes: u64 = n * 8
+    if call_ix_bytes == 0 { call_ix_bytes = 8 }
+    let call_ix: *u64 = arena_take(ar, call_ix_bytes)
+    let ncalls: u64 = 0
+    let j: u64 = 0
+    while j < n {
+        if arr[j].op == IR_CALL {
+            call_ix[ncalls] = j
+            ncalls = ncalls + 1
+        }
+        j = j + 1
+    }
+
+    let uses: *u64 = arena_take(ar, 128)
+    j = n
+    while j > 0 {
+        j = j - 1
+        let nu: u64 = collect_uses(arr[j], uses)
+        let u: u64 = 0
+        while u < nu {
+            let sl: u64 = uses[u]
+            if last_use[sl] == n { last_use[sl] = j }
+            u = u + 1
+        }
+    }
+
+    j = 0
+    while j < n {
+        let ii: *Ins = arr[j]
+        if ir_has_dst(ii) != 0 {
+            let d: u64 = ii.dst
+            if def_idx[d] == n { def_idx[d] = j }
+        }
+        j = j + 1
+    }
+
+    s = 0
+    while s < nslots {
+        if def_idx[s] < n {
+            if last_use[s] < n {
+                let c: u64 = 0
+                while c < ncalls {
+                    let ci: u64 = call_ix[c]
+                    if ci > def_idx[s] {
+                        if ci < last_use[s] { cross[s] = 1 }
+                    }
+                    c = c + 1
+                }
+            }
+        }
+        s = s + 1
+    }
+
+    let reg_of: *u64 = arena_take(ar, ns_bytes)
+    s = 0
+    while s < nslots {
+        reg_of[s] = NREGS
+        s = s + 1
+    }
+    fn.reg_of = reg_of
+    fn.last_use = last_use
+
+    let nlocals: u64 = fn.nlocals
+    let is_free: *u64 = arena_take(ar, 64)
+    let r: u64 = 0
+    while r < NREGS {
+        is_free[r] = 1
+        r = r + 1
+    }
+
+    j = 0
+    while j < n {
+        let ii2: *Ins = arr[j]
+        if ir_has_dst(ii2) != 0 {
+            let d2: u64 = ii2.dst
+            if d2 >= nlocals {
+                if last_use[d2] < n {
+                    if cross[d2] == 0 {
+                        let rr: u64 = 0
+                        let found: u64 = NREGS
+                        while rr < NREGS {
+                            if is_free[rr] != 0 {
+                                if found == NREGS { found = rr }
+                            }
+                            rr = rr + 1
+                        }
+                        if found < NREGS {
+                            reg_of[d2] = found
+                            is_free[found] = 0
+                        }
+                    }
+                }
+            }
+        }
+        let nu2: u64 = collect_uses(ii2, uses)
+        let u2: u64 = 0
+        while u2 < nu2 {
+            let sl2: u64 = uses[u2]
+            if last_use[sl2] == j {
+                let rrr: u64 = reg_of[sl2]
+                if rrr < NREGS { is_free[rrr] = 1 }
+            }
+            u2 = u2 + 1
+        }
+        j = j + 1
+    }
+}
+
+fun finalize_frame(fn: *IrFn) {
+    let raw: u64 = fn.nslots * 8
+    let fb: u64 = raw + 15
+    fb = fb / 16
+    fb = fb * 16
+    fn.frame_bytes = fb
+}
+
+fun lower(ar: *Arena, prog: *Program) -> *IrFn {
+    let head: *IrFn = nil
+    let tail: *IrFn = nil
+    let sf: *Func = prog.funcs
+    while sf != nil {
+        let f: *IrFn = lower_one_fn(ar, sf)
+        regalloc(ar, f)
+        finalize_frame(f)
+        if head == nil {
+            head = f
+            tail = f
+        } else {
+            tail.next = f
+            tail = f
+        }
+        sf = sf.next
+    }
+    return head
+}

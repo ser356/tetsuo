@@ -1,0 +1,21 @@
+bss E2E_BUF: 4096
+bss E2E_STORAGE: 64
+
+fun main() -> u32 {
+    let ast_ar: *Arena = ast_init()
+    let ir_ar: *Arena = ir_init()
+
+    let src: str = 'fun main()->u64{return 42}'
+    let prog: *Program = parse(ast_ar, src.ptr, src.len)
+    let irhead: *IrFn = lower(ir_ar, prog)
+
+    let path: str = '/tmp/tt_stage1.s\0'
+    let fd: u64 = io_open_write(path.ptr)
+    if fd == 0 { return 90 }
+
+    let o: *Out = E2E_STORAGE
+    out_init(o, fd, E2E_BUF, 4096)
+    codegen(o, TGT_MACOS, prog, irhead)
+    io_close(fd)
+    return 0
+}

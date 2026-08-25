@@ -24,6 +24,8 @@ VEC_LIB=lib/vec.tt
 AST_LIB=lib/ast.tt
 LEXER_LIB=tests/lexer.tt
 PARSER_LIB=src/parser.tt
+IR_LIB=src/ir.tt
+CODEGEN_LIB=src/codegen.tt
 if [[ -f $IO_LIB && $INPUT != $IO_LIB ]]; then
   COMBINED=$BUILD/combined_macos.tt
   cat "$IO_LIB" > "$COMBINED"
@@ -33,6 +35,8 @@ if [[ -f $IO_LIB && $INPUT != $IO_LIB ]]; then
   [[ -f $AST_LIB && $INPUT != $AST_LIB ]] && cat "$AST_LIB" >> "$COMBINED"
   [[ -f $LEXER_LIB && $INPUT != $LEXER_LIB ]] && cat "$LEXER_LIB" >> "$COMBINED"
   [[ -f $PARSER_LIB && $INPUT != $PARSER_LIB ]] && cat "$PARSER_LIB" >> "$COMBINED"
+  [[ -f $IR_LIB && $INPUT != $IR_LIB ]] && cat "$IR_LIB" >> "$COMBINED"
+  [[ -f $CODEGEN_LIB && $INPUT != $CODEGEN_LIB ]] && cat "$CODEGEN_LIB" >> "$COMBINED"
   cat "$INPUT" >> "$COMBINED"
   "$COMPILER" --target=macos "$COMBINED" -o "$BASE.s"
 else

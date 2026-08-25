@@ -1,0 +1,43 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+    let b: *B = mk_builder(ar, fn)
+
+    let zero: *Expr = mk_expr(ar, EX_INT)
+    zero.ival = 0
+    let let_a: *Stmt = mk_stmt(ar, ST_LET)
+    let_a.local_index = 0
+    let_a.init = zero
+
+    let v0a: *Expr = mk_expr(ar, EX_VAR)
+    v0a.var_index = 0
+    let addr_a: *Expr = mk_expr(ar, EX_ADDR)
+    addr_a.inner = v0a
+    let seven: *Expr = mk_expr(ar, EX_INT)
+    seven.ival = 7
+    let store: *Stmt = mk_stmt(ar, ST_STORE)
+    store.expr = addr_a
+    store.init = seven
+
+    let v0b: *Expr = mk_expr(ar, EX_VAR)
+    v0b.var_index = 0
+    let addr_b: *Expr = mk_expr(ar, EX_ADDR)
+    addr_b.inner = v0b
+    let deref: *Expr = mk_expr(ar, EX_DEREF)
+    deref.inner = addr_b
+    let ret: *Stmt = mk_stmt(ar, ST_RETURN)
+    ret.ret_val = deref
+
+    let_a.next = store
+    store.next = ret
+
+    lower_block(b, let_a)
+
+    let cnt: u64 = 0
+    let it: *Ins = fn.head
+    while it != nil {
+        cnt = cnt + 1
+        it = it.next
+    }
+    return cnt
+}

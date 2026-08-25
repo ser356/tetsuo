@@ -1,0 +1,21 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+    let b: *B = mk_builder(ar, fn)
+
+    let five: *Expr = mk_expr(ar, EX_INT)
+    five.ival = 5
+
+    let s: *Stmt = mk_stmt(ar, ST_RETURN)
+    s.ret_val = five
+
+    lower_block(b, s)
+
+    let cnt: u64 = 0
+    let it: *Ins = fn.head
+    while it != nil {
+        cnt = cnt + 1
+        it = it.next
+    }
+    return cnt
+}

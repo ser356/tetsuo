@@ -1,0 +1,30 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let prog: *Program = mk_program(ar)
+
+    let s: *Expr = mk_expr(ar, EX_STRLIT)
+    s.str_id = 7
+    s.str_len = 4
+
+    let ret_stmt: *Stmt = mk_stmt(ar, ST_RETURN)
+    ret_stmt.ret_val = s
+
+    let sf: *Func = arena_take(ar, 56)
+    sf.name_start = 0
+    sf.name_len = 0
+    sf.params = nil
+    sf.nparams = 0
+    sf.ret_type = nil
+    sf.body = ret_stmt
+    sf.next = nil
+    prog.funcs = sf
+
+    let irhead: *IrFn = lower(ar, prog)
+
+    let it: *Ins = irhead.head
+    while it != nil {
+        if it.op == IR_LABEL_ADDR { return it.str_id }
+        it = it.next
+    }
+    return 0
+}

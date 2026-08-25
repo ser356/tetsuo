@@ -1,0 +1,14 @@
+bss CG_OUT: 128
+bss CG_STORAGE: 64
+bss CG_EXPECT: 64
+
+fun main() -> u32 {
+    let o: *Out = CG_STORAGE
+    out_init(o, 0, CG_OUT, 128)
+    emit_movi(o, 9, 42)
+    let exp: str = '    movz    x9, #0x002a\n'
+    let n: u64 = exp.len
+    mem_copy(CG_EXPECT, exp.ptr, n)
+    if bytes_eq(CG_OUT, CG_EXPECT, n) == 1 { return n }
+    return 0
+}

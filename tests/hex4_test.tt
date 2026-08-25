@@ -1,0 +1,14 @@
+bss HEX_OUT: 32
+bss HEX_EXPECT: 8
+bss HEX_STORAGE: 64
+
+fun main() -> u32 {
+    let o: *Out = HEX_STORAGE
+    out_init(o, 0, HEX_OUT, 32)
+    out_hex4(o, 42)
+    HEX_EXPECT[0] = 48
+    HEX_EXPECT[1] = 48
+    HEX_EXPECT[2] = 50
+    HEX_EXPECT[3] = 97
+    return bytes_eq(HEX_OUT, HEX_EXPECT, 4) * 4
+}

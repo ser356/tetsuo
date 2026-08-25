@@ -1,0 +1,13 @@
+bss O_STORAGE: 64
+bss O_BUF: 512
+
+fun main() -> u32 {
+    let o: *Out = O_STORAGE
+    out_init(o, 1, O_BUF, 512)
+    let s2: str = 'AAAA'
+    out_bytes(o, s2.ptr, s2.len)
+    let s3: str = 'BBBB'
+    out_bytes(o, s3.ptr, s3.len)
+    out_flush(o)
+    return 0
+}

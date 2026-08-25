@@ -75,10 +75,135 @@ struct Expr {
     callee_len:   u64,
     str_bytes:    *u8,
     str_len:      u64,
+    var_index:    u64,
+    str_id:       u64,
 }
 
 bss LX_STATE: 32
 bss TOK_CUR:  40
+bss STR_HEAD: 8
+bss STR_COUNT: 8
+bss STR_TAIL: 8
+
+struct StrLit {
+    id:    u64,
+    bytes: *u8,
+    slen:  u64,
+    next:  *StrLit,
+}
+
+struct Stmt {
+    kind:        u64,
+    name_start:  u64,
+    name_len:    u64,
+    type:        *Type,
+    init:        *Expr,
+    cond:        *Expr,
+    body:        *Stmt,
+    else_body:   *Stmt,
+    ret_val:     *Expr,
+    expr:        *Expr,
+    next:        *Stmt,
+    local_index: u64,
+}
+
+struct Param {
+    name_start: u64,
+    name_len:   u64,
+    type:       *Type,
+    next:       *Param,
+}
+
+struct Local {
+    name_start: u64,
+    name_len:   u64,
+    type:       *Type,
+}
+
+struct Func {
+    name_start: u64,
+    name_len:   u64,
+    params:     *Param,
+    nparams:    u64,
+    ret_type:   *Type,
+    body:       *Stmt,
+    next:       *Func,
+    locals:     **Local,
+    nlocals:    u64,
+}
+
+bss CUR_FUNC: 8
+
+fun cur_func_set(f: *Func) {
+    let p: **Func = CUR_FUNC
+    p[0] = f
+}
+
+fun cur_func() -> *Func {
+    let p: **Func = CUR_FUNC
+    return p[0]
+}
+
+fun bytes_eq_off(a_off: u64, a_len: u64, b_off: u64, b_len: u64) -> u32 {
+    if a_len != b_len { return 0 }
+    let lx: *Lexer = LX_STATE
+    return bytes_eq(lx.src + a_off, lx.src + b_off, a_len)
+}
+
+fun add_local(ar: *Arena, f: *Func, ns: u64, nl: u64, ty: *Type) -> u64 {
+    let idx: u64 = f.nlocals
+    let loc: *Local = arena_take(ar, 24)
+    loc.name_start = ns
+    loc.name_len = nl
+    loc.type = ty
+    let arr: **Local = f.locals
+    arr[idx] = loc
+    f.nlocals = idx + 1
+    return idx
+}
+
+fun lookup_local(f: *Func, ns: u64, nl: u64) -> u64 {
+    let n: u64 = f.nlocals
+    let i: u64 = n
+    while i > 0 {
+        i = i - 1
+        let arr: **Local = f.locals
+        let loc: *Local = arr[i]
+        if bytes_eq_off(loc.name_start, loc.name_len, ns, nl) == 1 { return i }
+    }
+    return n
+}
+
+fun str_table_init() {
+    let h: **StrLit = STR_HEAD
+    let c: *u64 = STR_COUNT
+    let ta: **StrLit = STR_TAIL
+    h[0] = nil
+    c[0] = 0
+    ta[0] = nil
+}
+
+fun str_table_add(ar: *Arena, bytes: *u8, slen: u64) -> u64 {
+    let c: *u64 = STR_COUNT
+    let id: u64 = c[0]
+    let s: *StrLit = arena_take(ar, 32)
+    s.id = id
+    s.bytes = bytes
+    s.slen = slen
+    s.next = nil
+    let h: **StrLit = STR_HEAD
+    let ta: **StrLit = STR_TAIL
+    if h[0] == nil {
+        h[0] = s
+        ta[0] = s
+    } else {
+        let t: *StrLit = ta[0]
+        t.next = s
+        ta[0] = s
+    }
+    c[0] = id + 1
+    return id
+}
 
 fun ps_init(src: *u8, srclen: u64) {
     let lx: *Lexer = LX_STATE
@@ -99,7 +224,7 @@ fun ps_kind() -> u32 {
 }
 
 fun mk_expr(ar: *Arena, kind: u64) -> *Expr {
-    let e: *Expr = arena_take(ar, 120)
+    let e: *Expr = arena_take(ar, 136)
     e.kind = kind
     e.type = nil
     e.ival = 0
@@ -115,6 +240,8 @@ fun mk_expr(ar: *Arena, kind: u64) -> *Expr {
     e.callee_len = 0
     e.str_bytes = nil
     e.str_len = 0
+    e.var_index = 0
+    e.str_id = 0
     return e
 }
 
@@ -170,10 +297,20 @@ fun parse_primary(ar: *Arena) -> *Expr {
         let e: *Expr = mk_expr(ar, EX_VAR)
         e.var_start = name_start
         e.var_len = name_len
+        let fn: *Func = cur_func()
+        if fn != nil {
+            let idx: u64 = lookup_local(fn, name_start, name_len)
+            if idx < fn.nlocals { e.var_index = idx }
+        }
         return e
     }
     if k == TK_STRING {
+        let t: *Tok = TOK_CUR
+        let lx: *Lexer = LX_STATE
         let e: *Expr = mk_expr(ar, EX_STRLIT)
+        e.str_bytes = lx.src + t.start + 1
+        e.str_len = t.tlen - 2
+        e.str_id = str_table_add(ar, e.str_bytes, e.str_len)
         ps_advance()
         return e
     }
@@ -286,22 +423,8 @@ const ST_BREAK:  u64 = 6
 const ST_RETURN: u64 = 7
 const ST_EXPR:   u64 = 8
 
-struct Stmt {
-    kind:       u64,
-    name_start: u64,
-    name_len:   u64,
-    type:       *Type,
-    init:       *Expr,
-    cond:       *Expr,
-    body:       *Stmt,
-    else_body:  *Stmt,
-    ret_val:    *Expr,
-    expr:       *Expr,
-    next:       *Stmt,
-}
-
 fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
-    let s: *Stmt = arena_take(ar, 88)
+    let s: *Stmt = arena_take(ar, 96)
     s.kind = kind
     s.name_start = 0
     s.name_len = 0
@@ -313,6 +436,7 @@ fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
     s.ret_val = nil
     s.expr = nil
     s.next = nil
+    s.local_index = 0
     return s
 }
 
@@ -384,6 +508,10 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
         if ps_accept(TK_EQ) == 1 {
             s.init = parse_expr(ar, 1)
         }
+        let fn: *Func = cur_func()
+        if fn != nil {
+            s.local_index = add_local(ar, fn, s.name_start, s.name_len, s.type)
+        }
         return s
     }
     if k == TK_RETURN {
@@ -434,28 +562,12 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
         let s: *Stmt = mk_stmt(ar, ST_ASSIGN)
         s.expr = e
         s.init = rhs
+        if e.kind == EX_VAR { s.local_index = e.var_index }
         return s
     }
     let s: *Stmt = mk_stmt(ar, ST_EXPR)
     s.expr = e
     return s
-}
-
-struct Param {
-    name_start: u64,
-    name_len:   u64,
-    type:       *Type,
-    next:       *Param,
-}
-
-struct Func {
-    name_start: u64,
-    name_len:   u64,
-    params:     *Param,
-    nparams:    u64,
-    ret_type:   *Type,
-    body:       *Stmt,
-    next:       *Func,
 }
 
 struct ConstItem {
@@ -493,14 +605,18 @@ struct Program {
     consts:  *ConstItem,
     bsses:   *BssItem,
     structs: *StructDecl,
+    strs:    *StrLit,
+    nstrs:   u64,
 }
 
 fun mk_program(ar: *Arena) -> *Program {
-    let p: *Program = arena_take(ar, 32)
+    let p: *Program = arena_take(ar, 48)
     p.funcs = nil
     p.consts = nil
     p.bsses = nil
     p.structs = nil
+    p.strs = nil
+    p.nstrs = 0
     return p
 }
 
@@ -508,7 +624,7 @@ fun parse_fun(ar: *Arena) -> *Func {
     ps_expect(TK_FUN)
     if ps_kind() != TK_IDENT { io_exit(84) }
     let t: *Tok = TOK_CUR
-    let f: *Func = arena_take(ar, 56)
+    let f: *Func = arena_take(ar, 72)
     f.name_start = t.start
     f.name_len = t.tlen
     f.params = nil
@@ -516,6 +632,9 @@ fun parse_fun(ar: *Arena) -> *Func {
     f.ret_type = nil
     f.body = nil
     f.next = nil
+    f.locals = arena_take(ar, 2048)
+    f.nlocals = 0
+    cur_func_set(f)
     ps_advance()
     ps_expect(TK_LPAREN)
     let phead: *Param = nil
@@ -533,6 +652,7 @@ fun parse_fun(ar: *Arena) -> *Func {
         if phead == nil { phead = p } else { ptail.next = p }
         ptail = p
         f.nparams = f.nparams + 1
+        add_local(ar, f, p.name_start, p.name_len, p.type)
         if ps_kind() != TK_RPAREN { ps_expect(TK_COMMA) }
     }
     ps_expect(TK_RPAREN)
@@ -542,6 +662,7 @@ fun parse_fun(ar: *Arena) -> *Func {
         f.ret_type = parse_type(ar)
     }
     f.body = parse_block(ar)
+    cur_func_set(nil)
     return f
 }
 
@@ -614,6 +735,7 @@ fun parse_struct_decl(ar: *Arena) -> *StructDecl {
 
 fun parse(ar: *Arena, src: *u8, srclen: u64) -> *Program {
     ps_init(src, srclen)
+    str_table_init()
     let p: *Program = mk_program(ar)
     let ftail: *Func = nil
     let ctail: *ConstItem = nil
@@ -644,5 +766,9 @@ fun parse(ar: *Arena, src: *u8, srclen: u64) -> *Program {
             stail = sd
         }
     }
+    let hh: **StrLit = STR_HEAD
+    let cc: *u64 = STR_COUNT
+    p.strs = hh[0]
+    p.nstrs = cc[0]
     return p
 }

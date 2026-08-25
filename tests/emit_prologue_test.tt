@@ -1,0 +1,30 @@
+bss NAME_BUF: 8
+bss FN_BUF: 128
+bss CG_OUT: 512
+bss CG_STORAGE: 64
+bss CG_EXPECT: 512
+
+fun main() -> u32 {
+    NAME_BUF[0] = 109
+    NAME_BUF[1] = 97
+    NAME_BUF[2] = 105
+    NAME_BUF[3] = 110
+    let lx: *Lexer = LX_STATE
+    lx.src = NAME_BUF
+    let fn: *IrFn = FN_BUF
+    fn.name_start = 0
+    fn.name_len = 4
+    fn.frame_bytes = 16
+    set_target(TGT_MACOS)
+    let o: *Out = CG_STORAGE
+    out_init(o, 0, CG_OUT, 512)
+    emit_prologue(o, fn)
+    emit_epilogue(o, fn, 0)
+    let p1: str = '\n    .globl   _main\n_main:\n    stp     x29, x30, [sp, #-16]!\n    mov     x29, sp\n    sub     sp, sp, #16\n'
+    let p2: str = '.L0:\n    add     sp, sp, #16\n    ldp     x29, x30, [sp], #16\n    ret\n'
+    mem_copy(CG_EXPECT, p1.ptr, p1.len)
+    mem_copy(CG_EXPECT + p1.len, p2.ptr, p2.len)
+    let n: u64 = p1.len + p2.len
+    if bytes_eq(CG_OUT, CG_EXPECT, n) == 1 { return n }
+    return 0
+}

@@ -1,0 +1,24 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+    let b: *B = mk_builder(ar, fn)
+
+    let zero: *Expr = mk_expr(ar, EX_INT)
+    zero.ival = 0
+
+    let brk: *Stmt = mk_stmt(ar, ST_BREAK)
+
+    let wh: *Stmt = mk_stmt(ar, ST_WHILE)
+    wh.cond = zero
+    wh.body = brk
+
+    lower_block(b, wh)
+
+    let cnt: u64 = 0
+    let it: *Ins = fn.head
+    while it != nil {
+        cnt = cnt + 1
+        it = it.next
+    }
+    return cnt
+}

@@ -1,0 +1,19 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+
+    let a: *Ins = mk_ins(ar, IR_MOVI)
+    ir_emit(fn, a)
+    let b: *Ins = mk_ins(ar, IR_MOVI)
+    ir_emit(fn, b)
+    let c: *Ins = mk_ins(ar, IR_RET)
+    ir_emit(fn, c)
+
+    let cnt: u64 = 0
+    let it: *Ins = fn.head
+    while it != nil {
+        cnt = cnt + 1
+        it = it.next
+    }
+    return cnt
+}

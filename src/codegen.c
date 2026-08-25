@@ -346,6 +346,7 @@ void codegen(FILE *out, Target tgt, Program *prog, IrFn *funcs) {
             for (size_t k = 0; k < s->len; k++) {
                 fprintf(out, "    .byte   0x%02x\n", (unsigned char)s->bytes[k]);
             }
+            fprintf(out, "    .byte   0x00\n");
         }
     }
 

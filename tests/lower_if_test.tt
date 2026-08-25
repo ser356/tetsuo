@@ -1,0 +1,32 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+    let b: *B = mk_builder(ar, fn)
+
+    let one: *Expr = mk_expr(ar, EX_INT)
+    one.ival = 1
+    let five: *Expr = mk_expr(ar, EX_INT)
+    five.ival = 5
+    let six: *Expr = mk_expr(ar, EX_INT)
+    six.ival = 6
+
+    let ret_then: *Stmt = mk_stmt(ar, ST_RETURN)
+    ret_then.ret_val = five
+    let ret_else: *Stmt = mk_stmt(ar, ST_RETURN)
+    ret_else.ret_val = six
+
+    let if_stmt: *Stmt = mk_stmt(ar, ST_IF)
+    if_stmt.cond = one
+    if_stmt.body = ret_then
+    if_stmt.else_body = ret_else
+
+    lower_block(b, if_stmt)
+
+    let cnt: u64 = 0
+    let it: *Ins = fn.head
+    while it != nil {
+        cnt = cnt + 1
+        it = it.next
+    }
+    return cnt
+}

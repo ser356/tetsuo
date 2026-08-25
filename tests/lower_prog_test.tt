@@ -1,0 +1,29 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let prog: *Program = mk_program(ar)
+
+    let ret42: *Expr = mk_expr(ar, EX_INT)
+    ret42.ival = 42
+    let ret_stmt: *Stmt = mk_stmt(ar, ST_RETURN)
+    ret_stmt.ret_val = ret42
+
+    let sf: *Func = arena_take(ar, 56)
+    sf.name_start = 0
+    sf.name_len = 0
+    sf.params = nil
+    sf.nparams = 0
+    sf.ret_type = nil
+    sf.body = ret_stmt
+    sf.next = nil
+    prog.funcs = sf
+
+    let irhead: *IrFn = lower(ar, prog)
+
+    let cnt: u64 = 0
+    let it: *Ins = irhead.head
+    while it != nil {
+        cnt = cnt + 1
+        it = it.next
+    }
+    return cnt
+}

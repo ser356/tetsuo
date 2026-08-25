@@ -1,0 +1,16 @@
+fun main() -> u32 {
+    let ast_ar: *Arena = ast_init()
+    let ir_ar: *Arena = ir_init()
+
+    let src: str = 'fun main()->u64{let a:u64=1;let b:u64=2;return b}'
+
+    let prog: *Program = parse(ast_ar, src.ptr, src.len)
+    let irhead: *IrFn = lower(ir_ar, prog)
+
+    let it: *Ins = irhead.head
+    while it != nil {
+        if it.op == IR_LOAD_LOCAL { return it.local }
+        it = it.next
+    }
+    return 99
+}

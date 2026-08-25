@@ -1,0 +1,38 @@
+bss CGI_OUT: 128
+bss CGI_STORAGE: 64
+bss CGI_EXPECT: 128
+bss CGI_REGS: 64
+bss CGI_FN_STORE: 112
+
+fun main() -> u32 {
+    let o: *Out = CGI_STORAGE
+    out_init(o, 0, CGI_OUT, 128)
+
+    let ar: *Arena = ir_init()
+
+    let fn: *IrFn = CGI_FN_STORE
+    let ro: *u64 = CGI_REGS
+    ro[0] = 0
+    fn.reg_of = ro
+    fn.frame_bytes = 16
+    fn.ret_type = nil
+
+    let mi: *Ins = mk_ins(ar, IR_MOVI)
+    mi.dst = 0
+    mi.imm = 99
+    mi.width = 8
+
+    let ri: *Ins = mk_ins(ar, IR_RET)
+    ri.a = 0
+
+    emit_instr(o, fn, mi, 7)
+    emit_instr(o, fn, ri, 7)
+
+    let exp: str = '    movz    x9, #0x0063\n    mov     x0, x9\n    b       .L7\n'
+    let n: u64 = exp.len
+    mem_copy(CGI_EXPECT, exp.ptr, n)
+    if bytes_eq(CGI_OUT, CGI_EXPECT, n) == 1 {
+        if o.pos == n { return n }
+    }
+    return 0
+}

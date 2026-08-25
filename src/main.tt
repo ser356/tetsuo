@@ -1,0 +1,39 @@
+bss SRC_BUF: 262144
+bss OUT_BUF: 65536
+bss OUT_STORAGE: 64
+
+fun read_all(path: *u8, buf: *u8, cap: u64) -> u64 {
+    let fd: u64 = io_open_read(path)
+    if fd == 0 { return 0 }
+    let total: u64 = 0
+    loop {
+        let n: u64 = io_read(fd, buf + total, cap - total)
+        if n == 0 { break }
+        total = total + n
+    }
+    io_close(fd)
+    return total
+}
+
+fun main(argc: u64, argv: **u8) -> u32 {
+    if argc < 4 { return 2 }
+    let input: *u8 = argv[argc - 3]
+    let output: *u8 = argv[argc - 1]
+
+    let n: u64 = read_all(input, SRC_BUF, 262144)
+    if n == 0 { return 3 }
+
+    let ast_ar: *Arena = ast_init()
+    let ir_ar: *Arena = ir_init()
+    let prog: *Program = parse(ast_ar, SRC_BUF, n)
+    let irhead: *IrFn = lower(ir_ar, prog)
+
+    let fd: u64 = io_open_write(output)
+    if fd == 0 { return 4 }
+
+    let o: *Out = OUT_STORAGE
+    out_init(o, fd, OUT_BUF, 65536)
+    codegen(o, TGT_MACOS, prog, irhead)
+    io_close(fd)
+    return 0
+}

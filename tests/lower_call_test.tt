@@ -1,0 +1,29 @@
+fun main() -> u32 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+    let b: *B = mk_builder(ar, fn)
+
+    let three: *Expr = mk_expr(ar, EX_INT)
+    three.ival = 3
+
+    let call: *Expr = mk_expr(ar, EX_CALL)
+    call.callee_start = 0
+    call.callee_len = 3
+    call.nargs = 1
+    let args: **Expr = arena_take(ar, 8)
+    args[0] = three
+    call.args = args
+
+    let stmt: *Stmt = mk_stmt(ar, ST_EXPR)
+    stmt.expr = call
+
+    lower_block(b, stmt)
+
+    let cnt: u64 = 0
+    let it: *Ins = fn.head
+    while it != nil {
+        cnt = cnt + 1
+        it = it.next
+    }
+    return cnt
+}
