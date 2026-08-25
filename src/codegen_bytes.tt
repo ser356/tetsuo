@@ -1,0 +1,722 @@
+// Codegen a bytes ARM64 (hito 24.e): emite instrucciones codificadas (4 bytes
+// cada una) en vez de texto .s, reutilizando los encoders de asm.tt. Los saltos
+// se resuelven con una tabla de labels + lista de fixups (equivalente a dos
+// pasadas: emitir con placeholders, luego parchear los desplazamientos).
+//
+// El cuerpo emitido se compone de:  _tt_start (bl _main; exit) ++ funciones.
+// El resultado (CB, CB_POS) lo empaqueta emit_macho_code (mas abajo) en un
+// __TEXT ejecutable + firmado, con los literales de cadena colocados tras el
+// codigo y sus adrp/add reubicados contra las direcciones virtuales finales.
+//
+// Cobertura: prologo/epilogo, params, MOVI, locals (x/w/b), addr_local,
+// load/store mem, todos los binops (incl. shifts), comparaciones+cset, llamadas
+// (bl resuelto por offset), recursion, syscall, control de flujo (jmp/jz/label)
+// y literales de cadena via adrp+add en __cstring.
+// Pendiente (soportado en la ruta textual codegen.tt): bss en __DATA,__bss; los
+// hooks de fixup FX_ADRPB/FX_PGOFB estan cableados pero su resolucion (que
+// requiere un segmento __DATA escribible) queda para 24.g.
+//
+// Registros: reg_of[slot] < NREGS -> fisico x(r+9); scratch x16/x17; retorno x0.
+
+bss CB: 262144
+bss CB_POS: 8
+bss CG_LBL: 262144      // label id -> offset de byte en CB (u64)
+bss CG_FNOFF: 8192      // indice de funcion -> offset de entrada
+bss CG_FIX: 393216      // fixups: (pos, kind, target) x u64
+bss CG_FIXN: 8
+bss CG_STROFF: 65536    // str_id -> offset de byte del literal en CB
+bss CG_ENTRY: 8         // offset de _tt_start (entry)
+
+// kinds de fixup
+const FX_B: u64    = 0   // b   .Llabel     (imm26)
+const FX_CBZ: u64  = 1   // cbz w, .Llabel  (imm19)
+const FX_BL: u64   = 2   // bl  funcindex   (imm26)
+const FX_ADRP: u64 = 3   // adrp de literal str_id (pagina)
+const FX_PGOF: u64 = 4   // add pageoff de literal str_id
+const FX_ADRPB: u64 = 5  // adrp de bss (extern) por nombre
+const FX_PGOFB: u64 = 6  // add pageoff de bss por nombre
+
+fun cb_pos() -> u64 {
+    let p: *u64 = CB_POS
+    return p[0]
+}
+
+fun cb_set(v: u64) {
+    let p: *u64 = CB_POS
+    p[0] = v
+}
+
+fun cb_word(w: u64) {
+    let cb: *u8 = CB
+    let c: u64 = cb_pos()
+    cb[c + 0] = w & 255
+    cb[c + 1] = (w >> 8) & 255
+    cb[c + 2] = (w >> 16) & 255
+    cb[c + 3] = (w >> 24) & 255
+    cb_set(c + 4)
+}
+
+fun lbl_set(id: u64, off: u64) {
+    let p: *u64 = CG_LBL
+    p[id] = off
+}
+
+fun lbl_get(id: u64) -> u64 {
+    let p: *u64 = CG_LBL
+    return p[id]
+}
+
+fun fnoff_set(idx: u64, off: u64) {
+    let p: *u64 = CG_FNOFF
+    p[idx] = off
+}
+
+fun fnoff_get(idx: u64) -> u64 {
+    let p: *u64 = CG_FNOFF
+    return p[idx]
+}
+
+fun fix_add(pos: u64, kind: u64, target: u64) {
+    let n: *u64 = CG_FIXN
+    let base: u64 = n[0]
+    let f: *u64 = CG_FIX
+    f[base * 3 + 0] = pos
+    f[base * 3 + 1] = kind
+    f[base * 3 + 2] = target
+    n[0] = base + 1
+}
+
+fun w32(enc: u64) -> u64 {
+    return enc & 2147483647
+}
+
+// --- primitivas de emision ---
+
+fun b_movi(rd: u64, imm: u64) {
+    if imm == 0 {
+        cb_word(enc_movz(rd, 0, 0))
+        return
+    }
+    let g0: u64 = imm & 65535
+    let g1: u64 = (imm >> 16) & 65535
+    let g2: u64 = (imm >> 32) & 65535
+    let g3: u64 = (imm >> 48) & 65535
+    let first: u64 = 1
+    if g0 != 0 {
+        cb_word(enc_movz(rd, g0, 0))
+        first = 0
+    }
+    if g1 != 0 {
+        if first == 1 { cb_word(enc_movz(rd, g1, 1))  first = 0 }
+        else { cb_word(enc_movk(rd, g1, 1)) }
+    }
+    if g2 != 0 {
+        if first == 1 { cb_word(enc_movz(rd, g2, 2))  first = 0 }
+        else { cb_word(enc_movk(rd, g2, 2)) }
+    }
+    if g3 != 0 {
+        if first == 1 { cb_word(enc_movz(rd, g3, 3))  first = 0 }
+        else { cb_word(enc_movk(rd, g3, 3)) }
+    }
+}
+
+fun b_mov_x(rd: u64, rs: u64) {
+    cb_word(enc_mov_reg(rd, rs))
+}
+
+fun b_mov_w(rd: u64, rs: u64) {
+    cb_word(w32(enc_mov_reg(rd, rs)))
+}
+
+fun b_ldr_x(rt: u64, off: u64) {
+    cb_word(enc_ldr_x(rt, 31, off / 8))
+}
+
+fun b_str_x(rt: u64, off: u64) {
+    cb_word(enc_str_x(rt, 31, off / 8))
+}
+
+fun b_ldr_w(rt: u64, off: u64) {
+    cb_word(enc_ldr_w(rt, 31, off / 4))
+}
+
+fun b_str_w(rt: u64, off: u64) {
+    cb_word(enc_str_w(rt, 31, off / 4))
+}
+
+fun b_ldrb(rt: u64, off: u64) {
+    cb_word(enc_ldrb(rt, 31, off))
+}
+
+fun b_strb(rt: u64, off: u64) {
+    cb_word(enc_strb(rt, 31, off))
+}
+
+// --- helpers de registro/slot (espejo de codegen.tt) ---
+
+fun cgb_dst_x(fn: *IrFn, slot: u64) -> u64 {
+    let ro: *u64 = fn.reg_of
+    let r: u64 = ro[slot]
+    if r < NREGS { return r + 9 }
+    return 16
+}
+
+fun cgb_spill(fn: *IrFn, slot: u64, xreg: u64) {
+    let ro: *u64 = fn.reg_of
+    if ro[slot] < NREGS { return }
+    b_str_x(xreg, slot * 8)
+}
+
+fun cgb_src_x(fn: *IrFn, slot: u64, scratch: u64) -> u64 {
+    let ro: *u64 = fn.reg_of
+    let r: u64 = ro[slot]
+    if r < NREGS { return r + 9 }
+    b_ldr_x(scratch, slot * 8)
+    return scratch
+}
+
+fun cgb_src_w(fn: *IrFn, slot: u64, scratch: u64) -> u64 {
+    let ro: *u64 = fn.reg_of
+    let r: u64 = ro[slot]
+    if r < NREGS { return r + 9 }
+    b_ldr_w(scratch, slot * 8)
+    return scratch
+}
+
+fun cgb_load_slot_x(fn: *IrFn, slot: u64, dx: u64) {
+    let ro: *u64 = fn.reg_of
+    let r: u64 = ro[slot]
+    if r < NREGS { b_mov_x(dx, r + 9)  return }
+    b_ldr_x(dx, slot * 8)
+}
+
+// --- ALU: enc de 64 bits, o su version de 32 bits (bit 31 a 0) ---
+
+fun cgb_alu(binop: u64, rd: u64, ra: u64, rb: u64, wide: u64) {
+    let e: u64 = 0
+    if binop == OP_ADD { e = enc_add_reg(rd, ra, rb) }
+    if binop == OP_SUB { e = enc_sub_reg(rd, ra, rb) }
+    if binop == OP_MUL { e = enc_mul(rd, ra, rb) }
+    if binop == OP_DIV { e = enc_udiv(rd, ra, rb) }
+    if binop == OP_AND { e = enc_and(rd, ra, rb) }
+    if binop == OP_OR  { e = enc_orr(rd, ra, rb) }
+    if binop == OP_XOR { e = enc_eor(rd, ra, rb) }
+    if binop == OP_SHL { e = enc_lslv(rd, ra, rb) }
+    if binop == OP_SHR { e = enc_lsrv(rd, ra, rb) }
+    if wide == 1 { cb_word(e) } else { cb_word(w32(e)) }
+}
+
+// invcond por codigo de comparacion (eq,ne,lo,ls,hi,hs)
+fun cgb_invcond(cc: u64) -> u64 {
+    if cc == 0 { return 1 }   // eq -> inv ne
+    if cc == 1 { return 0 }   // ne -> inv eq
+    if cc == 2 { return 2 }   // lo -> inv hs
+    if cc == 3 { return 8 }   // ls -> inv hi
+    if cc == 4 { return 9 }   // hi -> inv ls
+    return 3                  // hs -> inv lo
+}
+
+// --- emision por instruccion IR ---
+
+fun cgb_i_movi(fn: *IrFn, i: *Ins) {
+    let xd: u64 = cgb_dst_x(fn, i.dst)
+    b_movi(xd, i.imm)
+    cgb_spill(fn, i.dst, xd)
+}
+
+fun cgb_i_addr_local(fn: *IrFn, i: *Ins) {
+    let xd: u64 = cgb_dst_x(fn, i.dst)
+    cb_word(enc_add_imm(xd, 31, i.local * 8))
+    cgb_spill(fn, i.dst, xd)
+}
+
+fun cgb_i_load_local(fn: *IrFn, i: *Ins) {
+    let xd: u64 = cgb_dst_x(fn, i.dst)
+    if i.width == 1 {
+        b_ldrb(xd, i.local * 8)
+    } else if i.width == 4 {
+        b_ldr_w(xd, i.local * 8)
+    } else {
+        b_ldr_x(xd, i.local * 8)
+    }
+    cgb_spill(fn, i.dst, xd)
+}
+
+fun cgb_i_store_local(fn: *IrFn, i: *Ins) {
+    let ro: *u64 = fn.reg_of
+    let r: u64 = ro[i.a]
+    let sreg: u64 = 16
+    if r < NREGS { sreg = r + 9 }
+    else { b_ldr_x(16, i.a * 8) }
+    if i.width == 1 {
+        b_strb(sreg, i.local * 8)
+    } else if i.width == 4 {
+        b_str_w(sreg, i.local * 8)
+    } else {
+        b_str_x(sreg, i.local * 8)
+    }
+}
+
+fun cgb_i_load_mem(fn: *IrFn, i: *Ins) {
+    let addr: u64 = cgb_src_x(fn, i.a, 17)
+    let xd: u64 = cgb_dst_x(fn, i.dst)
+    if i.width == 1 {
+        cb_word(enc_ldrb(xd, addr, 0))
+    } else if i.width == 4 {
+        cb_word(enc_ldr_w(xd, addr, 0))
+    } else {
+        cb_word(enc_ldr_x(xd, addr, 0))
+    }
+    cgb_spill(fn, i.dst, xd)
+}
+
+fun cgb_i_store_mem(fn: *IrFn, i: *Ins) {
+    let addr: u64 = cgb_src_x(fn, i.a, 17)
+    let ro: *u64 = fn.reg_of
+    let r: u64 = ro[i.b]
+    let val: u64 = 16
+    if r < NREGS { val = r + 9 }
+    else { b_ldr_x(16, i.b * 8) }
+    if i.width == 1 {
+        cb_word(enc_strb(val, addr, 0))
+    } else if i.width == 4 {
+        cb_word(enc_str_w(val, addr, 0))
+    } else {
+        cb_word(enc_str_x(val, addr, 0))
+    }
+}
+
+fun cgb_i_binop(fn: *IrFn, i: *Ins) {
+    let wide: u64 = 0
+    if i.width == 8 { wide = 1 }
+    let ra: u64 = 0
+    let rb: u64 = 0
+    if wide == 1 {
+        ra = cgb_src_x(fn, i.a, 16)
+        rb = cgb_src_x(fn, i.b, 17)
+    } else {
+        ra = cgb_src_w(fn, i.a, 16)
+        rb = cgb_src_w(fn, i.b, 17)
+    }
+    let rd: u64 = cgb_dst_x(fn, i.dst)
+    cgb_alu(i.binop, rd, ra, rb, wide)
+    cgb_spill(fn, i.dst, rd)
+}
+
+fun cgb_i_cmp(fn: *IrFn, i: *Ins, cc: u64) {
+    let wide: u64 = 0
+    if i.width == 8 { wide = 1 }
+    let ra: u64 = 0
+    let rb: u64 = 0
+    if wide == 1 {
+        ra = cgb_src_x(fn, i.a, 16)
+        rb = cgb_src_x(fn, i.b, 17)
+    } else {
+        ra = cgb_src_w(fn, i.a, 16)
+        rb = cgb_src_w(fn, i.b, 17)
+    }
+    let rd: u64 = cgb_dst_x(fn, i.dst)
+    if wide == 1 { cb_word(enc_cmp_reg(ra, rb)) }
+    else { cb_word(w32(enc_cmp_reg(ra, rb))) }
+    cb_word(enc_cset(rd, cgb_invcond(cc)))
+    cgb_spill(fn, i.dst, rd)
+}
+
+fun cgb_i_syscall(fn: *IrFn, i: *Ins) {
+    let args: *u64 = i.args
+    let ro: *u64 = fn.reg_of
+    let s0: u64 = args[0]
+    let r0: u64 = ro[s0]
+    if r0 < NREGS { b_mov_x(16, r0 + 9) }
+    else { b_ldr_x(16, s0 * 8) }
+    let k: u64 = 1
+    while k < i.nargs {
+        cgb_load_slot_x(fn, args[k], k - 1)
+        k = k + 1
+    }
+    cb_word(enc_svc(128))
+    let dr: u64 = ro[i.dst]
+    if dr < NREGS { b_mov_x(dr + 9, 0)  return }
+    b_str_x(0, i.dst * 8)
+}
+
+fun cgb_i_call(fn: *IrFn, i: *Ins, funcs: *IrFn) {
+    let syskw: str = 'syscall'
+    if bytes_eq_at(i.callee_start, i.callee_len, syskw.ptr, 7) == 1 {
+        cgb_i_syscall(fn, i)
+        return
+    }
+    let args: *u64 = i.args
+    let k: u64 = 0
+    while k < i.nargs {
+        cgb_load_slot_x(fn, args[k], k)
+        k = k + 1
+    }
+    let idx: u64 = find_fn_index(funcs, i.callee_start, i.callee_len)
+    fix_add(cb_pos(), FX_BL, idx)
+    cb_word(enc_bl(0))
+    let ro: *u64 = fn.reg_of
+    let dr: u64 = ro[i.dst]
+    if dr < NREGS { b_mov_x(dr + 9, 0)  return }
+    b_str_x(0, i.dst * 8)
+}
+
+fun cgb_i_label_addr(fn: *IrFn, i: *Ins) {
+    let xd: u64 = cgb_dst_x(fn, i.dst)
+    if i.callee_len > 0 {
+        fix_add(cb_pos(), FX_ADRPB, i.dst)
+        cb_word(enc_adrp(xd, 0))
+        fix_add(cb_pos(), FX_PGOFB, i.dst)
+        cb_word(enc_add_pageoff(xd, xd, 0))
+        cgb_spill(fn, i.dst, xd)
+        return
+    }
+    fix_add(cb_pos(), FX_ADRP, i.str_id)
+    cb_word(enc_adrp(xd, 0))
+    fix_add(cb_pos(), FX_PGOF, i.str_id)
+    cb_word(enc_add_pageoff(xd, xd, 0))
+    cgb_spill(fn, i.dst, xd)
+}
+
+fun cgb_i_ret(fn: *IrFn, i: *Ins, epi_label: u64) {
+    if i.imm == 0 {
+        let wide: u64 = 0
+        let rt: *Type = fn.ret_type
+        if rt != nil {
+            if type_width(rt) == 8 { wide = 1 }
+        }
+        let ro: *u64 = fn.reg_of
+        let r: u64 = ro[i.a]
+        if wide == 1 {
+            if r < NREGS { b_mov_x(0, r + 9) }
+            else { b_ldr_x(0, i.a * 8) }
+        } else {
+            if r < NREGS { b_mov_w(0, r + 9) }
+            else { b_ldr_w(0, i.a * 8) }
+        }
+    }
+    fix_add(cb_pos(), FX_B, epi_label)
+    cb_word(enc_b(0))
+}
+
+fun cgb_i_jmp(i: *Ins) {
+    fix_add(cb_pos(), FX_B, i.label)
+    cb_word(enc_b(0))
+}
+
+fun cgb_i_jz(fn: *IrFn, i: *Ins) {
+    let sw: u64 = cgb_src_w(fn, i.a, 16)
+    fix_add(cb_pos(), FX_CBZ, i.label)
+    cb_word(enc_cbz_w(sw, 0))
+}
+
+fun cgb_instr(fn: *IrFn, i: *Ins, epi_label: u64, funcs: *IrFn) {
+    let op: u64 = i.op
+    if op == IR_MOVI        { cgb_i_movi(fn, i);              return }
+    if op == IR_LABEL_ADDR  { cgb_i_label_addr(fn, i);        return }
+    if op == IR_ADDR_LOCAL  { cgb_i_addr_local(fn, i);        return }
+    if op == IR_LOAD_LOCAL  { cgb_i_load_local(fn, i);        return }
+    if op == IR_STORE_LOCAL { cgb_i_store_local(fn, i);       return }
+    if op == IR_LOAD_MEM    { cgb_i_load_mem(fn, i);          return }
+    if op == IR_STORE_MEM   { cgb_i_store_mem(fn, i);         return }
+    if op == IR_BINOP       { cgb_i_binop(fn, i);             return }
+    if op == IR_CMPEQ       { cgb_i_cmp(fn, i, 0);            return }
+    if op == IR_CMPNE       { cgb_i_cmp(fn, i, 1);            return }
+    if op == IR_CMPLT       { cgb_i_cmp(fn, i, 2);            return }
+    if op == IR_CMPLE       { cgb_i_cmp(fn, i, 3);            return }
+    if op == IR_CMPGT       { cgb_i_cmp(fn, i, 4);            return }
+    if op == IR_CMPGE       { cgb_i_cmp(fn, i, 5);            return }
+    if op == IR_CALL        { cgb_i_call(fn, i, funcs);       return }
+    if op == IR_RET         { cgb_i_ret(fn, i, epi_label);    return }
+    if op == IR_JMP         { cgb_i_jmp(i);                   return }
+    if op == IR_JZ          { cgb_i_jz(fn, i);                return }
+    if op == IR_LABEL       { lbl_set(i.label, cb_pos());     return }
+}
+
+fun cgb_prologue(fn: *IrFn) {
+    cb_word(enc_stp_pre(29, 30, 31, 126))   // stp x29,x30,[sp,#-16]!
+    cb_word(enc_add_imm(29, 31, 0))         // mov x29, sp
+    if fn.frame_bytes > 0 {
+        if fn.frame_bytes <= 4095 {
+            cb_word(enc_sub_imm(31, 31, fn.frame_bytes))
+        } else {
+            b_movi(16, fn.frame_bytes)
+            cb_word(enc_sub_reg(31, 31, 16))
+        }
+    }
+}
+
+fun cgb_epilogue(fn: *IrFn, epi_label: u64) {
+    lbl_set(epi_label, cb_pos())
+    if fn.frame_bytes > 0 {
+        if fn.frame_bytes <= 4095 {
+            cb_word(enc_add_imm(31, 31, fn.frame_bytes))
+        } else {
+            b_movi(16, fn.frame_bytes)
+            cb_word(enc_add_reg(31, 31, 16))
+        }
+    }
+    cb_word(enc_ldp_post(29, 30, 31, 2))    // ldp x29,x30,[sp],#16
+    cb_word(enc_ret())
+}
+
+fun cgb_param_spill(fn: *IrFn, k: u64) {
+    let w: u64 = 8
+    let pts: **Type = fn.param_types
+    if pts != nil {
+        let pt: *Type = pts[k]
+        if pt != nil {
+            let tw: u64 = type_width(pt)
+            if tw == 1 { w = 1 }
+            if tw == 4 { w = 4 }
+        }
+    }
+    if w == 1 { b_strb(k, k * 8)  return }
+    if w == 4 { b_str_w(k, k * 8)  return }
+    b_str_x(k, k * 8)
+}
+
+fun cgb_fn(fn: *IrFn, epi_label: u64, funcs: *IrFn) {
+    cgb_prologue(fn)
+    let k: u64 = 0
+    while k < fn.nparams {
+        cgb_param_spill(fn, k)
+        k = k + 1
+    }
+    let it: *Ins = fn.head
+    while it != nil {
+        cgb_instr(fn, it, epi_label, funcs)
+        it = it.next
+    }
+    cgb_epilogue(fn, epi_label)
+}
+
+fun find_fn_index(funcs: *IrFn, cs: u64, cl: u64) -> u64 {
+    let lx: *Lexer = LX_STATE
+    let target: *u8 = lx.src + cs
+    let idx: u64 = 0
+    let fn: *IrFn = funcs
+    while fn != nil {
+        if fn.name_len == cl {
+            if bytes_eq(lx.src + fn.name_start, target, cl) == 1 {
+                return idx
+            }
+        }
+        idx = idx + 1
+        fn = fn.next
+    }
+    return 0
+}
+
+// parche in situ de una instruccion de 32 bits en CB (OR de campos)
+fun cb_patch_or(pos: u64, extra: u64) {
+    let cb: *u8 = CB
+    let w: u64 = cb[pos] | (cb[pos + 1] << 8) | (cb[pos + 2] << 16) | (cb[pos + 3] << 24)
+    w = w | extra
+    cb[pos + 0] = w & 255
+    cb[pos + 1] = (w >> 8) & 255
+    cb[pos + 2] = (w >> 16) & 255
+    cb[pos + 3] = (w >> 24) & 255
+}
+
+// resuelve saltos internos (b/cbz/bl). Los ADRP/PAGEOFF de literales los
+// resuelve emit_macho_code cuando conoce las direcciones virtuales finales.
+fun cgb_resolve_branches() {
+    let n: *u64 = CG_FIXN
+    let f: *u64 = CG_FIX
+    let count: u64 = n[0]
+    let i: u64 = 0
+    while i < count {
+        let pos: u64 = f[i * 3 + 0]
+        let kind: u64 = f[i * 3 + 1]
+        let target: u64 = f[i * 3 + 2]
+        if kind == FX_B {
+            let disp: u64 = (lbl_get(target) - pos) / 4
+            cb_patch_or(pos, disp & 67108863)
+        }
+        if kind == FX_CBZ {
+            let disp: u64 = (lbl_get(target) - pos) / 4
+            cb_patch_or(pos, (disp & 524287) << 5)
+        }
+        if kind == FX_BL {
+            let disp: u64 = (fnoff_get(target) - pos) / 4
+            cb_patch_or(pos, disp & 67108863)
+        }
+        i = i + 1
+    }
+}
+
+// cuenta el maximo label usado (control de flujo) para reservar los epilogos
+fun cgb_max_label(funcs: *IrFn) -> u64 {
+    let m: u64 = 0
+    let fn: *IrFn = funcs
+    while fn != nil {
+        let it: *Ins = fn.head
+        while it != nil {
+            if it.op == IR_LABEL { if it.label >= m { m = it.label + 1 } }
+            if it.op == IR_JMP   { if it.label >= m { m = it.label + 1 } }
+            if it.op == IR_JZ    { if it.label >= m { m = it.label + 1 } }
+            it = it.next
+        }
+        fn = fn.next
+    }
+    return m
+}
+
+// registra el offset del literal (str_id) para la reubicacion posterior
+fun cgb_stroff_set(id: u64, off: u64) {
+    let p: *u64 = CG_STROFF
+    p[id] = off
+}
+
+fun cgb_stroff_get(id: u64) -> u64 {
+    let p: *u64 = CG_STROFF
+    return p[id]
+}
+
+// Driver: emite _tt_start + funciones en CB, resuelve saltos internos.
+// Devuelve (via CG_ENTRY) el offset de entrada; deja CB_POS = tamano del codigo.
+fun codegen_bytes(prog: *Program, funcs: *IrFn) {
+    set_target(TGT_MACOS)
+    cb_set(0)
+    let fn0: *u64 = CG_FIXN
+    fn0[0] = 0
+
+    let maxl: u64 = cgb_max_label(funcs)
+
+    // _tt_start: bl _main; movz x16,#1; svc #0x80
+    let entry: *u64 = CG_ENTRY
+    entry[0] = cb_pos()
+    let main_kw: str = 'main'
+    // fixup bl a la funcion 'main' por nombre
+    let mi: u64 = fn_index_by_name(funcs, main_kw.ptr, 4)
+    fix_add(cb_pos(), FX_BL, mi)
+    cb_word(enc_bl(0))
+    cb_word(enc_movz(16, 1, 0))
+    cb_word(enc_svc(128))
+
+    // funciones
+    let epi: u64 = maxl
+    let idx: u64 = 0
+    let fn: *IrFn = funcs
+    while fn != nil {
+        fnoff_set(idx, cb_pos())
+        cgb_fn(fn, epi, funcs)
+        epi = epi + 1
+        idx = idx + 1
+        fn = fn.next
+    }
+
+    cgb_resolve_branches()
+}
+
+// --- writer con reubicacion de literales de cadena (__cstring en __TEXT) ---
+
+fun mo_align8(v: u64) -> u64 {
+    return ((v + 7) / 8) * 8
+}
+
+// parche in situ (OR) de una palabra de 32 bits en MO_IMG
+fun img_or(off: u64, extra: u64) {
+    let img: *u8 = MO_IMG
+    let w: u64 = img[off] | (img[off + 1] << 8) | (img[off + 2] << 16) | (img[off + 3] << 24)
+    w = w | extra
+    img[off + 0] = w & 255
+    img[off + 1] = (w >> 8) & 255
+    img[off + 2] = (w >> 16) & 255
+    img[off + 3] = (w >> 24) & 255
+}
+
+// asigna offset de fichero a cada literal (8-alineado, null-terminado) tras el
+// codigo, y devuelve el tamano total de la seccion __text (codigo + cstrings).
+fun mo_string_layout(prog: *Program, code_len: u64) -> u64 {
+    let cursor: u64 = 552 + code_len
+    let it: *StrLit = prog.strs
+    while it != nil {
+        cursor = mo_align8(cursor)
+        cgb_stroff_set(it.id, cursor)
+        cursor = cursor + it.slen + 1
+        it = it.next
+    }
+    return cursor - 552
+}
+
+// resuelve los fixups adrp/add de literales contra las vaddr finales
+fun mo_resolve_strings() {
+    let n: *u64 = CG_FIXN
+    let f: *u64 = CG_FIX
+    let count: u64 = n[0]
+    let i: u64 = 0
+    while i < count {
+        let pos: u64 = f[i * 3 + 0]
+        let kind: u64 = f[i * 3 + 1]
+        let target: u64 = f[i * 3 + 2]
+        if kind == FX_ADRP {
+            let instr: u64 = 552 + pos
+            let tgt: u64 = cgb_stroff_get(target)
+            let imm21: u64 = (tgt / 4096) - (instr / 4096)
+            let lo: u64 = imm21 & 3
+            let hi: u64 = imm21 >> 2
+            img_or(instr, (lo << 29) | (hi << 5))
+        }
+        if kind == FX_PGOF {
+            let instr2: u64 = 552 + pos
+            let tgt2: u64 = cgb_stroff_get(target)
+            img_or(instr2, (tgt2 & 4095) << 10)
+        }
+        i = i + 1
+    }
+}
+
+// emite el Mach-O firmado con el codigo de CB (code_len) y los literales de prog
+fun emit_macho_code(fd: u64, prog: *Program, code_len: u64, entry_off: u64) {
+    let img: *u8 = MO_IMG
+    let tsize: u64 = mo_string_layout(prog, code_len)
+    mc_set(0)
+    mo_emit_headers(img, tsize, entry_off)
+    // copia el codigo
+    let cb: *u8 = CB
+    let bi: u64 = 0
+    while bi < code_len {
+        e8(img, cb[bi])
+        bi = bi + 1
+    }
+    // literales: alinea a cada offset asignado y escribe bytes + null
+    let it: *StrLit = prog.strs
+    while it != nil {
+        let off: u64 = cgb_stroff_get(it.id)
+        while mc_get() < off {
+            e8(img, 0)
+        }
+        let k: u64 = 0
+        while k < it.slen {
+            e8(img, it.bytes[k])
+            k = k + 1
+        }
+        e8(img, 0)
+        it = it.next
+    }
+    // parchea las reubicaciones de literales
+    mo_resolve_strings()
+    // relleno hasta 0x4000, firma y escritura
+    let cur: u64 = mc_get()
+    ezeros(img, 16384 - cur)
+    mo_sign_and_write(fd, img)
+}
+
+// busca el indice de una funcion por nombre literal (para _tt_start -> main)
+fun fn_index_by_name(funcs: *IrFn, name: *u8, nlen: u64) -> u64 {
+    let lx: *Lexer = LX_STATE
+    let idx: u64 = 0
+    let fn: *IrFn = funcs
+    while fn != nil {
+        if fn.name_len == nlen {
+            if bytes_eq(lx.src + fn.name_start, name, nlen) == 1 {
+                return idx
+            }
+        }
+        idx = idx + 1
+        fn = fn.next
+    }
+    return 0
+}

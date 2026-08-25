@@ -1,128 +1,285 @@
-bss MO_OUT_BUF: 32768
-bss MO_OUT_STORAGE: 64
+// Emisor de Mach-O AArch64 firmado ad-hoc, sin herramientas externas.
+// Construye la imagen completa en memoria (MO_IMG), calcula los hashes SHA-256
+// de cada pagina de 4KB y embebe el CS_SuperBlob en __LINKEDIT.
+//
+// Layout (page16 = 0x4000):
+//   [0]      mach_header_64 (32B)
+//   [32]     10 load commands (sizeofcmds = 520B) -> LC_END = 552
+//   [552]    __text: cuerpo exit(code) (12B)
+//   ...      relleno cero hasta 0x4000
+//   [0x4000] __LINKEDIT: CS_SuperBlob (firma)
+//
+// Depende de asm.tt (encoders del cuerpo) y lib/sha256.tt (hashes).
 
-fun out_u32_le(o: *Out, v: u64) {
-    let b0: u64 = v - (v / 256) * 256
-    let v1: u64 = v / 256
-    let b1: u64 = v1 - (v1 / 256) * 256
-    let v2: u64 = v1 / 256
-    let b2: u64 = v2 - (v2 / 256) * 256
-    let b3: u64 = v2 / 256
-    out_byte(o, b0)
-    out_byte(o, b1)
-    out_byte(o, b2)
-    out_byte(o, b3)
+bss MO_IMG: 20000
+bss MO_CUR: 8
+
+fun mc_get() -> u64 {
+    let p: *u64 = MO_CUR
+    return p[0]
 }
 
-fun out_u64_le(o: *Out, v: u64) {
-    let lo: u64 = v - (v / 4294967296) * 4294967296
-    let hi: u64 = v / 4294967296
-    out_u32_le(o, lo)
-    out_u32_le(o, hi)
+fun mc_set(v: u64) {
+    let p: *u64 = MO_CUR
+    p[0] = v
 }
 
-fun out_zeros(o: *Out, n: u64) {
+fun e8(img: *u8, v: u64) {
+    let c: u64 = mc_get()
+    img[c] = v & 255
+    mc_set(c + 1)
+}
+
+// little-endian 32/64
+fun e32(img: *u8, v: u64) {
+    e8(img, v)
+    e8(img, v >> 8)
+    e8(img, v >> 16)
+    e8(img, v >> 24)
+}
+
+fun e64(img: *u8, v: u64) {
+    e32(img, v)
+    e32(img, v >> 32)
+}
+
+// big-endian 32/64 (firma)
+fun eb32(img: *u8, v: u64) {
+    e8(img, v >> 24)
+    e8(img, v >> 16)
+    e8(img, v >> 8)
+    e8(img, v)
+}
+
+fun eb64(img: *u8, v: u64) {
+    eb32(img, v >> 32)
+    eb32(img, v)
+}
+
+fun ezeros(img: *u8, n: u64) {
     let i: u64 = 0
     while i < n {
-        out_byte(o, 0)
+        e8(img, 0)
         i = i + 1
     }
 }
 
-fun out_segname(o: *Out, name: *u8, nlen: u64) {
+// nombre de 16 bytes (segmento/seccion), rellenado con ceros
+fun ename16(img: *u8, name: *u8, nlen: u64) {
     let i: u64 = 0
     while i < nlen {
-        out_byte(o, name[i])
+        e8(img, name[i])
         i = i + 1
     }
     while i < 16 {
-        out_byte(o, 0)
+        e8(img, 0)
         i = i + 1
     }
 }
 
-fun write_macho_exit42(o: *Out) {
-    out_u32_le(o, 4277009103)
-    out_u32_le(o, 16777228)
-    out_u32_le(o, 0)
-    out_u32_le(o, 2)
-    out_u32_le(o, 5)
-    out_u32_le(o, 304)
-    out_u32_le(o, 2097285)
-    out_u32_le(o, 0)
+// Emite un Mach-O firmado con un cuerpo de codigo arbitrario (code_ptr,
+// code_len bytes) colocado en el offset 552; entryoff = 552 + entry_off.
+// Emite header + 10 load commands. text_size = tamano de la seccion __text
+// (codigo, opcionalmente + cstrings); entry_off relativo al inicio de __text.
+fun mo_emit_headers(img: *u8, text_size: u64, entry_off: u64) {
+    // --- mach_header_64 ---
+    e32(img, 4277009103)
+    e32(img, 16777228)
+    e32(img, 0)
+    e32(img, 2)
+    e32(img, 10)
+    e32(img, 520)
+    e32(img, 2097285)
+    e32(img, 0)
 
-    out_u32_le(o, 25)
-    out_u32_le(o, 72)
-    let pz: str = '__PAGEZERO'
-    out_segname(o, pz.ptr, pz.len)
-    out_u64_le(o, 0)
-    out_u64_le(o, 4294967296)
-    out_u64_le(o, 0)
-    out_u64_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
+    // --- LC_SEGMENT_64 __PAGEZERO ---
+    e32(img, 25)
+    e32(img, 72)
+    let pz2: str = '__PAGEZERO'
+    ename16(img, pz2.ptr, pz2.len)
+    e64(img, 0)
+    e64(img, 4294967296)
+    e64(img, 0)
+    e64(img, 0)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 0)
 
-    out_u32_le(o, 25)
-    out_u32_le(o, 152)
-    let tx: str = '__TEXT'
-    out_segname(o, tx.ptr, tx.len)
-    out_u64_le(o, 4294967296)
-    out_u64_le(o, 16384)
-    out_u64_le(o, 0)
-    out_u64_le(o, 16384)
-    out_u32_le(o, 7)
-    out_u32_le(o, 5)
-    out_u32_le(o, 1)
-    out_u32_le(o, 0)
+    // --- LC_SEGMENT_64 __TEXT ---
+    e32(img, 25)
+    e32(img, 152)
+    let tx2: str = '__TEXT'
+    ename16(img, tx2.ptr, tx2.len)
+    e64(img, 4294967296)
+    e64(img, 16384)
+    e64(img, 0)
+    e64(img, 16384)
+    e32(img, 7)
+    e32(img, 5)
+    e32(img, 1)
+    e32(img, 0)
+    let sn2: str = '__text'
+    ename16(img, sn2.ptr, sn2.len)
+    ename16(img, tx2.ptr, tx2.len)
+    e64(img, 4294967848)
+    e64(img, text_size)
+    e32(img, 552)
+    e32(img, 2)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 2147484672)
+    e32(img, 0)
+    e32(img, 0)
+    e32(img, 0)
 
-    let secn: str = '__text'
-    out_segname(o, secn.ptr, secn.len)
-    out_segname(o, tx.ptr, tx.len)
-    out_u64_le(o, 4294971392)
-    out_u64_le(o, 12)
-    out_u32_le(o, 4096)
-    out_u32_le(o, 2)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 2147484672)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
-    out_u32_le(o, 0)
+    // --- LC_SEGMENT_64 __LINKEDIT ---
+    e32(img, 25)
+    e32(img, 72)
+    let le2: str = '__LINKEDIT'
+    ename16(img, le2.ptr, le2.len)
+    e64(img, 4294983680)
+    e64(img, 16384)
+    e64(img, 16384)
+    e64(img, 238)
+    e32(img, 3)
+    e32(img, 1)
+    e32(img, 0)
+    e32(img, 0)
 
-    out_u32_le(o, 14)
-    out_u32_le(o, 32)
-    out_u32_le(o, 12)
-    let dyld: str = '/usr/lib/dyld'
-    let di: u64 = 0
-    while di < dyld.len {
-        out_byte(o, dyld.ptr[di])
-        di = di + 1
+    // --- LC_LOAD_DYLINKER ---
+    e32(img, 14)
+    e32(img, 32)
+    e32(img, 12)
+    let dy2: str = '/usr/lib/dyld'
+    let di2: u64 = 0
+    while di2 < dy2.len {
+        e8(img, dy2.ptr[di2])
+        di2 = di2 + 1
     }
-    while di < 20 {
-        out_byte(o, 0)
-        di = di + 1
+    while di2 < 20 {
+        e8(img, 0)
+        di2 = di2 + 1
     }
 
-    out_u32_le(o, 50)
-    out_u32_le(o, 24)
-    out_u32_le(o, 1)
-    out_u32_le(o, 720896)
-    out_u32_le(o, 720896)
-    out_u32_le(o, 0)
+    // --- LC_SYMTAB ---
+    e32(img, 2)
+    e32(img, 24)
+    e32(img, 16384)
+    e32(img, 0)
+    e32(img, 16384)
+    e32(img, 0)
 
-    out_u32_le(o, 2147483688)
-    out_u32_le(o, 24)
-    out_u64_le(o, 4096)
-    out_u64_le(o, 0)
+    // --- LC_DYSYMTAB ---
+    e32(img, 11)
+    e32(img, 80)
+    ezeros(img, 72)
 
-    let hdr_end: u64 = 336
-    out_zeros(o, 4096 - hdr_end)
+    // --- LC_UUID ---
+    e32(img, 27)
+    e32(img, 24)
+    e32(img, 305419896)
+    e32(img, 2309737967)
+    e32(img, 19088743)
+    e32(img, 2596069104)
 
-    out_u32_le(o, 3531605312)
-    out_u32_le(o, 3531604016)
-    out_u32_le(o, 3556773889)
+    // --- LC_BUILD_VERSION ---
+    e32(img, 50)
+    e32(img, 24)
+    e32(img, 1)
+    e32(img, 720896)
+    e32(img, 720896)
+    e32(img, 0)
 
-    out_zeros(o, 16384 - 4096 - 12)
+    // --- LC_MAIN ---
+    e32(img, 2147483688)
+    e32(img, 24)
+    e64(img, 552 + entry_off)
+    e64(img, 0)
+
+    // --- LC_CODE_SIGNATURE ---
+    e32(img, 29)
+    e32(img, 16)
+    e32(img, 16384)
+    e32(img, 238)
+}
+
+fun emit_macho_image(fd: u64, code_ptr: *u8, code_len: u64, entry_off: u64) {
+    let img: *u8 = MO_IMG
+    mc_set(0)
+    mo_emit_headers(img, code_len, entry_off)
+
+    // --- cuerpo __text: copia code_len bytes ---
+    let bi: u64 = 0
+    while bi < code_len {
+        e8(img, code_ptr[bi])
+        bi = bi + 1
+    }
+
+    // relleno cero hasta 0x4000, firma ad-hoc y escritura
+    let cur2: u64 = mc_get()
+    ezeros(img, 16384 - cur2)
+    mo_sign_and_write(fd, img)
+}
+
+// escribe el CS_SuperBlob, calcula los hashes de pagina y vuelca a fichero
+fun mo_sign_and_write(fd: u64, img: *u8) {
+    eb32(img, 0xfade0cc0)
+    eb32(img, 238)
+    eb32(img, 1)
+    eb32(img, 0)
+    eb32(img, 20)
+    eb32(img, 0xfade0c02)
+    eb32(img, 218)
+    eb32(img, 132096)
+    eb32(img, 2)
+    eb32(img, 90)
+    eb32(img, 88)
+    eb32(img, 0)
+    eb32(img, 4)
+    eb32(img, 16384)
+    e8(img, 32)
+    e8(img, 2)
+    e8(img, 0)
+    e8(img, 12)
+    eb32(img, 0)
+    eb32(img, 0)
+    eb32(img, 0)
+    eb32(img, 0)
+    eb64(img, 0)
+    eb64(img, 0)
+    eb64(img, 16384)
+    eb64(img, 1)
+    e8(img, 97)
+    e8(img, 0)
+    ezeros(img, 128)
+    let hbase2: u64 = 16494
+    let slot2: u64 = 0
+    while slot2 < 4 {
+        sha256(img + slot2 * 4096, 4096, img + hbase2 + slot2 * 32)
+        slot2 = slot2 + 1
+    }
+    io_write(fd, img, 16622)
+}
+
+bss MO_CODE: 64
+
+fun emit_macho_signed(fd: u64, exit_code: u64) {
+    let code: *u8 = MO_CODE
+    let w0: u64 = enc_movz(0, exit_code, 0)
+    let w1: u64 = enc_movz(16, 1, 0)
+    let w2: u64 = enc_svc(128)
+    code[0] = w0 & 255
+    code[1] = (w0 >> 8) & 255
+    code[2] = (w0 >> 16) & 255
+    code[3] = (w0 >> 24) & 255
+    code[4] = w1 & 255
+    code[5] = (w1 >> 8) & 255
+    code[6] = (w1 >> 16) & 255
+    code[7] = (w1 >> 24) & 255
+    code[8] = w2 & 255
+    code[9] = (w2 >> 8) & 255
+    code[10] = (w2 >> 16) & 255
+    code[11] = (w2 >> 24) & 255
+    emit_macho_image(fd, code, 12, 0)
 }

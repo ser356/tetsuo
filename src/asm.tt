@@ -1,0 +1,163 @@
+// Encoder de instrucciones AArch64: cada funcion devuelve el u32 codificado.
+// Todos los campos se enmascaran para no desbordar bits vecinos.
+// Convencion: registros 0..30 = x0..x30 / w0..w30; 31 = xzr/wzr o sp segun uso.
+
+fun m5(v: u64) -> u64  { return v & 31 }
+fun m7(v: u64) -> u64  { return v & 127 }
+fun m12(v: u64) -> u64 { return v & 4095 }
+fun m16(v: u64) -> u64 { return v & 65535 }
+fun m19(v: u64) -> u64 { return v & 524287 }
+fun m21(v: u64) -> u64 { return v & 2097151 }
+fun m26(v: u64) -> u64 { return v & 67108863 }
+
+// MOVZ Xd, #imm16, LSL #(16*hw)
+fun enc_movz(rd: u64, imm16: u64, hw: u64) -> u64 {
+    return 3531603968 | (m5(hw) << 21) | (m16(imm16) << 5) | m5(rd)
+}
+
+// MOVK Xd, #imm16, LSL #(16*hw)
+fun enc_movk(rd: u64, imm16: u64, hw: u64) -> u64 {
+    return 4068474880 | (m5(hw) << 21) | (m16(imm16) << 5) | m5(rd)
+}
+
+// MOV Xd, Xm  == ORR Xd, XZR, Xm
+fun enc_mov_reg(rd: u64, rm: u64) -> u64 {
+    return 2852126720 | (m5(rm) << 16) | (31 << 5) | m5(rd)
+}
+
+// STP Xt, Xt2, [Xn, #imm7*8]!   (pre-index). imm7 = campo de 7 bits ya escalado.
+fun enc_stp_pre(rt: u64, rt2: u64, rn: u64, imm7: u64) -> u64 {
+    return 2843738112 | (m7(imm7) << 15) | (m5(rt2) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+// LDP Xt, Xt2, [Xn], #imm7*8    (post-index).
+fun enc_ldp_post(rt: u64, rt2: u64, rn: u64, imm7: u64) -> u64 {
+    return 2831155200 | (m7(imm7) << 15) | (m5(rt2) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+// ADD Xd, Xn, #imm12
+fun enc_add_imm(rd: u64, rn: u64, imm12: u64) -> u64 {
+    return 2432696320 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rd)
+}
+
+// SUB Xd, Xn, #imm12
+fun enc_sub_imm(rd: u64, rn: u64, imm12: u64) -> u64 {
+    return 3506438144 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rd)
+}
+
+// ADD Xd, Xn, Xm  (shifted register, LSL 0)
+fun enc_add_reg(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2332033024 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+fun enc_sub_reg(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 3405774848 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+// MUL Xd, Xn, Xm  == MADD Xd, Xn, Xm, XZR
+fun enc_mul(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2600500224 | (m5(rm) << 16) | (31 << 10) | (m5(rn) << 5) | m5(rd)
+}
+
+// UDIV Xd, Xn, Xm
+fun enc_udiv(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2596276224 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+fun enc_and(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2315255808 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+fun enc_orr(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2852126720 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+fun enc_eor(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 3388997632 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+// LSLV Xd, Xn, Xm
+fun enc_lslv(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2596282368 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+// LSRV Xd, Xn, Xm
+fun enc_lsrv(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2596283392 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
+// LDR Xt, [Xn, #imm12*8]   (imm12 = campo escalado, no bytes)
+fun enc_ldr_x(rt: u64, rn: u64, imm12: u64) -> u64 {
+    return 4181721088 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+// LDR Wt, [Xn, #imm12*4]
+fun enc_ldr_w(rt: u64, rn: u64, imm12: u64) -> u64 {
+    return 3107979264 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+// LDRB Wt, [Xn, #imm12]
+fun enc_ldrb(rt: u64, rn: u64, imm12: u64) -> u64 {
+    return 960495616 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+fun enc_str_x(rt: u64, rn: u64, imm12: u64) -> u64 {
+    return 4177526784 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+fun enc_str_w(rt: u64, rn: u64, imm12: u64) -> u64 {
+    return 3103784960 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+fun enc_strb(rt: u64, rn: u64, imm12: u64) -> u64 {
+    return 956301312 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+// ADRP Xd, #imm21 (paginas). imm21 = (target_page - pc_page).
+fun enc_adrp(rd: u64, imm21: u64) -> u64 {
+    let v: u64 = m21(imm21)
+    let lo: u64 = v & 3
+    let hi: u64 = v >> 2
+    return 2415919104 | (lo << 29) | (hi << 5) | m5(rd)
+}
+
+// ADD Xd, Xn, #imm12  (page offset). Alias de enc_add_imm.
+fun enc_add_pageoff(rd: u64, rn: u64, imm12: u64) -> u64 {
+    return enc_add_imm(rd, rn, imm12)
+}
+
+// BL #imm26 (offset en instrucciones, con signo, campo de 26 bits)
+fun enc_bl(imm26: u64) -> u64 {
+    return 2483027968 | m26(imm26)
+}
+
+// B #imm26
+fun enc_b(imm26: u64) -> u64 {
+    return 335544320 | m26(imm26)
+}
+
+// CBZ Wt, #imm19
+fun enc_cbz_w(rt: u64, imm19: u64) -> u64 {
+    return 872415232 | (m19(imm19) << 5) | m5(rt)
+}
+
+// CMP Xn, Xm  == SUBS XZR, Xn, Xm
+fun enc_cmp_reg(rn: u64, rm: u64) -> u64 {
+    return 3942645760 | (m5(rm) << 16) | (m5(rn) << 5) | 31
+}
+
+// CSET Wd, cond  == CSINC Wd, WZR, WZR, invert(cond).
+// invcond = campo de condicion invertida (p.ej. cset .., eq -> invcond = NE = 1).
+fun enc_cset(rd: u64, invcond: u64) -> u64 {
+    return 446629856 | ((invcond & 15) << 12) | m5(rd)
+}
+
+// SVC #imm16
+fun enc_svc(imm16: u64) -> u64 {
+    return 3556769793 | (m16(imm16) << 5)
+}
+
+// RET (X30)
+fun enc_ret() -> u64 {
+    return 3596551104 | (30 << 5)
+}

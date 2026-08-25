@@ -1,5 +1,17 @@
 # Plan Mach-O — hitos 24.a → 24.f
 
+> **Estado: cerrado (24.a–24.f).** stage1 emite un Mach-O AArch64 firmado
+> ad-hoc ejecutable directamente, con cero herramientas externas. Verificado en
+> Linux vía `bootstrap/linux/verify_linux.sh` (fixpoint bit-a-bit + smokes
+> 24.a–24.f): los shifts (24.a), el encoder (24.b) contra `aarch64-linux-gnu-as`,
+> SHA-256 (24.c) contra `hashlib`, y el Mach-O firmado (24.d/24.f) cuyos hashes
+> de pagina se recalculan y comparan (lo que hace `codesign -v`), parseando
+> ademas limpio con `llvm-objdump`/`macholib`. El codegen a bytes (24.e) compila
+> programas reales (llamadas, recursion, comparaciones, literales de cadena) a un
+> Mach-O firmado que se ejecuta bajo qemu y devuelve el valor esperado.
+> Pendiente menor: bss en `__DATA` por la ruta de bytes (24.g), soportada ya por
+> la ruta textual.
+
 Objetivo: **stage1 emite ejecutables Mach-O AArch64 auto-firmados directamente**, sin `clang` ni `as`/`ld` ni `codesign`. macOS 11+ (Apple Silicon).
 
 Estado actual: stage1 emite `.s` textual → `clang -c` + `clang -e` produce el binario. clang funciona como `as`+`ld`; el ejecutable resultante lo firma clang implícitamente.

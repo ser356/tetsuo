@@ -1,0 +1,31 @@
+fun main() -> u32 {
+    if enc_movz(0, 42, 0) != 0xd2800540 { return 1 }
+    if enc_movk(0, 0, 1) != 0xf2a00000 { return 2 }
+    if enc_mov_reg(0, 1) != 0xaa0103e0 { return 3 }
+    if enc_stp_pre(29, 30, 31, 126) != 0xa9bf7bfd { return 4 }
+    if enc_ldp_post(29, 30, 31, 2) != 0xa8c17bfd { return 5 }
+    if enc_add_imm(31, 31, 16) != 0x910043ff { return 6 }
+    if enc_sub_imm(0, 0, 8) != 0xd1002000 { return 7 }
+    if enc_add_reg(0, 1, 2) != 0x8b020020 { return 8 }
+    if enc_sub_reg(0, 1, 2) != 0xcb020020 { return 9 }
+    if enc_mul(0, 1, 2) != 0x9b027c20 { return 10 }
+    if enc_udiv(0, 1, 2) != 0x9ac20820 { return 11 }
+    if enc_and(0, 1, 2) != 0x8a020020 { return 12 }
+    if enc_orr(0, 1, 2) != 0xaa020020 { return 13 }
+    if enc_eor(0, 1, 2) != 0xca020020 { return 14 }
+    if enc_lslv(0, 1, 2) != 0x9ac22020 { return 15 }
+    if enc_lsrv(0, 1, 2) != 0x9ac22420 { return 16 }
+    if enc_ldr_x(0, 1, 1) != 0xf9400420 { return 17 }
+    if enc_ldr_w(0, 1, 1) != 0xb9400420 { return 18 }
+    if enc_ldrb(0, 1, 1) != 0x39400420 { return 19 }
+    if enc_str_x(0, 1, 1) != 0xf9000420 { return 20 }
+    if enc_strb(0, 1, 1) != 0x39000420 { return 21 }
+    if enc_bl(2) != 0x94000002 { return 22 }
+    if enc_b(2) != 0x14000002 { return 23 }
+    if enc_cbz_w(0, 2) != 0x34000040 { return 24 }
+    if enc_cmp_reg(0, 1) != 0xeb01001f { return 25 }
+    if enc_cset(0, 1) != 0x1a9f17e0 { return 26 }
+    if enc_svc(0x80) != 0xd4001001 { return 27 }
+    if enc_ret() != 0xd65f03c0 { return 28 }
+    return 0
+}
