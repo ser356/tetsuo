@@ -14,18 +14,20 @@ src/            compilador stage1 en tetsuo puro
   lexer.tt        tokenizador
   parser.tt       parser descendente recursivo + AST + tipos
   ir.tt           lowering a IR lineal + regalloc lineal
-  codegen.tt      emisión AArch64 (macos)
-  main.tt         CLI argv-driven (input.tt -o output.s)
+  codegen.tt      emisión AArch64 textual (.s, target macos)
+  macho.tt        writer Mach-O binario (en curso, ver docs/MACHO-PLAN.md)
+  main.tt         CLI argv-driven: preprocessor `import` + parse + lower + codegen
   runtime/
     io.tt         envoltorios de syscalls (target macos)
 lib/            runtime en tetsuo: str.tt, fmt.tt, vec.tt, ast.tt
 tests/          fuentes .tt de prueba + scripts de build por target
 bootstrap/
-  tetsuoc.s       golden seed asm: salida de stage1 sobre sí mismo (18432L).
+  tetsuoc.s       golden seed asm: salida de stage1 sobre sí mismo (~20 kL).
                   Bootstraps el compilador sin dependencia de código externo.
   verify.sh       batería de smoke tests + fixpoint bit-a-bit
   linux/          harness qemu-aarch64 para verificar el fixpoint en Linux
 test.sh         pipeline virt: compila, ensambla, enlaza y arranca en QEMU
+docs/MACHO-PLAN.md  plan del writer Mach-O + firma ad-hoc (hitos 24.a → 24.f)
 LENGUAJE.md     referencia del lenguaje y guía de uso correcto
 idioms.md       patrones idiomáticos observados en el código real
 SELFHOST-STATE.md  bitácora del avance del autohospedaje
@@ -48,10 +50,17 @@ solos si no existe.
 ## Uso del compilador
 
 ```bash
-build/main fuente.tt -o salida.s
+build/main fuente.tt -o salida.s               # compila a asm
+build/main --dump-tokens fuente.tt             # imprime tokens
+build/main --dump-ir     fuente.tt             # imprime IR lineal
 ```
 
-Target hardcodeado a macOS por ahora. Enlace de la salida:
+El driver ejecuta primero el preprocessor `import` sobre el fuente (una línea
+`import 'ruta/relativa.tt'` inlinea recursivamente el fichero citado; los
+paths ya vistos se saltan → sin ciclos ni duplicados). Después parsea, lowera
+y emite AArch64 Mach-O textual. Target hardcodeado a macOS.
+
+Enlace de la salida:
 
 ```bash
 clang -c salida.s -o salida.o
@@ -96,15 +105,35 @@ bash bootstrap/linux/verify_linux.sh
 
 Usa `qemu-user` + un shim BSD→Linux para ejecutar los Mach-O emitidos.
 
-## Sin módulos: concatenación
+## Módulos: `import` como preprocessor
 
-tetsuo no tiene sistema de módulos. Una "biblioteca" es un fichero `.tt` y la
-"importación" es concatenar ficheros en orden antes de compilar. Las
-referencias hacia atrás (recursión mutua) solo son válidas **dentro** de un
-mismo fichero; entre ficheros el orden de concatenación debe respetar las
-dependencias. Ver `LENGUAJE.md` y `idioms.md`.
+tetsuo no tiene sistema de módulos separado. Una "biblioteca" es un fichero
+`.tt` y la "importación" es una directiva de línea del preprocessor integrado
+en el driver:
+
+```
+import 'lib/str.tt'
+import 'lib/fmt.tt'
+
+fun main() -> u64 { ... }
+```
+
+Reglas:
+
+- La directiva ocupa una línea entera y va **antes** de cualquier declaración.
+- La ruta es relativa al cwd desde el que se invoca `build/main`.
+- El expansor deduplica por path: importar dos veces el mismo fichero es
+  no-op, y los ciclos se resuelven trivialmente.
+- Las referencias hacia atrás (recursión mutua) siguen siendo válidas solo
+  **dentro** de un mismo fichero; entre importados el orden debe respetar las
+  dependencias tal como si los concatenases a mano.
+
+Detalles y patrones idiomáticos en `LENGUAJE.md` e `idioms.md`.
 
 ## Estado
 
-Autohospedado 100%. `stage1(stage1) == seed` bit-a-bit. La bitácora
-detallada, con los tests que cubren cada hito, está en `SELFHOST-STATE.md`.
+Autohospedado 100%. `stage1(stage1) == seed` bit-a-bit sobre el combined del
+propio compilador. Siguiente frente: emisión Mach-O binaria + firma ad-hoc
+embebida sin `clang`/`as`/`ld`/`codesign` (ver `docs/MACHO-PLAN.md`). La
+bitácora detallada, con los tests que cubren cada hito, está en
+`SELFHOST-STATE.md`.

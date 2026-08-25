@@ -217,9 +217,22 @@ fun io_write(fd: u64, buf: *u8, len: u64) { syscall(4, fd, buf, len) }
 fun io_exit(code: u64) { syscall(1, code, 0, 0) }
 ```
 
-(workaround) Sin módulos, la "importación" es concatenación:
-`cat io.tt main.tt` en el script de build. El prefijo `io_`/`arena_`
-en los nombres es la convención que sustituye al espacio de nombres.
+La "importación" es una directiva de línea del preprocessor integrado
+en el driver: `import 'ruta/relativa.tt'` una por línea al principio
+del fichero. El preprocessor expande recursivamente y deduplica por
+path, así que importar dos veces el mismo fichero (o cerrar un ciclo)
+es inofensivo. Ejemplo tipo:
+
+```
+import 'src/runtime/io.tt'
+import 'lib/str.tt'
+
+fun main() -> u64 { ... }
+```
+
+El prefijo `io_`/`arena_`/`lex_` en los nombres sigue siendo la
+convención que sustituye al espacio de nombres — no hay scoping por
+fichero.
 
 Regla dura: nada de `syscall` en código destinado a `--target=virt` —
 compila igual pero `svc #0x80` sin handler cuelga la máquina.
@@ -330,7 +343,8 @@ mismo `.tt` el orden de las funciones es libre.
 Corolario práctico: el parser descendente recursivo del stage1 vive
 en un único `parser.tt` porque `parse_expr` ↔ `parse_primary` es
 mutuamente recursiva. La recursión **entre ficheros** distintos sí
-está prohibida: `io.tt`, `str.tt`, `fmt.tt`, `vec.tt`, `lexer.tt`,
-`parser.tt`, `ir.tt`, `codegen.tt`, `main.tt` se concatenan en ese
-orden y toda referencia hacia atrás debe cerrarse dentro del mismo
-fichero.
+está prohibida: `io.tt`, `str.tt`, `fmt.tt`, `vec.tt`, `ast.tt`,
+`lexer.tt`, `parser.tt`, `ir.tt`, `codegen.tt`, `main.tt` se importan
+en ese orden (vía `import` en el driver o expandidos por `pp_expand`
+en `src/main.tt`) y toda referencia hacia atrás debe cerrarse dentro
+del mismo fichero.

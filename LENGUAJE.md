@@ -166,12 +166,24 @@ Precedencias, de mayor a menor:
 
 ## Modelo de compilación
 
-- **Sin módulos**: se concatenan ficheros `.tt` y se compila el resultado.
-  Orden canónico del stage1:
-  `io.tt → str.tt → fmt.tt → vec.tt → ast.tt → lexer.tt → parser.tt → main`.
+- **Preprocessor `import`**: el driver (`src/main.tt`) reconoce líneas
+  `import 'ruta/relativa.tt'` **antes** del lexer y las sustituye por el
+  contenido del fichero citado. Se aplica de forma recursiva: los `import`
+  del importado también se expanden. Reglas:
+  - la directiva ocupa **una línea entera** y va antes de cualquier
+    declaración top-level;
+  - la ruta es relativa al cwd desde el que se lanza `build/main`;
+  - hay **dedup por path**: el segundo `import` del mismo fichero es no-op
+    → los ciclos y las importaciones diamante son inofensivos;
+  - `import` **no es** palabra reservada del lenguaje: es un token de línea
+    que el preprocessor consume antes de que llegue al lexer.
+- Orden canónico del stage1 (equivalente al que produce el `pp_expand` del
+  driver sobre `src/main.tt`):
+  `io.tt → str.tt → fmt.tt → vec.tt → ast.tt → lexer.tt → parser.tt →
+   ir.tt → codegen.tt → main`.
 - Dentro de un fichero el orden de las funciones es libre (recursión mutua
-  válida). ⚠ Entre ficheros no: toda referencia debe apuntar a un fichero
-  anterior en la concatenación.
+  válida). ⚠ Entre ficheros importados no: toda referencia debe apuntar a un
+  fichero ya expandido en el flujo del preprocessor.
 - Convenciones: constantes en MAYÚSCULAS; funciones y campos en snake_case;
   prefijo de "módulo" manual en los nombres (`io_`, `arena_`, `lex_`).
 

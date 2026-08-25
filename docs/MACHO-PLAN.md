@@ -18,6 +18,20 @@ Estado actual: stage1 emite `.s` textual → `clang -c` + `clang -e` produce el 
 
 Salida deseada: `stage1 → binario Mach-O firmado, ejecutable directo`.
 
+## Estado real de los sub-hitos (2026-08-25)
+
+| Hito  | Estado      | Piezas en repo                                                  |
+|-------|-------------|-----------------------------------------------------------------|
+| 24.a  | 🔴 pendiente | Ni `TK_LSHIFT`/`TK_RSHIFT` ni `OP_SHL`/`OP_SHR` en `src/lexer.tt`/`src/parser.tt`. `grep '<<\|>>'` sobre `src/*.tt` no encuentra nada. Es prerequisito de 24.b y 24.c. |
+| 24.b  | 🔴 pendiente | No existe `src/asm.tt` ni `tests/asm_test.tt`.                  |
+| 24.c  | 🔴 pendiente | No existe `lib/sha256.tt` ni `tests/sha256_test.tt`.             |
+| 24.d  | 🟡 en curso  | `src/macho.tt` existe con `out_u32_le`, `out_u64_le`, `out_zeros`, `out_segname` + esqueleto `write_macho_exit42` (header + `LC_SEGMENT_64` + `LC_MAIN`). Smoke `tests/macho42_test.tt` produce `/tmp/tt_macho42`; corre tras `codesign -s -` externo. Falta cerrar el resto de LCs (`LC_LOAD_DYLINKER`, `LC_SYMTAB`, `LC_DYSYMTAB`, `LC_UUID`, `LC_BUILD_VERSION`, `LC_CODE_SIGNATURE`) y el smoke automatizado en `bootstrap/verify.sh`. |
+| 24.e  | 🔴 pendiente | No existe `src/codegen_bytes.tt`.                                |
+| 24.f  | 🔴 pendiente | Depende de 24.c y 24.d completos.                                |
+
+Este bloque manda: si un sub-hito de las secciones siguientes contradice esta tabla, la tabla gana.
+
+
 Estructura del binario destino:
 
 ```

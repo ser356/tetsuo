@@ -1,6 +1,5 @@
 const TGT_VIRT:  u64 = 0
 const TGT_MACOS: u64 = 1
-
 bss G_TARGET: 8
 
 fun set_target(t: u64) {
