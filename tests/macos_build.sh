@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+# Compila un .tt a Mach-O AArch64 firmado adhoc y lo ejecuta.
+# Sin clang, sin as, sin ld, sin codesign: el binario emitido por stage1
+# --emit=macho es directamente ejecutable en macOS 11+ arm64.
 set -euo pipefail
 
-CC=${CC:-clang}
 BUILD=build
 COMPILER=$BUILD/main
-SEED=bootstrap/tetsuoc.s
+SEED=bootstrap/tetsuoc.macho
 INPUT=${1:-tests/macos_hello.tt}
 BASE=$BUILD/$(basename "${INPUT%.*}")
 shift || true
@@ -13,8 +15,8 @@ ARGS=("$@")
 mkdir -p "$BUILD"
 
 if [[ ! -x $COMPILER ]]; then
-  $CC -c "$SEED" -o "$BUILD/main.o"
-  $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
+  cp "$SEED" "$COMPILER"
+  chmod +x "$COMPILER"
 fi
 
 LIBS=(src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt \
@@ -27,15 +29,14 @@ if [[ -f ${LIBS[0]} && $INPUT != ${LIBS[0]} ]]; then
     [[ -f $L && $INPUT != $L ]] && echo "import '$L'" >> "$ENTRY"
   done
   echo "import '$INPUT'" >> "$ENTRY"
-  "$COMPILER" --target=macos "$ENTRY" -o "$BASE.s"
+  "$COMPILER" --emit=macho "$ENTRY" -o "$BASE.macho"
 else
-  "$COMPILER" --target=macos "$INPUT" -o "$BASE.s"
+  "$COMPILER" --emit=macho "$INPUT" -o "$BASE.macho"
 fi
 
-$CC -c "$BASE.s" -o "$BASE.o"
-$CC -e _tt_start -o "$BASE" "$BASE.o"
+chmod +x "$BASE.macho"
 
 echo "--- ejecutando ---"
-"$BASE" ${ARGS[@]+"${ARGS[@]}"}
+"$BASE.macho" ${ARGS[@]+"${ARGS[@]}"}
 rc=$?
 echo "--- exit=$rc ---"

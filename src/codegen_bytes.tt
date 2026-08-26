@@ -437,14 +437,14 @@ fun cgb_instr(fn: *IrFn, i: *Ins, epi_label: u64, funcs: *IrFn) {
 }
 
 fun cgb_prologue(fn: *IrFn) {
-    cb_word(enc_stp_pre(29, 30, 31, 126))   // stp x29,x30,[sp,#-16]!
-    cb_word(enc_add_imm(29, 31, 0))         // mov x29, sp
+    cb_word(enc_stp_pre(29, 30, 31, 126))
+    cb_word(enc_add_imm(29, 31, 0))
     if fn.frame_bytes > 0 {
         if fn.frame_bytes <= 4095 {
             cb_word(enc_sub_imm(31, 31, fn.frame_bytes))
         } else {
             b_movi(16, fn.frame_bytes)
-            cb_word(enc_sub_reg(31, 31, 16))
+            cb_word(enc_sub_ext_sp(16))
         }
     }
 }
@@ -456,10 +456,10 @@ fun cgb_epilogue(fn: *IrFn, epi_label: u64) {
             cb_word(enc_add_imm(31, 31, fn.frame_bytes))
         } else {
             b_movi(16, fn.frame_bytes)
-            cb_word(enc_add_reg(31, 31, 16))
+            cb_word(enc_add_ext_sp(16))
         }
     }
-    cb_word(enc_ldp_post(29, 30, 31, 2))    // ldp x29,x30,[sp],#16
+    cb_word(enc_ldp_post(29, 30, 31, 2))
     cb_word(enc_ret())
 }
 
@@ -773,6 +773,7 @@ fun cgb_bss_index_by_name(prog: *Program, s: u64, n: u64) -> u64 {
         }
         idx = idx + 1
         it = it.next
+
     }
     return 0
 }
@@ -789,7 +790,8 @@ fun mo_string_layout_bss(prog: *Program, code_len: u64) -> u64 {
     return cursor - 704
 }
 
-fun mo_resolve_strings_bss() {
+fun mo_resolve_strings_bss(text_pages: u64) {
+    let text_vmsize: u64 = text_pages * 16384
     let n: *u64 = CG_FIXN
     let f: *u64 = CG_FIX
     let count: u64 = n[0]
@@ -813,7 +815,7 @@ fun mo_resolve_strings_bss() {
         }
         if kind == FX_ADRPB {
             let instr3: u64 = 704 + pos
-            let bpage: u64 = (16384 + cgb_bss_off_get(target)) / 4096
+            let bpage: u64 = (text_vmsize + cgb_bss_off_get(target)) / 4096
             let ipage: u64 = instr3 / 4096
             let imm21b: u64 = bpage - ipage
             let lob: u64 = imm21b & 3
@@ -822,7 +824,7 @@ fun mo_resolve_strings_bss() {
         }
         if kind == FX_PGOFB {
             let instr4: u64 = 704 + pos
-            let bvaddr: u64 = 16384 + cgb_bss_off_get(target)
+            let bvaddr: u64 = text_vmsize + cgb_bss_off_get(target)
             img_or(instr4, (bvaddr & 4095) << 10)
         }
         i = i + 1
@@ -855,7 +857,7 @@ fun emit_macho_code_bss(fd: u64, prog: *Program, code_len: u64, entry_off: u64, 
         e8(img, 0)
         it = it.next
     }
-    mo_resolve_strings_bss()
+    mo_resolve_strings_bss(text_pages)
     let cur: u64 = mc_get()
     let text_end: u64 = text_pages * 16384
     ezeros(img, text_end - cur)

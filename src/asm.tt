@@ -54,6 +54,17 @@ fun enc_sub_reg(rd: u64, rn: u64, rm: u64) -> u64 {
     return 3405774848 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
+// SUB SP, SP, Xm (extended register, UXTX). Necesario cuando Rd=31=SP; el
+// enc_sub_reg de arriba con Rd=31 codifica XZR y no toca SP.
+fun enc_sub_ext_sp(rm: u64) -> u64 {
+    return 3407897599 | (m5(rm) << 16)
+}
+
+// ADD SP, SP, Xm (extended register, UXTX). Analogo de arriba para restaurar SP.
+fun enc_add_ext_sp(rm: u64) -> u64 {
+    return 2334155775 | (m5(rm) << 16)
+}
+
 // MUL Xd, Xn, Xm  == MADD Xd, Xn, Xm, XZR
 fun enc_mul(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2600500224 | (m5(rm) << 16) | (31 << 10) | (m5(rn) << 5) | m5(rd)

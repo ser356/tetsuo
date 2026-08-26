@@ -76,6 +76,7 @@ check "codegen_bytes_build.sh (bytes)"  42  bash tests/codegen_bytes_build.sh
 check "codegen_bytes_bss (Session A)"   42  bash tests/codegen_bytes_bss_build.sh
 check "codegen_bytes_bigtext (Sess B)"  65  bash tests/codegen_bytes_bigtext_build.sh
 check "emit_macho_build.sh (Sess C1)"   42  bash tests/emit_macho_build.sh
+check "fixpoint_macho (Sess C2 bytes)"  0   bash tests/fixpoint_macho_build.sh
 
 section "Runtime IO + fixpoint (hito 19.b)"
 rm -f /tmp/tetsuo_write_test.txt
