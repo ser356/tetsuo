@@ -1,10 +1,43 @@
+// ============================================================================
+// lib/vec.tt - array dinamico sobre arena
+// ============================================================================
+//
+// Vec es el unico contenedor generico del arbol. Se usa alli donde hace falta
+// una lista cuyo tamano no se conoce al parsear (parametros de una funcion,
+// locales de un frame, argumentos de una llamada).
+//
+// Es "generico" a base de bytes: no hay tipos parametricos en tetsuo, asi que
+// Vec guarda el tamano de elemento (`esz`) y trata los elementos como bloques
+// opacos. Se mete un elemento pasando un PUNTERO a el (vec_push copia esz bytes
+// desde ahi) y se saca un puntero a su hueco (vec_get). El llamante castea:
+//
+//     let slot: *u64 = vec_get(v, i)
+//     let valor: u64 = @slot
+//
+// Crecimiento: como el arena no tiene realloc ni free, "crecer" significa pedir
+// un bloque nuevo del doble, copiar y ABANDONAR el viejo. La memoria del bloque
+// anterior se pierde hasta que el proceso termina. Para un compilador de un
+// disparo es un intercambio deliberado: el desperdicio total esta acotado por
+// 2x el tamano final de todos los vectores juntos, y a cambio no hay ni un
+// puntero que liberar en todo el arbol.
+//
+// De ahi el nombre del test que ejercita esto: tests/vec_test.tt (arena grow).
+// ============================================================================
+
 struct Vec {
-    data: *u8,
-    len:  u64,
-    cap:  u64,
-    esz:  u64,
+    data: *u8,   // bloque actual, propiedad del arena
+    len:  u64,   // elementos usados
+    cap:  u64,   // elementos que caben en `data`
+    esz:  u64,   // bytes por elemento
 }
 
+// Inicializa sobre un bloque ya reservado. `buf` debe tener sitio para al menos
+// `cap` elementos de `esz` bytes; el patron habitual es
+//
+//     let head: *u8 = arena_take(ar, 8)
+//     vec_init(v, 8, head, 1)
+//
+// es decir, empezar con capacidad 1 y dejar que vec_push haga el resto.
 fun vec_init(v: *Vec, esz: u64, buf: *u8, cap: u64) {
     v.data = buf
     v.len  = 0
@@ -12,6 +45,16 @@ fun vec_init(v: *Vec, esz: u64, buf: *u8, cap: u64) {
     v.esz  = esz
 }
 
+// Anade un elemento copiando esz bytes desde `elem`.
+//
+// Si el vector esta lleno duplica la capacidad: pide un bloque nuevo al arena,
+// copia el contenido y se queda con el nuevo. El bloque viejo queda huerfano
+// (ver la nota de arriba). Duplicar da un coste amortizado constante por push y
+// acota el desperdicio total a menos del doble de lo vivo.
+//
+// El arena se pasa como argumento en vez de guardarlo en el Vec para que un
+// mismo Vec pueda vivir en un arena y sus datos en otro, y sobre todo para que
+// el struct no cargue con un puntero que casi nunca cambia.
 fun vec_push(ar: *Arena, v: *Vec, elem: *u8) {
     if v.len == v.cap {
         let nc: u64 = v.cap * 2
@@ -24,6 +67,9 @@ fun vec_push(ar: *Arena, v: *Vec, elem: *u8) {
     v.len = v.len + 1
 }
 
+// Devuelve un puntero al hueco i. NO comprueba limites: el llamante ya ha
+// mirado `v.len`. Devolver el puntero y no el valor es lo que permite que Vec
+// sea generico sin tipos parametricos, y de paso deja escribir en el sitio.
 fun vec_get(v: *Vec, i: u64) -> *u8 {
     return v.data + i * v.esz
 }

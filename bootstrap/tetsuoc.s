@@ -27933,7 +27933,7 @@ _pp_out_cap:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
     sub     sp, sp, #16
-    movz    x9, #0x0008, lsl #16
+    movz    x9, #0x0010, lsl #16
     mov     x0, x9
     b       .L1188
 .L1188:
@@ -31747,7 +31747,7 @@ L_str166:
     .zerofill __DATA,__bss,_OUT_BUF,65536,3
     .zerofill __DATA,__bss,_OUT_STORAGE,64,3
     .zerofill __DATA,__bss,_DUMP_TOK_STORE,40,3
-    .zerofill __DATA,__bss,_PP_OUT,524288,3
+    .zerofill __DATA,__bss,_PP_OUT,1048576,3
     .zerofill __DATA,__bss,_PP_OUT_LEN,8,3
     .zerofill __DATA,__bss,_PP_ARENA_STORE,24,3
     .zerofill __DATA,__bss,_PP_ARENA_BUF,16777216,3

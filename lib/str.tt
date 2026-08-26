@@ -1,3 +1,29 @@
+// ============================================================================
+// lib/str.tt - operaciones sobre bloques de bytes
+// ============================================================================
+//
+// tetsuo no tiene libreria estandar ni tipo "string" con operaciones: el tipo
+// `str` del lenguaje es solo un par (ptr, len) que el parser desugariza a dos
+// campos, y todo lo demas se hace a mano sobre *u8.
+//
+// Estas dos funciones son el minimo que necesita el resto del compilador:
+// comparar identificadores (el lexer no internaliza, asi que cada comparacion
+// de nombre de funcion o de variable acaba aqui) y copiar bytes (arenas,
+// buffers de salida, literales).
+//
+// Ambas son deliberadamente ingenuas, byte a byte. Copiar de 8 en 8 seria mas
+// rapido pero exigiria tratar alineacion y solapamiento, y el compilador pasa
+// mucho mas tiempo en el parser que aqui.
+// ============================================================================
+
+// Compara n bytes. Devuelve 1 si son iguales, 0 si no.
+//
+// Devuelve u32 y no un bool porque el lenguaje no tiene bool; la convencion en
+// todo el arbol es 1 = si, 0 = no, y los llamantes escriben `== 1`.
+//
+// No comprueba longitudes: es responsabilidad del llamante haber verificado ya
+// que ambos lados tienen al menos n bytes. El patron habitual en parser.tt es
+//     if it.name_len == n { if bytes_eq(...) == 1 { ... } }
 fun bytes_eq(a: *u8, b: *u8, n: u64) -> u32 {
     let i: u64 = 0
     while i < n {
@@ -9,6 +35,12 @@ fun bytes_eq(a: *u8, b: *u8, n: u64) -> u32 {
     return 1
 }
 
+// Copia n bytes de src a dst.
+//
+// Copia hacia delante, asi que solo es segura si dst <= src o si los rangos no
+// se solapan. Todos los usos en el arbol copian de un buffer a otro distinto
+// (de una fuente a un arena, de un arena a un buffer de salida), nunca dentro
+// del mismo bloque hacia arriba.
 fun mem_copy(dst: *u8, src: *u8, n: u64) {
     let i: u64 = 0
     while i < n {

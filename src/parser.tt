@@ -1,3 +1,71 @@
+// ============================================================================
+// src/parser.tt - tipos, AST y analizador sintactico
+// ============================================================================
+//
+// Toma los tokens del lexer y produce un *Program: listas de funciones,
+// constantes, bloques bss, structs y literales de cadena.
+//
+// EL PARSER HACE MAS QUE PARSEAR
+//
+// No hay una fase de analisis semantico separada. El parser tambien:
+//
+//   - resuelve nombres a indices (una variable pasa a ser un numero de local,
+//     ver add_local / lookup_local),
+//   - propaga tipos hacia arriba en las expresiones, lo justo para saber el
+//     ancho de cada acceso a memoria,
+//   - DESAZUCARA el acceso a campos y la indexacion.
+//
+// Ese ultimo punto es la decision de diseno mas importante del fichero.
+// `p.campo` y `p[i]` no llegan al IR como tales: parse_postfix los convierte en
+// aritmetica de punteros con un DEREF encima, usando el layout del struct que
+// ya conoce. Consecuencia: ni el lowering ni los backends saben lo que es un
+// struct ni un campo, y por eso los dos backends caben en tan poco codigo.
+//
+// LAYOUT DE STRUCTS
+//
+// Deliberadamente trivial: TODOS los campos ocupan 8 bytes, sea cual sea su
+// tipo. El campo i esta en el offset i*8. Eso desperdicia memoria en structs
+// con u8, pero elimina el calculo de alineacion y padding, y hace que el offset
+// de un campo sea su indice por 8.
+//
+// La excepcion es `str`, que ocupa 16 (dos campos: ptr y len) y se desazucara
+// en dos accesos separados.
+//
+// GRAMATICA DE EXPRESIONES
+//
+// Pratt / precedencia por escalada (parse_expr con min_prec). Los niveles, de
+// menos a mas fuerte:
+//
+//     1  == != < <= > >=      comparaciones
+//     2  |                    or
+//     3  ^                    xor
+//     4  &                    and
+//     5  + - << >>            suma y desplazamientos
+//     6  * /                  producto
+//
+// Que << y >> compartan nivel con + - es poco convencional (en C ligan mas
+// flojo), pero es coherente dentro del lenguaje y se documenta aqui para que
+// nadie se sorprenda: `a + b << c` es `(a + b) << c`.
+//
+// No hay operadores logicos && ni ||, ni ternario, ni asignacion como
+// expresion. De ahi los `if` anidados que se ven por todo el arbol.
+//
+// ESTADO GLOBAL
+//
+// El parser guarda su estado en bss (LX_STATE, TOK_CUR, CUR_FUNC, CUR_PROG) en
+// vez de pasarlo por parametro. Es feo pero deliberado: ahorra un parametro en
+// cada una de las decenas de funciones mutuamente recursivas de la gramatica.
+// La consecuencia es que solo se puede parsear un fichero a la vez.
+//
+// LX_STATE en concreto sobrevive al parser: el lowering y los backends leen de
+// el para recuperar los nombres, que se guardan como rangos (start, len) dentro
+// del buffer de fuente, nunca como copias. Ver la nota de src/lexer.tt.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// Tipos
+// ---------------------------------------------------------------------------
+
 const T_U8: u64 = 0
 const T_U32: u64 = 1
 const T_U64: u64 = 2
@@ -5,6 +73,12 @@ const T_PTR: u64 = 3
 const T_STR: u64 = 4
 const T_STRUCT: u64 = 5
 
+// Un tipo. `inner` solo lo usan los punteros (el apuntado) y `decl` apunta al
+// StructDecl cuando kind es T_STRUCT.
+//
+// Los tipos NO se comparten ni se internalizan: cada mencion crea un Type nuevo
+// en el arena. Comparar dos tipos por identidad de puntero no funciona; hay que
+// mirar el kind.
 struct Type {
     kind:  u64,
     inner: *Type,
@@ -42,6 +116,14 @@ fun mk_ptr(ar: *Arena, inner: *Type) -> *Type {
     return t
 }
 
+// Ancho en bytes. Decide que instruccion de carga o almacenamiento emite el
+// backend (ldrb / ldr w / ldr x).
+//
+//   u8 -> 1, u32 -> 4, u64 y punteros -> 8
+//   str -> 16, porque son dos campos (ptr y len)
+//   struct -> nfields * 8, por el layout de 8 bytes por campo
+//
+// El 8 del final es el caso conservador para un tipo desconocido.
 fun type_width(t: *Type) -> u64 {
     if t.kind == T_U8  { return 1 }
     if t.kind == T_U32 { return 4 }
@@ -55,6 +137,13 @@ fun type_width(t: *Type) -> u64 {
     return 8
 }
 
+// ---------------------------------------------------------------------------
+// Expresiones
+//
+// EX_EXTERN es el caso de un nombre que no es ni local ni constante: se asume
+// que es un simbolo bss y se resuelve en el backend, que es lo que permite
+// escribir `let p: *u8 = MI_BSS`.
+// ---------------------------------------------------------------------------
 const EX_INT:    u64 = 0
 const EX_VAR:    u64 = 1
 const EX_CALL:   u64 = 2
@@ -70,6 +159,8 @@ const EX_STRLIT: u64 = 11
 const EX_ADDR:   u64 = 12
 const EX_EXTERN: u64 = 13
 
+// Operadores binarios aritmeticos y de bits. Las comparaciones no estan aqui:
+// son kinds de expresion propios (EX_EQ, EX_LT, ...).
 const OP_ADD: u64 = 0
 const OP_SUB: u64 = 1
 const OP_MUL: u64 = 2
@@ -80,6 +171,21 @@ const OP_XOR: u64 = 6
 const OP_SHL: u64 = 7
 const OP_SHR: u64 = 8
 
+// Un nodo de expresion. Como en el IR, un solo struct con todos los campos
+// posibles y sin uniones; que campos valen depende de `kind`.
+//
+//   EX_INT     ival
+//   EX_VAR     var_index (ya resuelto), var_start/var_len (nombre original)
+//   EX_CALL    callee_start/callee_len, args, nargs
+//   EX_DEREF   inner
+//   EX_BIN     lhs, rhs, op
+//   EX_EQ..GE  lhs, rhs
+//   EX_STRLIT  str_bytes, str_len, str_id
+//   EX_ADDR    inner
+//   EX_EXTERN  var_start/var_len (nombre de un simbolo bss)
+//
+// `type` lo rellena el parser segun va subiendo, y es lo que luego usa el
+// lowering para elegir anchos.
 struct Expr {
     kind:         u64,
     type:         *Type,
@@ -100,12 +206,20 @@ struct Expr {
     str_id:       u64,
 }
 
+// Estado global del parser.
+//
+//   LX_STATE   el Lexer. Sobrevive al parser: el lowering y los backends leen
+//              de aqui el buffer de fuente para resolver nombres.
+//   TOK_CUR    UNICO token de anticipacion. La gramatica se parsea con uno.
+//   STR_*      tabla de literales de cadena (cabeza, cola y contador), para
+//              asignar ids consecutivos y poder recorrerlos luego en orden.
 bss LX_STATE: 32
 bss TOK_CUR:  40
 bss STR_HEAD: 8
 bss STR_COUNT: 8
 bss STR_TAIL: 8
 
+// Error fatal en la posicion del token actual. No retorna.
 fun die_here(msg: *u8, mlen: u64) {
     let t: *Tok = TOK_CUR
     die_line(msg, mlen, t.tline)
@@ -173,6 +287,8 @@ struct BssItem {
     next:       *BssItem,
 }
 
+// El resultado del parseo. Cinco listas y un contador, que es todo lo que
+// necesitan las fases siguientes.
 struct Program {
     funcs:   *Func,
     consts:  *ConstItem,
@@ -205,12 +321,17 @@ fun cur_prog() -> *Program {
     return q[0]
 }
 
+// Compara dos rangos del buffer de fuente. Es la operacion basica de todas las
+// busquedas por nombre del parser, ya que los nombres nunca se copian.
 fun bytes_eq_off(a_off: u64, a_len: u64, b_off: u64, b_len: u64) -> u32 {
     if a_len != b_len { return 0 }
     let lx: *Lexer = LX_STATE
     return bytes_eq(lx.src + a_off, lx.src + b_off, a_len)
 }
 
+// Declara un local y devuelve su indice. Los parametros son los primeros
+// locales, en orden, lo que hace que el indice de un parametro coincida con su
+// numero de argumento.
 fun add_local(ar: *Arena, f: *Func, ns: u64, nl: u64, ty: *Type) -> u64 {
     let idx: u64 = f.nlocals
     let loc: *Local = arena_take(ar, 24)
@@ -247,6 +368,14 @@ fun add_local(ar: *Arena, f: *Func, ns: u64, nl: u64, ty: *Type) -> u64 {
     return idx
 }
 
+// Busca un local por nombre y devuelve su indice, o algo fuera de rango si no
+// existe.
+//
+// Recorre HACIA ATRAS, del ultimo declarado al primero. No es un detalle
+// estetico: con dos declaraciones del mismo nombre (en bloques distintos, ya
+// que no hay ambitos anidados de verdad) hay que quedarse con la mas reciente.
+// Buscar hacia delante devolvia la primera y fue la causa de un SEGV en el
+// hito 15.7 que costo dos sesiones encontrar.
 fun lookup_local(f: *Func, ns: u64, nl: u64) -> u64 {
     let n: u64 = f.nlocals
     let i: u64 = n
@@ -317,6 +446,15 @@ fun str_table_init() {
     ta[0] = nil
 }
 
+// Registra un literal de cadena y devuelve su id.
+//
+// Los ids son consecutivos y la lista se mantiene en ORDEN DE APARICION (por
+// eso hay tail ademas de head). El orden importa: los backends recorren
+// prog.strs para colocar los literales en memoria y el layout tiene que ser
+// determinista para que el fixpoint compare igual.
+//
+// No se deduplican literales iguales. Cuesta unos bytes de __TEXT y ahorra una
+// busqueda por cada cadena del programa.
 fun str_table_add(ar: *Arena, bytes: *u8, slen: u64) -> u64 {
     let c: *u64 = STR_COUNT
     let id: u64 = c[0]
@@ -339,6 +477,11 @@ fun str_table_add(ar: *Arena, bytes: *u8, slen: u64) -> u64 {
     return id
 }
 
+// Traduce los escapes de un literal y guarda los bytes ya resueltos.
+//
+// El lexer no desescapa nada (solo se salta el caracter siguiente a una barra
+// para no cerrar la cadena antes de tiempo); aqui es donde \n se convierte de
+// verdad en el byte 10. `raw` incluye las comillas de apertura y cierre.
 fun str_unescape(ar: *Arena, e: *Expr, raw: *u8, rawlen: u64) {
     let buf: *u8 = arena_take(ar, rawlen + 8)
     let i: u64 = 0
@@ -379,6 +522,8 @@ fun ps_init(src: *u8, srclen: u64) {
     lex_next(lx, t)
 }
 
+// Avanza al siguiente token. Junto con ps_kind son toda la interfaz del parser
+// con el lexer; nadie mas toca TOK_CUR salvo para leer start/tlen.
 fun ps_advance() {
     let lx: *Lexer = LX_STATE
     let t: *Tok = TOK_CUR
@@ -412,6 +557,18 @@ fun mk_expr(ar: *Arena, kind: u64) -> *Expr {
     return e
 }
 
+// ---------------------------------------------------------------------------
+// Expresiones, de dentro afuera:
+//
+//   parse_primary  literales, nombres, llamadas, parentesis, sizeof, nil
+//   parse_postfix  encadena `.campo` y `[indice]` sobre lo anterior
+//   parse_unary    @ (deref) y & (direccion)
+//   parse_expr     operadores binarios por precedencia
+// ---------------------------------------------------------------------------
+
+// Un nombre puede resolverse a cuatro cosas, y se prueban en este orden:
+// local -> constante -> bss (EX_EXTERN) -> error. Ese orden es el que da el
+// ambito: un local tapa a una constante del mismo nombre.
 fun parse_primary(ar: *Arena) -> *Expr {
     let t: *Tok = TOK_CUR
     let k: u32 = t.kind
@@ -529,6 +686,20 @@ fun parse_primary(ar: *Arena) -> *Expr {
     return nil
 }
 
+// Aqui ocurre el desazucarado que evita que el resto del compilador conozca los
+// structs.
+//
+//   p.campo   ->  DEREF(ADD(p, indice_del_campo * 8))
+//   p[i]      ->  DEREF(ADD(p, i * ancho_del_apuntado))
+//
+// con el tipo del resultado propagado para que el lowering emita el ancho
+// correcto.
+//
+// El caso especial es `str`, que no es un struct sino un par: `s.ptr` y `s.len`
+// se convierten en accesos a dos locales consecutivos, no en aritmetica de
+// punteros. Por eso un `str` ocupa dos huecos y type_width devuelve 16.
+//
+// El bucle `while 1 == 1` encadena postfijos, de modo que `a.b[i].c` funciona.
 fun parse_postfix(ar: *Arena) -> *Expr {
     let e: *Expr = parse_primary(ar)
     while 1 == 1 {
@@ -667,6 +838,9 @@ fun parse_postfix(ar: *Arena) -> *Expr {
     return e
 }
 
+// Prefijos: `@e` desreferencia y `&e` toma la direccion. Ligan mas fuerte que
+// cualquier binario y mas flojo que los postfijos, o sea que `@p[0]` es
+// `@(p[0])`.
 fun parse_unary(ar: *Arena) -> *Expr {
     let k: u32 = ps_kind()
     if k == TK_AT {
@@ -691,6 +865,10 @@ fun parse_unary(ar: *Arena) -> *Expr {
     return parse_postfix(ar)
 }
 
+// Precedencia de los operadores binarios. 0 significa "no es un binario" y
+// termina el bucle de parse_expr.
+//
+// Ver la tabla del encabezado. Nota: << y >> comparten nivel con + y -.
 fun bin_prec(k: u32) -> u64 {
     if k == TK_STAR   { return 6 }
     if k == TK_SLASH  { return 6 }
@@ -710,6 +888,15 @@ fun bin_prec(k: u32) -> u64 {
     return 0
 }
 
+// Escalada de precedencia (precedence climbing).
+//
+// Parsea un operando y luego, mientras el operador que viene ligue al menos tan
+// fuerte como min_prec, lo consume y parsea el lado derecho con `pr + 1`. Ese
+// +1 es lo que hace que todos los operadores sean ASOCIATIVOS POR LA IZQUIERDA:
+// con `pr` a secas serian por la derecha.
+//
+// El tipo del resultado es el del lado izquierdo para los aritmeticos, y u32
+// para las comparaciones (que producen 0 o 1).
 fun parse_expr(ar: *Arena, min_prec: u64) -> *Expr {
     let lhs: *Expr = parse_unary(ar)
     while bin_prec(ps_kind()) >= min_prec {
@@ -745,6 +932,13 @@ fun parse_expr(ar: *Arena, min_prec: u64) -> *Expr {
     return lhs
 }
 
+// ---------------------------------------------------------------------------
+// Sentencias
+//
+// ST_STORE y ST_ASSIGN se distinguen por el destino: ST_ASSIGN escribe en una
+// variable (`x = e`) y ST_STORE en memoria a traves de un puntero (`@p = e` o
+// `p[i] = e`).
+// ---------------------------------------------------------------------------
 const ST_LET:    u64 = 0
 const ST_STORE:  u64 = 1
 const ST_ASSIGN: u64 = 2
@@ -772,6 +966,8 @@ fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
     return s
 }
 
+// Consume un token del tipo esperado o muere. `ps_accept` es la version que no
+// muere: consume y devuelve 1 si coincide, o deja el token y devuelve 0.
 fun ps_expect(k: u32) {
     if ps_kind() != k {
         let m81: str = 'se esperaba token'
@@ -791,6 +987,9 @@ fun bytes_eq_at(src_off: u64, tlen: u64, kw: *u8, kwlen: u64) -> u32 {
     return bytes_eq(lx.src + src_off, kw, kwlen)
 }
 
+// Un tipo: u8, u32, u64, str, un nombre de struct, o `*` seguido de otro tipo.
+// Los punteros se anidan a la izquierda, asi que `**u8` es puntero a puntero a
+// byte.
 fun parse_type(ar: *Arena) -> *Type {
     if ps_kind() == TK_STAR {
         ps_advance()
@@ -837,6 +1036,13 @@ fun parse_block(ar: *Arena) -> *Stmt {
     return head
 }
 
+// Una sentencia. No hay punto y coma obligatorio: el final de una sentencia se
+// deduce de la gramatica, lo que obliga a decidir por el primer token.
+//
+// El caso ambiguo es un identificador al principio: puede ser una asignacion
+// (`x = ...`), una escritura indexada (`p[i] = ...`) o una expresion suelta
+// (una llamada). Se resuelve parseando la expresion y mirando si despues viene
+// un `=`.
 fun parse_stmt(ar: *Arena) -> *Stmt {
     let k: u32 = ps_kind()
     if k == TK_LET {
@@ -939,6 +1145,11 @@ fun mk_program(ar: *Arena) -> *Program {
     return p
 }
 
+// Declaracion de funcion: nombre, parametros, tipo de retorno opcional tras
+// `->` y cuerpo.
+//
+// Los parametros se registran como locales segun se parsean, de modo que ya son
+// visibles dentro del cuerpo y su indice coincide con su posicion.
 fun parse_fun(ar: *Arena) -> *Func {
     ps_expect(TK_FUN)
     if ps_kind() != TK_IDENT {
@@ -1021,6 +1232,14 @@ fun parse_const_decl(ar: *Arena) -> *ConstItem {
     return c
 }
 
+// `bss NOMBRE: tamano`. Reserva un bloque de memoria estatica puesta a cero.
+//
+// Es el unico almacenamiento global del lenguaje: no hay variables globales
+// inicializadas, porque eso exigiria una seccion __data con contenido y aqui
+// __DATA es siempre S_ZEROFILL.
+//
+// El orden de declaracion determina el orden en memoria (ver cgb_bss_layout en
+// codegen_bytes.tt).
 fun parse_bss_decl(ar: *Arena) -> *BssItem {
     ps_expect(TK_BSS)
     if ps_kind() != TK_IDENT {
@@ -1044,6 +1263,8 @@ fun parse_bss_decl(ar: *Arena) -> *BssItem {
     return b
 }
 
+// `struct Nombre { campo: tipo, ... }`. Todos los campos ocupan 8 bytes; ver la
+// nota sobre el layout en el encabezado.
 fun parse_struct_decl(ar: *Arena) -> *StructDecl {
     ps_expect(TK_STRUCT)
     if ps_kind() != TK_IDENT {
@@ -1095,6 +1316,10 @@ fun parse_struct_decl(ar: *Arena) -> *StructDecl {
     return sd
 }
 
+// Punto de entrada: parsea un fichero entero y devuelve el Program.
+//
+// A nivel superior solo hay cinco cosas posibles: fun, const, bss, struct y el
+// fin de fichero.
 fun parse(ar: *Arena, src: *u8, srclen: u64) -> *Program {
     ps_init(src, srclen)
     str_table_init()

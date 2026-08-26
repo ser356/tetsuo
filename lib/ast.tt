@@ -1,6 +1,33 @@
+// ============================================================================
+// lib/ast.tt - arena del arbol sintactico
+// ============================================================================
+//
+// El compilador reparte la memoria dinamica en arenas separadas, una por fase,
+// en vez de tener un unico heap. Las tres grandes son:
+//
+//     AST_BUF  (aqui, 16MB)  nodos de parser.tt: Expr, Stmt, Func, Type, StrLit
+//     IR_BUF   (src/ir.tt)   instrucciones y funciones del IR
+//     PP_ARENA (src/main.tt) fuentes leidas por el preprocesador
+//
+// Separarlas no es por higiene: es lo que permite que cada fase razone sobre su
+// consumo por separado y que un desbordamiento diga QUE fase se paso. Los tres
+// bloques juntos dominan el tamano de __bss del binario emitido (~57MB de los
+// cuales 48MB son estos tres), que es lo que se ve como `__DATA vmsize` en
+// `otool -l` sobre cualquier binario producido con --emit=macho.
+//
+// 16MB da de sobra: el propio compilador (el fichero .tt combinado mas grande
+// que se parsea, ~139KB de fuente) consume del orden de 3MB de nodos.
+//
+// El struct Arena y arena_take viven en src/runtime/io.tt.
+// ============================================================================
+
 bss AST_BUF: 16777216
 bss AST_ARENA_STORE: 24
 
+// Devuelve el arena del AST, ya inicializado. AST_ARENA_STORE es un bss de 24
+// bytes (sizeof Arena) en vez de una variable local para que el struct
+// sobreviva al retorno: no hay heap donde ponerlo y devolver un puntero a un
+// local seria devolver un puntero a la pila ya liberada.
 fun ast_init() -> *Arena {
     let a: *Arena = AST_ARENA_STORE
     arena_init(a, AST_BUF, 16777216)

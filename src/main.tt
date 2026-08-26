@@ -1,13 +1,68 @@
-bss SRC_BUF: 262144
-bss OUT_BUF: 65536
-bss OUT_STORAGE: 64
-bss DUMP_TOK_STORE: 40
-bss PP_OUT: 524288
+// ============================================================================
+// src/main.tt - driver del compilador y preprocesador de imports
+// ============================================================================
+//
+// Es el punto de entrada de tetsuoc y el sitio donde se encadenan todas las
+// fases:
+//
+//     fichero.tt
+//        |  pp_expand          resuelve los `import` a un unico buffer
+//        v
+//     PP_OUT
+//        |  parse              lexer + parser -> *Program        (parser.tt)
+//        v
+//     AST
+//        |  lower              -> lista de IrFn                  (ir.tt)
+//        v
+//     IR
+//        |  codegen            -> texto .s                       (codegen.tt)
+//        |  codegen_bytes      -> bytes + emit_macho_code_bss    (codegen_bytes.tt)
+//        v
+//     salida
+//
+// MODOS DE INVOCACION
+//
+//     tetsuoc --dump-tokens f.tt              vuelca la secuencia de tokens
+//     tetsuoc --dump-ir f.tt                  vuelca el IR en texto
+//     tetsuoc [--target=macos] f.tt -o s.s    emite ensamblador
+//     tetsuoc --emit=macho f.tt -o binario    emite un Mach-O firmado, listo
+//                                             para ejecutar en macOS/arm64
+//
+// El ultimo es el que cierra el auto-hospedaje: no necesita clang, as, ld ni
+// codesign.
+//
+// EL PREPROCESADOR
+//
+// `import 'ruta'` es textual: se sustituye la linea por el contenido del
+// fichero, recursivamente, saltando lo ya incluido (guarda de inclusion por
+// ruta, ver pp_seen). No hay espacios de nombres ni simbolos privados; todo
+// acaba en un unico buffer plano, y por eso el orden de los import importa (el
+// primero que declare un bss se lleva el offset 0).
+//
+// Es deliberadamente tonto: reconoce una linea que EMPIECE por "import " y
+// extrae lo que hay entre comillas simples. Un import sangrado o dentro de un
+// comentario no se reconoce.
+//
+// LOS BUFFERS Y SUS LIMITES
+//
+// Casi todo el bss del compilador se declara aqui o en los arenas de las fases.
+// Los limites son duros y estan comprobados: pasarse aborta con un mensaje, no
+// trunca en silencio. Esa comprobacion no siempre estuvo: pp_expand leia cada
+// fichero en un buffer fijo de 128KB sin mirar si cabia, y una fuente mayor
+// perdia la cola, con lo que el error salia mucho despues disfrazado de fallo
+// de sintaxis en mitad del fichero.
+// ============================================================================
+
+bss SRC_BUF: 262144       // fuente cruda, solo para los modos --dump-*
+bss OUT_BUF: 65536        // buffer de salida del backend textual
+bss OUT_STORAGE: 64       // el struct Out (no cabe en un local por el retorno)
+bss DUMP_TOK_STORE: 40    // el Tok de --dump-tokens
+bss PP_OUT: 1048576       // fuente ya expandida: lo que ve el parser
 bss PP_OUT_LEN: 8
 bss PP_ARENA_STORE: 24
-bss PP_ARENA_BUF: 16777216
+bss PP_ARENA_BUF: 16777216  // arena del preprocesador: rutas y ficheros leidos
 bss PP_SEEN_COUNT: 8
-bss PP_SEEN_PTRS: 256
+bss PP_SEEN_PTRS: 256     // 32 rutas ya incluidas (guarda de inclusion)
 bss PP_SEEN_LENS: 256
 
 fun pp_arena_init() -> *Arena {
@@ -23,9 +78,15 @@ fun pp_file_cap() -> u64 {
 }
 
 fun pp_out_cap() -> u64 {
-    return 524288
+    return 1048576
 }
 
+// Guarda de inclusion: 1 si esta ruta ya se incluyo.
+//
+// La comparacion es por TEXTO de la ruta, no por fichero real. Dos rutas
+// distintas que apunten al mismo fichero (una relativa y otra con ./) se
+// incluirian dos veces y darian funciones duplicadas. En la practica todos los
+// entries usan rutas canonicas desde la raiz del repo.
 fun pp_seen(pth: *u8, plen: u64) -> u64 {
     let cnt_p: *u64 = PP_SEEN_COUNT
     let cnt: u64 = cnt_p[0]
@@ -71,6 +132,8 @@ fun pp_out_append(bytes: *u8, n: u64) {
     lp[0] = cur + n
 }
 
+// Si la linea que empieza en `off` es un `import `. Exige que las siete letras
+// esten al PRINCIPIO de la linea, sin sangrado.
 fun is_import_line(src: *u8, off: u64, srclen: u64) -> u64 {
     let kw: str = 'import '
     if off + 7 > srclen { return 0 }
@@ -82,6 +145,18 @@ fun is_import_line(src: *u8, off: u64, srclen: u64) -> u64 {
     return 1
 }
 
+// Expande un fichero y sus imports a PP_OUT.
+//
+// Recorre el fichero linea a linea. Si la linea es un import, extrae la ruta
+// entre comillas simples y se llama a si misma; si no, copia la linea tal cual.
+//
+// La ruta se copia al arena antes de marcarla como vista, porque `path` puede
+// apuntar al buffer del fichero que la contiene y ese buffer sigue vivo pero es
+// mas simple no depender de ello.
+//
+// Las lineas de import NO se sustituyen por una linea en blanco, asi que los
+// numeros de linea de los errores se refieren al fichero EXPANDIDO, no al
+// original. Es la limitacion mas visible del preprocesador.
 fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
     if pp_seen(path, plen) == 1 { return }
     let pcopy: *u8 = arena_take(ar, plen + 1)
@@ -156,6 +231,11 @@ fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
     }
 }
 
+// Modo --dump-tokens: imprime kind/start/len/line de cada token hasta EOF.
+//
+// Sirve para dos cosas: depurar el lexer, y comparar generaciones del
+// compilador sin depender del codigo generado (bootstrap/verify.sh comprueba
+// que dos generaciones producen la misma secuencia de tokens).
 fun dump_tokens(o: *Out, src: *u8, srclen: u64) {
     let lx: *Lexer = LX_STATE
     lex_init(lx, src, srclen)
@@ -179,6 +259,12 @@ fun dump_tokens(o: *Out, src: *u8, srclen: u64) {
     }
 }
 
+// Lee un fichero entero a un buffer. Solo lo usan los modos --dump-*; la ruta
+// normal de compilacion pasa por pp_expand.
+//
+// Como pp_expand antes del arreglo, no distingue "fichero de cap bytes" de
+// "fichero mas grande truncado". Aqui importa menos porque los modos --dump-*
+// son herramientas de depuracion.
 fun read_all(path: *u8, buf: *u8, cap: u64) -> u64 {
     let fd: u64 = io_open_read(path)
     if fd == 0 { return 0 }
@@ -211,6 +297,19 @@ fun cstr_eq(a: *u8, lit: *u8, n: u64) -> u64 {
     return 1
 }
 
+// ---------------------------------------------------------------------------
+// Driver
+//
+// Codigos de salida:
+//   0  todo bien
+//   2  argumentos insuficientes (o error de sintaxis, via die_line)
+//   3  la fuente esta vacia o no se pudo leer
+//   4  no se pudo abrir el fichero de salida
+//
+// Los argumentos se leen desde el FINAL (argv[argc-3] es la entrada y
+// argv[argc-1] la salida) para que los flags opcionales del principio no
+// desplacen las posiciones.
+// ---------------------------------------------------------------------------
 fun main(argc: u64, argv: **u8) -> u32 {
     if argc < 3 { return 2 }
 
@@ -271,6 +370,11 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let fd: u64 = io_open_write(output)
     if fd == 0 { return 4 }
 
+    // Camino --emit=macho: bytes en vez de texto.
+    //
+    // El orden importa. cgb_bss_layout tiene que ir ANTES de codegen_bytes
+    // porque el codigo generado referencia los simbolos bss por indice y esos
+    // indices los asigna el layout.
     if is_macho == 1 {
         let bvsz: u64 = cgb_bss_layout(prog)
         codegen_bytes(prog, irhead)

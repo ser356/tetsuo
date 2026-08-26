@@ -1,7 +1,65 @@
-// Encoder de instrucciones AArch64: cada funcion devuelve el u32 codificado.
-// Todos los campos se enmascaran para no desbordar bits vecinos.
-// Convencion: registros 0..30 = x0..x30 / w0..w30; 31 = xzr/wzr o sp segun uso.
+// ============================================================================
+// src/asm.tt - encoder de instrucciones AArch64 (hito 24.b)
+// ============================================================================
+//
+// Cada funcion `enc_*` devuelve el u32 de UNA instruccion ARM64 ya codificada,
+// lista para escribirse little-endian en el buffer de codigo. Es la pieza que
+// sustituye al ensamblador: donde src/codegen.tt escribe el texto
+// "add x9, x10, x11", src/codegen_bytes.tt llama a enc_add_reg(9, 10, 11) y
+// obtiene 0x8b0b014a.
+//
+// COMO SE LEE ESTE FICHERO
+//
+// Todas las funciones tienen la misma forma:
+//
+//     return <BASE> | (campo1 << pos1) | (campo2 << pos2) | ...
+//
+// donde BASE es la palabra con todos los campos variables a cero (el "opcode"
+// puro) y cada campo se enmascara antes de desplazarlo. El enmascarado no es
+// paranoia: un registro fuera de rango o un inmediato con signo negativo
+// (representado como u64, o sea enorme) desbordaria sobre los bits del opcode y
+// produciria OTRA instruccion, valida y silenciosamente incorrecta. Ese es
+// exactamente el modo de fallo mas caro de depurar en un compilador que emite
+// bytes: `otool -tv` ensena algo que se lee bien y la CPU hace otra cosa.
+//
+// Las constantes estan en decimal porque el lenguaje no tenia literales hex
+// cuando se escribio este fichero. La tabla de equivalencias:
+//
+//     movz       0xd2800000      ldr_x      0xf9400000      adrp   0x90000000
+//     movk       0xf2800000      ldr_w      0xb9400000      bl     0x94000000
+//     orr/mov    0xaa000000      ldrb       0x39400000      b      0x14000000
+//     stp_pre    0xa9800000      str_x      0xf9000000      cbz    0x34000000
+//     ldp_post   0xa8c00000      str_w      0xb9000000      subs   0xeb000000
+//     add_imm    0x91000000      strb       0x39000000      csinc  0x1a9f07e0
+//     sub_imm    0xd1000000      madd       0x9b007c00      svc    0xd4000001
+//     add_reg    0x8b000000      udiv       0x9ac00800      ret    0xd65f03c0
+//     sub_reg    0xcb000000      lslv       0x9ac02000
+//     and        0x8a000000      lsrv       0x9ac02400
+//     eor        0xca000000
+//
+// CONVENCION DE REGISTROS
+//
+// 0..30 son x0..x30 (o w0..w30 en las variantes de 32 bits). El 31 es especial
+// y su significado DEPENDE DE LA INSTRUCCION: en unas codifica xzr/wzr (el
+// registro cero) y en otras sp. Esta ambiguedad del ISA causo un bug real en la
+// sesion C2: emitir `sub sp, sp, x16` con enc_sub_reg(31, 31, 16) produce
+// `sub xzr, sp, x16`, que descarta el resultado y deja SP intacto, con lo que
+// los locales de la funcion pisaban el frame del llamante. De ahi que existan
+// enc_sub_ext_sp / enc_add_ext_sp por separado (ver mas abajo).
+//
+// El encoder se prueba en tests/asm_test.tt, que compara el u32 producido con
+// el que emite clang para la misma instruccion.
+// ============================================================================
 
+// ---------------------------------------------------------------------------
+// Mascaras de campo. m<N> recorta a los N bits bajos.
+//
+// Sirven para dos cosas a la vez: acotar valores sin signo (un registro nunca
+// pasa de 31) y convertir un desplazamiento con signo a su complemento a dos
+// del ancho correcto. Como en tetsuo todo es u64, un offset de -3 llega aqui
+// como 0xFFFFFFFFFFFFFFFD y m26() lo recorta a 0x3FFFFFD, que es justo lo que
+// espera el campo imm26 de un branch.
+// ---------------------------------------------------------------------------
 fun m5(v: u64) -> u64  { return v & 31 }
 fun m7(v: u64) -> u64  { return v & 127 }
 fun m12(v: u64) -> u64 { return v & 4095 }
@@ -10,32 +68,72 @@ fun m19(v: u64) -> u64 { return v & 524287 }
 fun m21(v: u64) -> u64 { return v & 2097151 }
 fun m26(v: u64) -> u64 { return v & 67108863 }
 
+// ---------------------------------------------------------------------------
+// Constantes a registro
+// ---------------------------------------------------------------------------
+
 // MOVZ Xd, #imm16, LSL #(16*hw)
+//
+// Pone imm16 en el hueco de 16 bits indicado por hw (0..3) y CERO en el resto
+// del registro. Es la primera instruccion de cualquier secuencia que carga una
+// constante grande: movz para el trozo bajo, movk para los demas.
+// Campos: hw en bits 22:21, imm16 en 20:5, Rd en 4:0.
 fun enc_movz(rd: u64, imm16: u64, hw: u64) -> u64 {
     return 3531603968 | (m5(hw) << 21) | (m16(imm16) << 5) | m5(rd)
 }
 
 // MOVK Xd, #imm16, LSL #(16*hw)
+//
+// Igual que movz pero CONSERVA el resto del registro (keep). Encadenando
+// movz + movk*3 se construye cualquier u64 en cuatro instrucciones. Ver b_movi
+// en codegen_bytes.tt, que omite los trozos que valen cero.
 fun enc_movk(rd: u64, imm16: u64, hw: u64) -> u64 {
     return 4068474880 | (m5(hw) << 21) | (m16(imm16) << 5) | m5(rd)
 }
 
-// MOV Xd, Xm  == ORR Xd, XZR, Xm
+// MOV Xd, Xm  ==  ORR Xd, XZR, Xm
+//
+// AArch64 no tiene un opcode MOV entre registros: es un alias de ORR con el
+// registro cero como primer operando. Por eso el 31 aparece literal en la
+// posicion de Rn.
 fun enc_mov_reg(rd: u64, rm: u64) -> u64 {
     return 2852126720 | (m5(rm) << 16) | (31 << 5) | m5(rd)
 }
 
-// STP Xt, Xt2, [Xn, #imm7*8]!   (pre-index). imm7 = campo de 7 bits ya escalado.
+// ---------------------------------------------------------------------------
+// Pares (prologo y epilogo de funcion)
+// ---------------------------------------------------------------------------
+
+// STP Xt, Xt2, [Xn, #imm7*8]!   (pre-index, con escritura de vuelta)
+//
+// imm7 es el campo CRUDO, ya escalado y en complemento a dos de 7 bits: el
+// desplazamiento real en bytes es imm7*8. El prologo usa imm7 = 126, que es -2
+// en 7 bits, o sea `[sp, #-16]!`: baja SP 16 bytes y guarda alli x29/x30.
+// Aqui Rn = 31 significa SP.
 fun enc_stp_pre(rt: u64, rt2: u64, rn: u64, imm7: u64) -> u64 {
     return 2843738112 | (m7(imm7) << 15) | (m5(rt2) << 10) | (m5(rn) << 5) | m5(rt)
 }
 
-// LDP Xt, Xt2, [Xn], #imm7*8    (post-index).
+// LDP Xt, Xt2, [Xn], #imm7*8    (post-index)
+//
+// El inverso del anterior: lee y DESPUES sube SP. El epilogo usa imm7 = 2, o
+// sea `[sp], #16`.
 fun enc_ldp_post(rt: u64, rt2: u64, rn: u64, imm7: u64) -> u64 {
     return 2831155200 | (m7(imm7) << 15) | (m5(rt2) << 10) | (m5(rn) << 5) | m5(rt)
 }
 
+// ---------------------------------------------------------------------------
+// Aritmetica
+// ---------------------------------------------------------------------------
+
 // ADD Xd, Xn, #imm12
+//
+// En la forma inmediata, Rd=31 y Rn=31 significan SP (no xzr), asi que esta
+// misma funcion sirve para `mov x29, sp` (add x29, sp, #0) y para
+// `sub sp, sp, #N` con enc_sub_imm. imm12 no lleva signo: para restar se usa
+// enc_sub_imm. El rango util es 0..4095 (existe un shift LSL #12 opcional que
+// aqui no se usa; por encima de 4095 el codegen carga la constante en x16 y usa
+// la forma de registro extendido).
 fun enc_add_imm(rd: u64, rn: u64, imm12: u64) -> u64 {
     return 2432696320 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rd)
 }
@@ -45,40 +143,65 @@ fun enc_sub_imm(rd: u64, rn: u64, imm12: u64) -> u64 {
     return 3506438144 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rd)
 }
 
-// ADD Xd, Xn, Xm  (shifted register, LSL 0)
+// ADD Xd, Xn, Xm  (shifted register, LSL #0)
+//
+// OJO: en la forma de registro DESPLAZADO, el 31 codifica xzr, NO sp. Por eso
+// esta funcion no vale para tocar SP; ver enc_add_ext_sp.
 fun enc_add_reg(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2332033024 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
+// SUB Xd, Xn, Xm  (shifted register, LSL #0). Misma advertencia sobre el 31.
 fun enc_sub_reg(rd: u64, rn: u64, rm: u64) -> u64 {
     return 3405774848 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
-// SUB SP, SP, Xm (extended register, UXTX). Necesario cuando Rd=31=SP; el
-// enc_sub_reg de arriba con Rd=31 codifica XZR y no toca SP.
+// SUB SP, SP, Xm   (extended register, UXTX #0)
+//
+// La unica forma de registro en la que Rd=31 significa SP es la EXTENDIDA (bit
+// 21 a uno, campo option = UXTX). La base 0xcb2063ff ya trae todo fijado:
+//
+//     bit 21     = 1        forma de registro extendido
+//     option 3   = UXTX     (bits 15:13, "usar Xm entero, sin extension")
+//     imm3  0    = LSL #0   (bits 12:10)
+//     Rn    31   = SP       (bits 9:5)
+//     Rd    31   = SP       (bits 4:0)
+//
+// Solo queda por rellenar Rm en los bits 20:16. Existe porque
+// enc_sub_reg(31, 31, 16) codifica `sub xzr, sp, x16`, que no modifica SP: el
+// bug de la sesion C2, que dejaba el frame sin reservar en toda funcion con
+// mas de 4095 bytes de locales.
 fun enc_sub_ext_sp(rm: u64) -> u64 {
     return 3407897599 | (m5(rm) << 16)
 }
 
-// ADD SP, SP, Xm (extended register, UXTX). Analogo de arriba para restaurar SP.
+// ADD SP, SP, Xm   (extended register, UXTX #0). El simetrico para el epilogo.
 fun enc_add_ext_sp(rm: u64) -> u64 {
     return 2334155775 | (m5(rm) << 16)
 }
 
-// MUL Xd, Xn, Xm  == MADD Xd, Xn, Xm, XZR
+// MUL Xd, Xn, Xm  ==  MADD Xd, Xn, Xm, XZR
+//
+// No hay MUL de tres operandos: es un alias de multiplicar-y-acumular con el
+// acumulador puesto a xzr. De ahi el `31 << 10` (campo Ra).
 fun enc_mul(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2600500224 | (m5(rm) << 16) | (31 << 10) | (m5(rn) << 5) | m5(rd)
 }
 
-// UDIV Xd, Xn, Xm
+// UDIV Xd, Xn, Xm  (division entera sin signo; division por cero da 0, no trap)
 fun enc_udiv(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2596276224 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
+
+// ---------------------------------------------------------------------------
+// Logicas y desplazamientos (hito 24.a)
+// ---------------------------------------------------------------------------
 
 fun enc_and(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2315255808 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
+// Misma base que enc_mov_reg: MOV es ORR con Rn=xzr.
 fun enc_orr(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2852126720 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
@@ -87,27 +210,39 @@ fun enc_eor(rd: u64, rn: u64, rm: u64) -> u64 {
     return 3388997632 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
-// LSLV Xd, Xn, Xm
+// LSLV / LSRV: desplazamiento por REGISTRO (variable). El desplazamiento por
+// inmediato es un alias de UBFM y no se usa aqui: el codegen carga la constante
+// a un registro y usa siempre la forma variable, lo que ahorra un caso.
+// Solo se miran los 6 bits bajos de Xm, como manda el ISA.
 fun enc_lslv(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2596282368 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
-// LSRV Xd, Xn, Xm
 fun enc_lsrv(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2596283392 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
-// LDR Xt, [Xn, #imm12*8]   (imm12 = campo escalado, no bytes)
+// ---------------------------------------------------------------------------
+// Memoria (forma "unsigned offset")
+//
+// En todas estas, imm12 es el campo CRUDO y el desplazamiento real en bytes es
+// imm12 * (ancho del acceso): *8 para x, *4 para w, *1 para b. Es decir, el
+// llamante debe DIVIDIR el offset en bytes por el ancho antes de pasarlo, y el
+// offset tiene que ser multiplo del ancho. Ver b_str_x / b_ldr_x en
+// codegen_bytes.tt, que hacen esa division.
+//
+// Rn = 31 significa SP aqui, que es justo lo que hace falta para los locales.
+// ---------------------------------------------------------------------------
+
 fun enc_ldr_x(rt: u64, rn: u64, imm12: u64) -> u64 {
     return 4181721088 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
 }
 
-// LDR Wt, [Xn, #imm12*4]
 fun enc_ldr_w(rt: u64, rn: u64, imm12: u64) -> u64 {
     return 3107979264 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
 }
 
-// LDRB Wt, [Xn, #imm12]
+// LDRB Wt, [Xn, #imm12]. Extiende con ceros a 32 bits (y el resto del X a 0).
 fun enc_ldrb(rt: u64, rn: u64, imm12: u64) -> u64 {
     return 960495616 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
 }
@@ -124,7 +259,28 @@ fun enc_strb(rt: u64, rn: u64, imm12: u64) -> u64 {
     return 956301312 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
 }
 
-// ADRP Xd, #imm21 (paginas). imm21 = (target_page - pc_page).
+// ---------------------------------------------------------------------------
+// Direcciones (el par adrp + add)
+// ---------------------------------------------------------------------------
+
+// ADRP Xd, #imm21
+//
+// Pone en Xd la direccion de la PAGINA de 4KB que esta imm21 paginas mas alla
+// de la pagina del PC. imm21 va con signo y da un alcance de +-4GB.
+//
+// El campo esta PARTIDO en dos trozos no contiguos, que es la peculiaridad de
+// esta instruccion: los 2 bits bajos van a 30:29 (immlo) y los 19 altos a 23:5
+// (immhi). De ahi el troceo lo/hi.
+//
+// El uso normal es el par cannonico
+//     adrp x9, simbolo          // pagina
+//     add  x9, x9, #(sim & 4095) // desplazamiento dentro de la pagina
+// que es lo que emiten los fixups FX_ADRP/FX_PGOF y FX_ADRPB/FX_PGOFB de
+// codegen_bytes.tt para literales de cadena y para simbolos bss.
+//
+// Como es relativo al PC, el binario resultante sigue siendo correcto si el
+// cargador desliza la imagen (MH_PIE), siempre que __TEXT y __DATA se deslicen
+// juntos, que es lo que hace macOS.
 fun enc_adrp(rd: u64, imm21: u64) -> u64 {
     let v: u64 = m21(imm21)
     let lo: u64 = v & 3
@@ -132,43 +288,82 @@ fun enc_adrp(rd: u64, imm21: u64) -> u64 {
     return 2415919104 | (lo << 29) | (hi << 5) | m5(rd)
 }
 
-// ADD Xd, Xn, #imm12  (page offset). Alias de enc_add_imm.
+// La segunda mitad del par adrp+add. Es literalmente enc_add_imm; existe con
+// nombre propio para que el sitio de la llamada se lea como lo que es.
 fun enc_add_pageoff(rd: u64, rn: u64, imm12: u64) -> u64 {
     return enc_add_imm(rd, rn, imm12)
 }
 
-// BL #imm26 (offset en instrucciones, con signo, campo de 26 bits)
+// ---------------------------------------------------------------------------
+// Saltos
+//
+// En todos los saltos el desplazamiento se cuenta en INSTRUCCIONES (palabras de
+// 4 bytes), no en bytes, y es relativo al PC de la propia instruccion. El
+// llamante calcula (destino - aqui) / 4 y deja que la mascara haga el
+// complemento a dos.
+// ---------------------------------------------------------------------------
+
+// BL #imm26 - llamada. Guarda la direccion de retorno en x30. Alcance +-128MB,
+// de sobra para un __text de 106KB como el del propio compilador.
 fun enc_bl(imm26: u64) -> u64 {
     return 2483027968 | m26(imm26)
 }
 
-// B #imm26
+// B #imm26 - salto incondicional. Mismo alcance.
 fun enc_b(imm26: u64) -> u64 {
     return 335544320 | m26(imm26)
 }
 
-// CBZ Wt, #imm19
+// CBZ Wt, #imm19 - salta si Wt es cero. Alcance +-1MB.
+//
+// Es el unico salto condicional que emite el backend de bytes: las
+// comparaciones producen un 0/1 en un registro (ver enc_cset) y el flujo de
+// control se decide con cbz sobre ese 0/1, en vez de con b.cond sobre los
+// flags. Eso desacopla la comparacion del salto y evita tener que preservar
+// NZCV entre instrucciones del IR.
 fun enc_cbz_w(rt: u64, imm19: u64) -> u64 {
     return 872415232 | (m19(imm19) << 5) | m5(rt)
 }
 
-// CMP Xn, Xm  == SUBS XZR, Xn, Xm
+// ---------------------------------------------------------------------------
+// Comparacion y materializacion de condiciones
+// ---------------------------------------------------------------------------
+
+// CMP Xn, Xm  ==  SUBS XZR, Xn, Xm
+//
+// Resta descartando el resultado y quedandose solo con los flags NZCV. El 31
+// literal al final es el Rd = xzr.
 fun enc_cmp_reg(rn: u64, rm: u64) -> u64 {
     return 3942645760 | (m5(rm) << 16) | (m5(rn) << 5) | 31
 }
 
-// CSET Wd, cond  == CSINC Wd, WZR, WZR, invert(cond).
-// invcond = campo de condicion invertida (p.ej. cset .., eq -> invcond = NE = 1).
+// CSET Wd, cond  ==  CSINC Wd, WZR, WZR, invert(cond)
+//
+// Pone 1 en Wd si se cumple `cond` y 0 si no. El truco del alias es que CSINC
+// escribe "Rn si se cumple la condicion, Rm+1 si no", asi que con Rn=Rm=wzr da
+// 0 cuando se cumple y 1 cuando no; por eso hay que pasar la condicion
+// INVERTIDA.
+//
+// El llamante ya hace esa inversion: para `cset w10, eq` se pasa invcond = NE
+// = 1. La tabla de condiciones ARM es EQ=0, NE=1, HS/CS=2, LO/CC=3, MI=4, PL=5,
+// VS=6, VC=7, HI=8, LS=9, GE=10, LT=11, GT=12, LE=13, AL=14; e invertir una
+// condicion es poner a uno su bit 0. Ver cgb_i_cmp en codegen_bytes.tt.
 fun enc_cset(rd: u64, invcond: u64) -> u64 {
     return 446629856 | ((invcond & 15) << 12) | m5(rd)
 }
 
-// SVC #imm16
+// ---------------------------------------------------------------------------
+// Sistema
+// ---------------------------------------------------------------------------
+
+// SVC #imm16 - llamada al supervisor. macOS usa siempre #0x80, con el numero de
+// syscall en x16. Ver src/runtime/io.tt.
 fun enc_svc(imm16: u64) -> u64 {
     return 3556769793 | (m16(imm16) << 5)
 }
 
-// RET (X30)
+// RET - vuelve a la direccion de x30. El registro es explicito en el encoding
+// (bits 9:5), aunque el ensamblador lo omite cuando es x30.
 fun enc_ret() -> u64 {
     return 3596551104 | (30 << 5)
 }

@@ -1,15 +1,64 @@
-// SHA-256 sobre 32 bits emulados en u64 (enmascarado a 0xffffffff).
-// sha256(msg, mlen, out) escribe 32 bytes de hash big-endian en out.
+// ============================================================================
+// lib/sha256.tt - SHA-256 (hito 24.c)
+// ============================================================================
+//
+// Implementacion directa de FIPS 180-4. Existe por una sola razon: firmar los
+// binarios Mach-O ad-hoc sin llamar a `codesign`. El CS_CodeDirectory que
+// escribe src/macho.tt guarda un SHA-256 por cada pagina de 4KB del binario, y
+// el kernel de macOS los recalcula al paginar; si no cuadran, mata el proceso.
+// Ver mo_sign_and_write_n en src/macho.tt.
+//
+// Tambien es la fuente del UUID del binario: mo_uuid_from_code hashea el codigo
+// y usa los 16 primeros bytes como LC_UUID.
+//
+// ARITMETICA DE 32 BITS SOBRE u64
+//
+// tetsuo solo tiene u64 como tipo aritmetico util, y SHA-256 se define sobre
+// palabras de 32 bits con desbordamiento envolvente. La solucion es trabajar en
+// u64 y enmascarar con 4294967295 (0xffffffff) DESPUES de cada operacion que
+// pueda desbordar: sumas, rotaciones y xor. Un enmascarado que falte no rompe
+// nada visible hasta que un acarreo se propaga por encima del bit 31, momento
+// en el que el hash sale mal y `codesign -v` falla; por eso el patron es
+// mecanico y esta en todas partes.
+//
+// ESTADO EN BSS
+//
+// Las cuatro tablas son globales, no locales, porque son grandes y esta funcion
+// se llama en bucle (una vez por pagina del binario). Consecuencia: sha256() NO
+// es reentrante ni se puede usar de forma incremental desde dos sitios a la
+// vez. En el compilador se usa siempre de una en una, de principio a fin.
+//
+//     SHA_K   64 constantes de ronda (K[0..63]), 8 bytes por hueco
+//     SHA_W   el "message schedule" expandido, 64 palabras
+//     SHA_H   los 8 acumuladores del estado (H[0..7])
+//     SHA_BLK bloque de 64 bytes para el relleno final
+//
+// Se prueba contra los vectores oficiales en tests/sha256_test.tt.
+// ============================================================================
 
 bss SHA_K: 512
 bss SHA_W: 512
 bss SHA_H: 64
 bss SHA_BLK: 64
 
+// Rotacion a la derecha de 32 bits (ROTR^n). Como el valor vive en un u64, hay
+// que reconstruir la rotacion a mano: los bits que salen por la derecha se
+// meten por el bit 31 con `x << (32 - n)`, y el enmascarado final descarta la
+// basura que ese desplazamiento a la izquierda deja por encima del bit 31.
+//
+// Solo es correcta para 0 < n < 32; SHA-256 nunca usa otros valores.
 fun sha_rotr(x: u64, n: u64) -> u64 {
     return (x >> n | x << (32 - n)) & 4294967295
 }
 
+// Las 64 constantes de ronda: los 32 bits fraccionarios de la raiz cubica de
+// los 64 primeros primos. Se escriben en decimal porque el lenguaje no tenia
+// literales hexadecimales cuando se escribio el fichero.
+//
+// Se reinicializan en cada llamada a sha256() en vez de precalcularse una vez,
+// porque no hay inicializadores estaticos: el bss arranca a cero y la unica
+// forma de rellenarlo es codigo. El coste (64 escrituras por bloque hasheado)
+// es despreciable frente a las 64 rondas de mezcla.
 fun sha_k_init() {
     let kp: *u64 = SHA_K
     kp[0] = 1116352408
@@ -78,6 +127,9 @@ fun sha_k_init() {
     kp[63] = 3329325298
 }
 
+// Estado inicial: los 32 bits fraccionarios de la raiz cuadrada de los 8
+// primeros primos. Al reinicializarse aqui, cada llamada a sha256() empieza
+// limpia aunque la anterior dejara SHA_H con el hash previo.
 fun sha_h_init() {
     let hp: *u64 = SHA_H
     hp[0] = 1779033703
@@ -90,6 +142,8 @@ fun sha_h_init() {
     hp[7] = 1541459225
 }
 
+// Lee 4 bytes como un u32 BIG-endian. SHA-256 se define sobre big-endian y la
+// maquina es little-endian, asi que el reordenado es explicito.
 fun sha_w32be(p: *u8) -> u64 {
     let b0: u64 = p[0]
     let b1: u64 = p[1]
@@ -98,6 +152,8 @@ fun sha_w32be(p: *u8) -> u64 {
     return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
 }
 
+// Escribe un u64 big-endian. Solo se usa para la longitud en bits del mensaje,
+// que va en los ultimos 8 bytes del ultimo bloque.
 fun sha_put_be64(p: *u8, off: u64, v: u64) {
     p[off + 0] = (v >> 56) & 255
     p[off + 1] = (v >> 48) & 255
@@ -109,6 +165,25 @@ fun sha_put_be64(p: *u8, off: u64, v: u64) {
     p[off + 7] = v & 255
 }
 
+// Procesa UN bloque de 64 bytes y actualiza SHA_H. Es el nucleo del algoritmo.
+//
+// Tiene dos mitades:
+//
+//   1. Expansion del mensaje. Las 16 palabras del bloque se copian a W[0..15] y
+//      las otras 48 se derivan con dos funciones de mezcla (s0 y s1) que
+//      combinan rotaciones y un desplazamiento. Esto es lo que hace que un
+//      cambio de un bit en la entrada afecte a todas las rondas.
+//
+//   2. Las 64 rondas de compresion. Ocho variables a..h rotan de posicion en
+//      cada ronda y solo dos reciben valor nuevo (a y e), a partir de:
+//        - be/ba: las funciones Sigma mayusculas (rotaciones puras)
+//        - ch:    "choose", elige bit a bit entre f y g segun e.
+//                 El `e ^ 4294967295` es el NOT de 32 bits, que el lenguaje no
+//                 tiene: xor con todo unos.
+//        - mj:    "majority", el bit mayoritario entre a, b y c.
+//
+// Al final los ocho acumuladores se SUMAN al estado anterior (construccion de
+// Davies-Meyer), que es lo que impide invertir la funcion.
 fun sha256_block(blk: *u8) {
     let wp: *u64 = SHA_W
     let kp: *u64 = SHA_K
@@ -163,6 +238,21 @@ fun sha256_block(blk: *u8) {
     hp[7] = (hp[7] + h) & 4294967295
 }
 
+// Hashea mlen bytes desde msg y escribe 32 bytes big-endian en out.
+//
+// El relleno sigue la norma: un byte 0x80, luego ceros, y en los ultimos 8
+// bytes del ultimo bloque la longitud del mensaje EN BITS, big-endian.
+//
+// El caso `rem >= 56` es el que suele olvidarse: si tras el 0x80 no quedan 8
+// bytes libres, la longitud no cabe en ese bloque, asi que se procesa el bloque
+// tal cual (con el 0x80 y ceros), se limpia y se emite un bloque extra que solo
+// lleva la longitud. Sin esa rama, cualquier mensaje cuyo resto modulo 64 sea
+// 56..63 daria un hash incorrecto.
+//
+// Nota sobre el uso desde macho.tt: alli siempre se hashean exactamente 4096
+// bytes, o sea 64 bloques completos y rem = 0, con lo que el relleno acaba
+// siendo un bloque entero de padding. Es el camino menos interesante, pero
+// tests/sha256_test.tt cubre los demas con los vectores oficiales.
 fun sha256(msg: *u8, mlen: u64, out: *u8) {
     sha_k_init()
     sha_h_init()
