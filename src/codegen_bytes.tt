@@ -658,9 +658,9 @@ fun mo_resolve_strings() {
         if kind == FX_ADRP {
             let instr: u64 = 552 + pos
             let tgt: u64 = cgb_stroff_get(target)
-            let imm21: u64 = (tgt / 4096) - (instr / 4096)
+            let imm21: u64 = ((tgt / 4096) - (instr / 4096)) & 2097151
             let lo: u64 = imm21 & 3
-            let hi: u64 = imm21 >> 2
+            let hi: u64 = (imm21 >> 2) & 524287
             img_or(instr, (lo << 29) | (hi << 5))
         }
         if kind == FX_PGOF {
@@ -676,6 +676,11 @@ fun mo_resolve_strings() {
 fun emit_macho_code(fd: u64, prog: *Program, code_len: u64, entry_off: u64) {
     let img: *u8 = MO_IMG
     let tsize: u64 = mo_string_layout(prog, code_len)
+    // este path fija __TEXT a una sola pagina de 16KB
+    if 552 + tsize > 16384 {
+        io_exit(72)
+    }
+    mo_uuid_from_code(CB, code_len)
     mc_set(0)
     mo_emit_headers(img, tsize, entry_off)
     // copia el codigo
@@ -803,9 +808,9 @@ fun mo_resolve_strings_bss(text_pages: u64) {
         if kind == FX_ADRP {
             let instr: u64 = 704 + pos
             let tgt: u64 = cgb_stroff_get(target)
-            let imm21: u64 = (tgt / 4096) - (instr / 4096)
+            let imm21: u64 = ((tgt / 4096) - (instr / 4096)) & 2097151
             let lo: u64 = imm21 & 3
-            let hi: u64 = imm21 >> 2
+            let hi: u64 = (imm21 >> 2) & 524287
             img_or(instr, (lo << 29) | (hi << 5))
         }
         if kind == FX_PGOF {
@@ -817,9 +822,9 @@ fun mo_resolve_strings_bss(text_pages: u64) {
             let instr3: u64 = 704 + pos
             let bpage: u64 = (text_vmsize + cgb_bss_off_get(target)) / 4096
             let ipage: u64 = instr3 / 4096
-            let imm21b: u64 = bpage - ipage
+            let imm21b: u64 = (bpage - ipage) & 2097151
             let lob: u64 = imm21b & 3
-            let hib: u64 = imm21b >> 2
+            let hib: u64 = (imm21b >> 2) & 524287
             img_or(instr3, (lob << 29) | (hib << 5))
         }
         if kind == FX_PGOFB {
@@ -835,8 +840,13 @@ fun emit_macho_code_bss(fd: u64, prog: *Program, code_len: u64, entry_off: u64, 
     let img: *u8 = MO_IMG
     let tsize: u64 = mo_string_layout_bss(prog, code_len)
     let text_pages: u64 = ((704 + tsize + 16383) / 16384)
+    // un LC_SEGMENT_64 de vmsize 0 haria que __DATA y __LINKEDIT compartan
+    // vmaddr; reservamos siempre al menos una pagina.
+    let bvs: u64 = bss_vmsize
+    if bvs == 0 { bvs = 16384 }
+    mo_uuid_from_code(CB, code_len)
     mc_set(0)
-    mo_emit_headers_bss(img, tsize, text_pages, entry_off, bss_vmsize)
+    mo_emit_headers_bss(img, tsize, text_pages, entry_off, bvs)
     let cb: *u8 = CB
     let bi: u64 = 0
     while bi < code_len {

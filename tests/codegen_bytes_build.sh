@@ -21,6 +21,7 @@ $CC -c "$BUILD/cgb_emit.s" -o "$BUILD/cgb_emit.o"
 $CC -e _tt_start -o "$BUILD/cgb_emit" "$BUILD/cgb_emit.o"
 
 # ejecuta el emisor: escribe /tmp/tt_cgb (Mach-O firmado por el codegen de bytes)
+rm -f /tmp/tt_cgb
 "$BUILD/cgb_emit"
 
 chmod +x /tmp/tt_cgb

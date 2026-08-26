@@ -13,6 +13,42 @@
 
 bss MO_IMG: 1048576
 bss MO_CUR: 8
+bss MO_UUID: 16
+bss MO_DIGEST: 32
+
+// capacidad de MO_IMG: la imagen completa (paginas de __TEXT + firma) tiene que
+// caber aqui. Si no cabe escribiriamos fuera del buffer y el binario saldria
+// truncado/corrupto sin ningun aviso.
+fun mo_img_cap() -> u64 {
+    return 1048576
+}
+
+// Deriva el UUID del CONTENIDO (SHA-256 del codigo, truncado a 16 bytes, con
+// los bits de version/variante de RFC 4122). Un UUID constante hace que dos
+// binarios distintos se presenten al kernel con la misma identidad; macOS
+// cachea informacion de carga por UUID y puede validar un binario contra los
+// datos cacheados de otro (sintoma: SIGKILL con `codesign -v` limpio).
+fun mo_uuid_from_code(code: *u8, code_len: u64) {
+    let dg: *u8 = MO_DIGEST
+    sha256(code, code_len, dg)
+    let u: *u8 = MO_UUID
+    let i: u64 = 0
+    while i < 16 {
+        u[i] = dg[i]
+        i = i + 1
+    }
+    u[6] = (u[6] & 15) | 64
+    u[8] = (u[8] & 63) | 128
+}
+
+fun mo_emit_uuid(img: *u8) {
+    let u: *u8 = MO_UUID
+    let i: u64 = 0
+    while i < 16 {
+        e8(img, u[i])
+        i = i + 1
+    }
+}
 
 fun mc_get() -> u64 {
     let p: *u64 = MO_CUR
@@ -175,13 +211,10 @@ fun mo_emit_headers(img: *u8, text_size: u64, entry_off: u64) {
     e32(img, 80)
     ezeros(img, 72)
 
-    // --- LC_UUID ---
+    // --- LC_UUID (derivado del contenido) ---
     e32(img, 27)
     e32(img, 24)
-    e32(img, 305419896)
-    e32(img, 2309737967)
-    e32(img, 19088743)
-    e32(img, 2596069104)
+    mo_emit_uuid(img)
 
     // --- LC_BUILD_VERSION ---
     e32(img, 50)
@@ -206,6 +239,12 @@ fun mo_emit_headers(img: *u8, text_size: u64, entry_off: u64) {
 
 fun emit_macho_image(fd: u64, code_ptr: *u8, code_len: u64, entry_off: u64) {
     let img: *u8 = MO_IMG
+    // este path no esta parametrizado por paginas: __TEXT es exactamente una
+    // pagina de 16KB. Si el cuerpo no cabe hay que usar emit_macho_code_bss.
+    if 552 + code_len > 16384 {
+        io_exit(72)
+    }
+    mo_uuid_from_code(code_ptr, code_len)
     mc_set(0)
     mo_emit_headers(img, code_len, entry_off)
 
@@ -234,6 +273,9 @@ fun mo_sign_and_write_n(fd: u64, img: *u8, text_pages: u64) {
     let cd_len: u64 = 88 + 2 + n_hashes * 32
     let cs_len: u64 = 20 + cd_len
     let text_vmsize: u64 = text_pages * 16384
+    if text_vmsize + cs_len > mo_img_cap() {
+        io_exit(71)
+    }
     eb32(img, 0xfade0cc0)
     eb32(img, cs_len)
     eb32(img, 1)
@@ -420,10 +462,7 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
 
     e32(img, 27)
     e32(img, 24)
-    e32(img, 305419896)
-    e32(img, 2309737967)
-    e32(img, 19088743)
-    e32(img, 2596069104)
+    mo_emit_uuid(img)
 
     e32(img, 50)
     e32(img, 24)

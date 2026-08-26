@@ -97,8 +97,33 @@ Mach-O emitido a ELF aarch64 (`bootstrap/linux/macho2elf.sh`: secciones, @PAGE/@
 bajo qemu-aarch64: fixpoint bit a bit + hello + los 33 smokes + parser sobre 6 samples
 (rc=55) + equivalencia numérica del lexer, todo verde el 2026-08-25.
 
+## Verificación del path `--emit=macho` en Linux (hito 24.g C3a)
+
+`bootstrap/linux/verify_macho_linux.sh` cierra el hueco que quedaba: comprueba los
+binarios **emitidos en bytes**, no solo el asm. Para cada test de `verify.sh`:
+
+1. stage1 emite el Mach-O firmado ad-hoc con `--emit=macho`;
+2. `check_macho.py` recalcula los hashes SHA-256 de cada página de 4KB contra el
+   fichero final (lo mismo que `codesign -v`);
+3. `bootstrap/linux/macho_exec.py` construye un ELF cuyos PT_LOAD **calcan los
+   LC_SEGMENT_64 del Mach-O** — `__TEXT` r-x en 0x100000000 desde el fichero,
+   `__DATA/__bss` rw- anónimo en su vmaddr real y con su vmsize completo — y lo
+   ejecuta bajo qemu-aarch64 (reescribiendo `svc #0x80` a un shim BSD→Linux).
+
+Como las direcciones son las mismas que en macOS, los adrp/add PC-relativos y los
+fixups contra `__bss` se ejercitan tal cual. Sirve para separar los dos mundos
+cuando un binario emitido muere en macOS: si falla aquí el problema es codegen o
+fixups; si pasa, el código y el layout son correctos y el fallo está en el
+contenedor (firma, load commands, caché del kernel).
+
+Estado 2026-08-26: 36 binarios `--emit=macho` verdes (incluido `vec_test` con
+`__TEXT` de 7 páginas), reproductor `macho_multipage` verde y fixpoint en bytes
+`s1 == s2` verde.
+
 ## Notas históricas
 
+- **Hito 24.g C3a**: `pp_expand` leía cada `.tt` en un buffer fijo de 128KB sin comprobar el tope: cualquier fuente mayor se truncaba **en silencio** y el error salía mucho después como un fallo de sintaxis en mitad del fichero (lo destapó `verify_linux.sh` sobre el combined de 134KB). Ahora reserva 1MB, devuelve el sobrante al arena y aborta con mensaje si el fichero no cabe.
+- **Hito 24.g C3a**: `LC_UUID` era una constante hardcodeada, idéntica en todos los binarios emitidos. Ahora se deriva del SHA-256 del código (bits de versión/variante RFC 4122), de modo que dos binarios distintos nunca comparten identidad ante las cachés de macOS.
 - **Hito 15.7-8**: bug bloqueante SEGV en parser stage1 sobre `return IDENT` — causa raíz en stage0 `lookup_local` (devolvía primera coincidencia por nombre en lugar de la más reciente). Fix: walk-backwards. Detalle completo en `git log --grep="lookup_local"`.
 - **Hito 17.3**: fix crítico en stage0 `src/codegen.c` — literales str en `__TEXT,__cstring` requieren null-termination (`.byte 0x00` extra); sin ello el linker macOS mergea sufijos y corrompe `.ptr` de literales cuando hay >60. Bug latente hasta que codegen.tt lo destapó.
 

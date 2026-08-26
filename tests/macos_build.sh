@@ -14,9 +14,16 @@ ARGS=("$@")
 
 mkdir -p "$BUILD"
 
+# macOS cachea la firma de codigo por vnode: sobrescribir un Mach-O firmado
+# "in place" deja el blob viejo asociado al inodo y el kernel mata el proceso
+# con SIGKILL aunque `codesign -v` sobre el fichero nuevo sea limpio. Por eso
+# todo binario se escribe en un temporal y se mueve con rename() atomico, que
+# crea un inodo nuevo.
 if [[ ! -x $COMPILER ]]; then
-  cp "$SEED" "$COMPILER"
-  chmod +x "$COMPILER"
+  rm -f "$COMPILER"
+  cp "$SEED" "$COMPILER.tmp"
+  chmod +x "$COMPILER.tmp"
+  mv -f "$COMPILER.tmp" "$COMPILER"
 fi
 
 LIBS=(src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt \
@@ -29,12 +36,14 @@ if [[ -f ${LIBS[0]} && $INPUT != ${LIBS[0]} ]]; then
     [[ -f $L && $INPUT != $L ]] && echo "import '$L'" >> "$ENTRY"
   done
   echo "import '$INPUT'" >> "$ENTRY"
-  "$COMPILER" --emit=macho "$ENTRY" -o "$BASE.macho"
+  "$COMPILER" --emit=macho "$ENTRY" -o "$BASE.macho.tmp"
 else
-  "$COMPILER" --emit=macho "$INPUT" -o "$BASE.macho"
+  "$COMPILER" --emit=macho "$INPUT" -o "$BASE.macho.tmp"
 fi
 
-chmod +x "$BASE.macho"
+chmod +x "$BASE.macho.tmp"
+rm -f "$BASE.macho"
+mv -f "$BASE.macho.tmp" "$BASE.macho"
 
 echo "--- ejecutando ---"
 "$BASE.macho" ${ARGS[@]+"${ARGS[@]}"}

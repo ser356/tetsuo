@@ -35,6 +35,7 @@ chmod +x "$BUILD/main_macho_s1.macho"
 
 # El binario emitido debe ejecutarse como compilador: compilar el smoke y
 # producir un binario que devuelve 42.
+rm -f /tmp/tt_fmv_smoke
 "$BUILD/main_macho_s1.macho" --emit=macho tests/emit_macho_test.tt -o /tmp/tt_fmv_smoke
 chmod +x /tmp/tt_fmv_smoke
 set +e

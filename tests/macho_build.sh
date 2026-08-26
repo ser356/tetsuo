@@ -20,6 +20,7 @@ $CC -c "$BUILD/macho42_emit.s" -o "$BUILD/macho42_emit.o"
 $CC -e _tt_start -o "$BUILD/macho42_emit" "$BUILD/macho42_emit.o"
 
 # ejecuta el emisor: escribe /tmp/tt_macho42
+rm -f /tmp/tt_macho42
 "$BUILD/macho42_emit"
 
 chmod +x /tmp/tt_macho42

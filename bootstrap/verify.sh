@@ -27,6 +27,13 @@ section() { printf '\n%s%s%s\n' "$BOLD" "$1" "$RESET"; }
 # Forzar rebuild del binario stage1: macos_build.sh cachea build/main.
 rm -f build/main
 
+# Sonda de aislamiento: mismo contenedor Mach-O que los binarios de abajo
+# (__TEXT de 7 paginas + ~50MB de __bss) pero con apenas 40 instrucciones de
+# codigo. Si esto muere, el problema es el contenedor/layout; si pasa y los
+# binarios grandes mueren, el problema no es el numero de paginas.
+section "Layout Mach-O multi-pagina (hito 24.g C3a)"
+check "macho_multipage (7 pag + 50MB bss)"  20  bash tests/macho_multipage_build.sh
+
 section "Base runtime + parser (hitos 12-15)"
 check "argv.tt (argc)"                  4   bash tests/macos_build.sh tests/argv.tt uno dos tres
 check "nil.tt (literal 0)"              7   bash tests/macos_build.sh tests/nil.tt

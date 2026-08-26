@@ -24,6 +24,7 @@ $CC -e _tt_start -o "$BUILD/main_macho" "$BUILD/main_macho.o"
 
 # Ahora build/main_macho es un compilador que soporta --emit=macho.
 # Compila el smoke tests/emit_macho_test.tt directamente a Mach-O firmado.
+rm -f /tmp/tt_emit_macho
 "$BUILD/main_macho" --emit=macho tests/emit_macho_test.tt -o /tmp/tt_emit_macho
 
 chmod +x /tmp/tt_emit_macho

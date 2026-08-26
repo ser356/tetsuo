@@ -20,6 +20,7 @@ fi
 $CC -c "$BUILD/cgb_bigtext_emit.s" -o "$BUILD/cgb_bigtext_emit.o"
 $CC -e _tt_start -o "$BUILD/cgb_bigtext_emit" "$BUILD/cgb_bigtext_emit.o"
 
+rm -f /tmp/tt_cgb_bigtext
 "$BUILD/cgb_bigtext_emit"
 
 chmod +x /tmp/tt_cgb_bigtext

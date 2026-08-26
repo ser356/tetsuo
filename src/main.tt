@@ -5,15 +5,25 @@ bss DUMP_TOK_STORE: 40
 bss PP_OUT: 524288
 bss PP_OUT_LEN: 8
 bss PP_ARENA_STORE: 24
-bss PP_ARENA_BUF: 4194304
+bss PP_ARENA_BUF: 16777216
 bss PP_SEEN_COUNT: 8
 bss PP_SEEN_PTRS: 256
 bss PP_SEEN_LENS: 256
 
 fun pp_arena_init() -> *Arena {
     let a: *Arena = PP_ARENA_STORE
-    arena_init(a, PP_ARENA_BUF, 4194304)
+    arena_init(a, PP_ARENA_BUF, 16777216)
     return a
+}
+
+// tamano maximo de un .tt suelto. pp_expand reserva este buffer por fichero y
+// devuelve al arena lo que no use, asi que subirlo no cuesta memoria real.
+fun pp_file_cap() -> u64 {
+    return 1048576
+}
+
+fun pp_out_cap() -> u64 {
+    return 524288
 }
 
 fun pp_seen(pth: *u8, plen: u64) -> u64 {
@@ -34,6 +44,10 @@ fun pp_seen(pth: *u8, plen: u64) -> u64 {
 fun pp_mark(pth: *u8, plen: u64) {
     let cnt_p: *u64 = PP_SEEN_COUNT
     let cnt: u64 = cnt_p[0]
+    if cnt == 32 {
+        let m: str = 'demasiados import (max 32)'
+        die_line(m.ptr, m.len, 0)
+    }
     let paths: **u8 = PP_SEEN_PTRS
     let lens: *u64 = PP_SEEN_LENS
     paths[cnt] = pth
@@ -44,6 +58,10 @@ fun pp_mark(pth: *u8, plen: u64) {
 fun pp_out_append(bytes: *u8, n: u64) {
     let lp: *u64 = PP_OUT_LEN
     let cur: u64 = lp[0]
+    if cur + n > pp_out_cap() {
+        let m: str = 'fuente expandida demasiado grande (PP_OUT)'
+        die_line(m.ptr, m.len, 0)
+    }
     let dst: *u8 = PP_OUT
     let i: u64 = 0
     while i < n {
@@ -74,16 +92,26 @@ fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
     }
     pcopy[plen] = 0
     pp_mark(pcopy, plen)
-    let buf: *u8 = arena_take(ar, 131072)
+    // El buffer se reserva al maximo y luego se devuelve el sobrante al arena:
+    // leer con un tope fijo y sin comprobarlo truncaba el fichero en silencio y
+    // el error salia mucho despues, como un fallo de sintaxis en mitad del .tt.
+    let cap: u64 = pp_file_cap()
+    let buf_pos: u64 = ar.pos
+    let buf: *u8 = arena_take(ar, cap)
     let fd: u64 = io_open_read(pcopy)
     if fd == 0 { return }
     let total: u64 = 0
     loop {
-        let n: u64 = io_read(fd, buf + total, 131072 - total)
+        let n: u64 = io_read(fd, buf + total, cap - total)
         if n == 0 { break }
         total = total + n
     }
     io_close(fd)
+    if total == cap {
+        let m: str = 'fichero demasiado grande para el preprocesador'
+        die_line(m.ptr, m.len, 0)
+    }
+    ar.pos = buf_pos + ((total + 7) / 8) * 8
     let src: *u8 = buf
     let i: u64 = 0
     while i < total {

@@ -28,7 +28,7 @@ _arena_init:
     add     x11, x9, x10
     ldr     x9, [sp, #16]
     str     x9, [x11]
-.L677:
+.L901:
     add     sp, sp, #128
     ldp     x29, x30, [sp], #16
     ret
@@ -88,8 +88,8 @@ _arena_take:
     str     x12, [x11]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L678
-.L678:
+    b       .L902
+.L902:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -111,8 +111,8 @@ _io_open_read:
     svc     #0x80
     mov     x13, x0
     mov     x0, x13
-    b       .L679
-.L679:
+    b       .L903
+.L903:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -134,8 +134,8 @@ _io_open_write:
     svc     #0x80
     mov     x13, x0
     mov     x0, x13
-    b       .L680
-.L680:
+    b       .L904
+.L904:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -159,8 +159,8 @@ _io_read:
     svc     #0x80
     mov     x13, x0
     mov     x0, x13
-    b       .L681
-.L681:
+    b       .L905
+.L905:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -183,7 +183,7 @@ _io_write:
     mov     x2, x12
     svc     #0x80
     str     x0, [sp, #56]
-.L682:
+.L906:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -204,7 +204,7 @@ _io_close:
     mov     x2, x12
     svc     #0x80
     str     x0, [sp, #40]
-.L683:
+.L907:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -225,7 +225,7 @@ _io_exit:
     mov     x2, x12
     svc     #0x80
     str     x0, [sp, #40]
-.L684:
+.L908:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -259,7 +259,7 @@ _bytes_eq:
     cbz     w11, .L3
     mov     x9, #0
     mov     w0, w9
-    b       .L685
+    b       .L909
 .L3:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
@@ -269,8 +269,8 @@ _bytes_eq:
 .L2:
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L685
-.L685:
+    b       .L909
+.L909:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -305,7 +305,7 @@ _mem_copy:
     str     x11, [sp, #24]
     b       .L4
 .L5:
-.L686:
+.L910:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -339,7 +339,7 @@ _out_init:
     add     x11, x9, x10
     ldr     x9, [sp, #24]
     str     x9, [x11]
-.L687:
+.L911:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -381,7 +381,7 @@ _out_flush:
     mov     x9, #0
     str     x9, [x11]
 .L6:
-.L688:
+.L912:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -430,7 +430,7 @@ _out_byte:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L689:
+.L913:
     add     sp, sp, #256
     ldp     x29, x30, [sp], #16
     ret
@@ -466,7 +466,7 @@ _out_bytes:
     str     x11, [sp, #24]
     b       .L8
 .L9:
-.L690:
+.L914:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -489,7 +489,7 @@ _out_u64:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #72]
-    b       .L691
+    b       .L915
 .L10:
     mov     x9, #0
     str     x9, [sp, #16]
@@ -545,7 +545,7 @@ _out_u64:
     str     x0, [sp, #336]
     b       .L13
 .L14:
-.L691:
+.L915:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -570,7 +570,7 @@ _out_nibble:
     mov     x1, x12
     bl      _out_byte
     str     x0, [sp, #72]
-    b       .L692
+    b       .L916
 .L15:
     ldr     x9, [sp, #0]
     movz    x10, #0x0057
@@ -580,7 +580,7 @@ _out_nibble:
     mov     x1, x12
     bl      _out_byte
     str     x0, [sp, #112]
-.L692:
+.L916:
     add     sp, sp, #128
     ldp     x29, x30, [sp], #16
     ret
@@ -646,7 +646,7 @@ _out_hex4:
     mov     x1, x10
     bl      _out_nibble
     str     x0, [sp, #344]
-.L693:
+.L917:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -727,7 +727,7 @@ _die_line:
     mov     x0, x9
     bl      _io_exit
     str     x0, [sp, #312]
-.L694:
+.L918:
     add     sp, sp, #320
     ldp     x29, x30, [sp], #16
     ret
@@ -761,7 +761,7 @@ _vec_init:
     add     x11, x9, x10
     ldr     x9, [sp, #8]
     str     x9, [x11]
-.L695:
+.L919:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -868,7 +868,7 @@ _vec_push:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L696:
+.L920:
     add     sp, sp, #640
     ldp     x29, x30, [sp], #16
     ret
@@ -892,8 +892,8 @@ _vec_get:
     mul     x12, x10, x11
     add     x10, x9, x12
     mov     x0, x10
-    b       .L697
-.L697:
+    b       .L921
+.L921:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -917,8 +917,8 @@ _ast_init:
     str     x0, [sp, #40]
     ldr     x9, [sp, #0]
     mov     x0, x9
-    b       .L698
-.L698:
+    b       .L922
+.L922:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -951,7 +951,7 @@ _lex_init:
     add     x11, x9, x10
     movz    x9, #0x0001
     str     x9, [x11]
-.L699:
+.L923:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -974,13 +974,13 @@ _is_digit:
     cbz     w11, .L18
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L700
+    b       .L924
 .L18:
 .L17:
     mov     x9, #0
     mov     w0, w9
-    b       .L700
-.L700:
+    b       .L924
+.L924:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -1001,7 +1001,7 @@ _is_hex:
     cbz     w11, .L19
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L701
+    b       .L925
 .L19:
     ldrb    w9, [sp, #0]
     movz    x10, #0x0061
@@ -1015,7 +1015,7 @@ _is_hex:
     cbz     w11, .L21
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L701
+    b       .L925
 .L21:
 .L20:
     ldrb    w9, [sp, #0]
@@ -1030,13 +1030,13 @@ _is_hex:
     cbz     w11, .L23
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L701
+    b       .L925
 .L23:
 .L22:
     mov     x9, #0
     mov     w0, w9
-    b       .L701
-.L701:
+    b       .L925
+.L925:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1059,7 +1059,7 @@ _hex_val:
     movz    x10, #0x0030
     sub     w11, w9, w10
     mov     w0, w11
-    b       .L702
+    b       .L926
 .L24:
     ldrb    w9, [sp, #0]
     movz    x10, #0x0061
@@ -1072,7 +1072,7 @@ _hex_val:
     movz    x9, #0x000a
     add     w10, w11, w9
     mov     w0, w10
-    b       .L702
+    b       .L926
 .L25:
     ldrb    w9, [sp, #0]
     movz    x10, #0x0041
@@ -1080,8 +1080,8 @@ _hex_val:
     movz    x9, #0x000a
     add     w10, w11, w9
     mov     w0, w10
-    b       .L702
-.L702:
+    b       .L926
+.L926:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1099,7 +1099,7 @@ _is_alpha:
     cbz     w11, .L26
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L703
+    b       .L927
 .L26:
     ldrb    w9, [sp, #0]
     movz    x10, #0x0061
@@ -1113,7 +1113,7 @@ _is_alpha:
     cbz     w11, .L28
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L703
+    b       .L927
 .L28:
 .L27:
     ldrb    w9, [sp, #0]
@@ -1128,13 +1128,13 @@ _is_alpha:
     cbz     w11, .L30
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L703
+    b       .L927
 .L30:
 .L29:
     mov     x9, #0
     mov     w0, w9
-    b       .L703
-.L703:
+    b       .L927
+.L927:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -1155,7 +1155,7 @@ _is_alnum:
     cbz     w11, .L31
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L704
+    b       .L928
 .L31:
     ldrb    w9, [sp, #0]
     mov     x0, x9
@@ -1167,12 +1167,12 @@ _is_alnum:
     cbz     w11, .L32
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L704
+    b       .L928
 .L32:
     mov     x9, #0
     mov     w0, w9
-    b       .L704
-.L704:
+    b       .L928
+.L928:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -1196,7 +1196,7 @@ _peek:
     cbz     w11, .L33
     mov     x9, #0
     mov     w0, w9
-    b       .L705
+    b       .L929
 .L33:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -1209,8 +1209,8 @@ _peek:
     add     x11, x9, x10
     ldrb    w9, [x11]
     mov     w0, w9
-    b       .L705
-.L705:
+    b       .L929
+.L929:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1238,7 +1238,7 @@ _peek1:
     cbz     w11, .L34
     mov     x9, #0
     mov     w0, w9
-    b       .L706
+    b       .L930
 .L34:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -1248,8 +1248,8 @@ _peek1:
     add     x11, x9, x10
     ldrb    w9, [x11]
     mov     w0, w9
-    b       .L706
-.L706:
+    b       .L930
+.L930:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1430,7 +1430,7 @@ _skip_ws:
 .L38:
     b       .L35
 .L36:
-.L707:
+.L931:
     add     sp, sp, #944
     ldp     x29, x30, [sp], #16
     ret
@@ -1526,7 +1526,7 @@ _kw_kind:
     cbz     w10, .L53
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L53:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
@@ -1542,7 +1542,7 @@ _kw_kind:
     cbz     w10, .L54
     movz    x9, #0x0002
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L54:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #176]
@@ -1558,7 +1558,7 @@ _kw_kind:
     cbz     w10, .L55
     movz    x9, #0x000b
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L55:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #192]
@@ -1574,7 +1574,7 @@ _kw_kind:
     cbz     w10, .L56
     movz    x9, #0x000c
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L56:
 .L52:
     ldr     x9, [sp, #8]
@@ -1596,7 +1596,7 @@ _kw_kind:
     cbz     w10, .L58
     movz    x9, #0x0003
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L58:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #128]
@@ -1612,7 +1612,7 @@ _kw_kind:
     cbz     w10, .L59
     movz    x9, #0x0008
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L59:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #144]
@@ -1628,7 +1628,7 @@ _kw_kind:
     cbz     w10, .L60
     movz    x9, #0x0009
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L60:
 .L57:
     ldr     x9, [sp, #8]
@@ -1650,7 +1650,7 @@ _kw_kind:
     cbz     w10, .L62
     movz    x9, #0x0004
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L62:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #160]
@@ -1666,7 +1666,7 @@ _kw_kind:
     cbz     w10, .L63
     movz    x9, #0x000a
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L63:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #208]
@@ -1682,7 +1682,7 @@ _kw_kind:
     cbz     w10, .L64
     movz    x9, #0x000d
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L64:
 .L61:
     ldr     x9, [sp, #8]
@@ -1704,7 +1704,7 @@ _kw_kind:
     cbz     w10, .L66
     movz    x9, #0x0005
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L66:
 .L65:
     ldr     x9, [sp, #8]
@@ -1726,7 +1726,7 @@ _kw_kind:
     cbz     w10, .L68
     movz    x9, #0x0006
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L68:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #112]
@@ -1742,13 +1742,13 @@ _kw_kind:
     cbz     w10, .L69
     movz    x9, #0x0007
     mov     w0, w9
-    b       .L708
+    b       .L932
 .L69:
 .L67:
     movz    x9, #0x000e
     mov     w0, w9
-    b       .L708
-.L708:
+    b       .L932
+.L932:
     add     sp, sp, #1296
     ldp     x29, x30, [sp], #16
     ret
@@ -1915,7 +1915,7 @@ _lex_number:
     ldr     x10, [x13]
     sub     x12, x9, x10
     str     x12, [x11]
-.L709:
+.L933:
     add     sp, sp, #912
     ldp     x29, x30, [sp], #16
     ret
@@ -2014,7 +2014,7 @@ _lex_ident:
     mov     x10, x0
     ldr     x17, [sp, #432]
     str     w10, [x17]
-.L710:
+.L934:
     add     sp, sp, #560
     ldp     x29, x30, [sp], #16
     ret
@@ -2132,7 +2132,7 @@ _lex_string:
     ldr     x10, [x13]
     sub     x12, x9, x10
     str     x12, [x11]
-.L711:
+.L935:
     add     sp, sp, #704
     ldp     x29, x30, [sp], #16
     ret
@@ -2185,7 +2185,7 @@ _lex_next:
     add     x11, x9, x10
     mov     x9, #0
     str     x9, [x11]
-    b       .L712
+    b       .L936
 .L86:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -2212,7 +2212,7 @@ _lex_next:
     mov     x1, x10
     bl      _lex_number
     str     x0, [sp, #416]
-    b       .L712
+    b       .L936
 .L87:
     ldrb    w9, [sp, #16]
     mov     x0, x9
@@ -2228,7 +2228,7 @@ _lex_next:
     mov     x1, x10
     bl      _lex_ident
     str     x0, [sp, #472]
-    b       .L712
+    b       .L936
 .L88:
     ldrb    w9, [sp, #16]
     movz    x10, #0x0027
@@ -2241,7 +2241,7 @@ _lex_next:
     mov     x1, x10
     bl      _lex_string
     str     x0, [sp, #520]
-    b       .L712
+    b       .L936
 .L89:
     ldrb    w9, [sp, #16]
     movz    x10, #0x002d
@@ -2284,7 +2284,7 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L712
+    b       .L936
 .L91:
 .L90:
     ldrb    w9, [sp, #16]
@@ -2328,7 +2328,7 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L712
+    b       .L936
 .L93:
 .L92:
     ldrb    w9, [sp, #16]
@@ -2372,7 +2372,7 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L712
+    b       .L936
 .L95:
 .L94:
     ldrb    w9, [sp, #16]
@@ -2416,7 +2416,7 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L712
+    b       .L936
 .L97:
 .L96:
     ldrb    w9, [sp, #16]
@@ -2460,7 +2460,7 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L712
+    b       .L936
 .L99:
 .L98:
     ldrb    w9, [sp, #16]
@@ -2504,7 +2504,7 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L712
+    b       .L936
 .L101:
 .L100:
     ldrb    w9, [sp, #16]
@@ -2548,7 +2548,7 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L712
+    b       .L936
 .L103:
 .L102:
     ldr     x9, [sp, #8]
@@ -2584,7 +2584,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0011
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L104:
     ldrb    w9, [sp, #16]
     movz    x10, #0x0029
@@ -2596,7 +2596,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0012
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L105:
     ldrb    w9, [sp, #16]
     movz    x10, #0x007b
@@ -2608,7 +2608,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0013
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L106:
     ldrb    w9, [sp, #16]
     movz    x10, #0x007d
@@ -2620,7 +2620,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0014
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L107:
     ldrb    w9, [sp, #16]
     movz    x10, #0x005b
@@ -2632,7 +2632,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0015
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L108:
     ldrb    w9, [sp, #16]
     movz    x10, #0x005d
@@ -2644,7 +2644,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0016
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L109:
     ldrb    w9, [sp, #16]
     movz    x10, #0x002a
@@ -2656,7 +2656,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0017
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L110:
     ldrb    w9, [sp, #16]
     movz    x10, #0x002b
@@ -2668,7 +2668,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0018
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L111:
     ldrb    w9, [sp, #16]
     movz    x10, #0x002d
@@ -2680,7 +2680,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0019
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L112:
     ldrb    w9, [sp, #16]
     movz    x10, #0x002f
@@ -2692,7 +2692,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x001a
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L113:
     ldrb    w9, [sp, #16]
     movz    x10, #0x0026
@@ -2704,7 +2704,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x001b
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L114:
     ldrb    w9, [sp, #16]
     movz    x10, #0x007c
@@ -2716,7 +2716,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x001c
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L115:
     ldrb    w9, [sp, #16]
     movz    x10, #0x005e
@@ -2728,7 +2728,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x001d
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L116:
     ldrb    w9, [sp, #16]
     movz    x10, #0x003d
@@ -2740,7 +2740,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x001e
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L117:
     ldrb    w9, [sp, #16]
     movz    x10, #0x003b
@@ -2752,7 +2752,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0025
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L118:
     ldrb    w9, [sp, #16]
     movz    x10, #0x002c
@@ -2764,7 +2764,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0026
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L119:
     ldrb    w9, [sp, #16]
     movz    x10, #0x003a
@@ -2776,7 +2776,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0027
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L120:
     ldrb    w9, [sp, #16]
     movz    x10, #0x002e
@@ -2788,7 +2788,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0028
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L121:
     ldrb    w9, [sp, #16]
     movz    x10, #0x0040
@@ -2800,7 +2800,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x002a
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L122:
     ldrb    w9, [sp, #16]
     movz    x10, #0x003c
@@ -2812,7 +2812,7 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0021
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L123:
     ldrb    w9, [sp, #16]
     movz    x10, #0x003e
@@ -2824,14 +2824,14 @@ _lex_next:
     add     x11, x9, x10
     movz    x9, #0x0023
     str     w9, [x11]
-    b       .L712
+    b       .L936
 .L124:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
     mov     x9, #0
     str     w9, [x11]
-.L712:
+.L936:
     add     sp, sp, #3632
     ldp     x29, x30, [sp], #16
     ret
@@ -2867,8 +2867,8 @@ _mk_prim:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L713
-.L713:
+    b       .L937
+.L937:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -2904,8 +2904,8 @@ _mk_ptr:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L714
-.L714:
+    b       .L938
+.L938:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -2926,7 +2926,7 @@ _type_width:
     cbz     w11, .L125
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L715
+    b       .L939
 .L125:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -2938,7 +2938,7 @@ _type_width:
     cbz     w11, .L126
     movz    x9, #0x0004
     mov     x0, x9
-    b       .L715
+    b       .L939
 .L126:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -2950,7 +2950,7 @@ _type_width:
     cbz     w11, .L127
     movz    x9, #0x0008
     mov     x0, x9
-    b       .L715
+    b       .L939
 .L127:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -2962,7 +2962,7 @@ _type_width:
     cbz     w11, .L128
     movz    x9, #0x0008
     mov     x0, x9
-    b       .L715
+    b       .L939
 .L128:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -2974,7 +2974,7 @@ _type_width:
     cbz     w11, .L129
     movz    x9, #0x0010
     mov     x0, x9
-    b       .L715
+    b       .L939
 .L129:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -3001,13 +3001,13 @@ _type_width:
     movz    x10, #0x0008
     mul     x11, x9, x10
     mov     x0, x11
-    b       .L715
+    b       .L939
 .L131:
 .L130:
     movz    x9, #0x0008
     mov     x0, x9
-    b       .L715
-.L715:
+    b       .L939
+.L939:
     add     sp, sp, #464
     ldp     x29, x30, [sp], #16
     ret
@@ -3033,7 +3033,7 @@ _die_here:
     mov     x2, x11
     bl      _die_line
     str     x0, [sp, #80]
-.L716:
+.L940:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -3054,7 +3054,7 @@ _cur_func_set:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L717:
+.L941:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -3074,8 +3074,8 @@ _cur_func:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L718
-.L718:
+    b       .L942
+.L942:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -3096,7 +3096,7 @@ _cur_prog_set:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L719:
+.L943:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -3116,8 +3116,8 @@ _cur_prog:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L720
-.L720:
+    b       .L944
+.L944:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -3138,7 +3138,7 @@ _bytes_eq_off:
     cbz     w11, .L132
     mov     x9, #0
     mov     w0, w9
-    b       .L721
+    b       .L945
 .L132:
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
@@ -3162,8 +3162,8 @@ _bytes_eq_off:
     bl      _bytes_eq
     mov     x10, x0
     mov     w0, w10
-    b       .L721
-.L721:
+    b       .L945
+.L945:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -3376,8 +3376,8 @@ _add_local:
 .L139:
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L722
-.L722:
+    b       .L946
+.L946:
     add     sp, sp, #1184
     ldp     x29, x30, [sp], #16
     ret
@@ -3441,14 +3441,14 @@ _lookup_local:
     cbz     w10, .L144
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L723
+    b       .L947
 .L144:
     b       .L142
 .L143:
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L723
-.L723:
+    b       .L947
+.L947:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -3494,7 +3494,7 @@ _lookup_const:
     cbz     w10, .L147
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L724
+    b       .L948
 .L147:
     ldr     x9, [sp, #24]
     movz    x10, #0x0020
@@ -3505,8 +3505,8 @@ _lookup_const:
 .L146:
     mov     x9, #0
     mov     x0, x9
-    b       .L724
-.L724:
+    b       .L948
+.L948:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -3552,7 +3552,7 @@ _lookup_bss:
     cbz     w10, .L150
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L725
+    b       .L949
 .L150:
     ldr     x9, [sp, #24]
     movz    x10, #0x0018
@@ -3563,8 +3563,8 @@ _lookup_bss:
 .L149:
     mov     x9, #0
     mov     x0, x9
-    b       .L725
-.L725:
+    b       .L949
+.L949:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -3610,7 +3610,7 @@ _lookup_struct:
     cbz     w10, .L153
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L726
+    b       .L950
 .L153:
     ldr     x9, [sp, #24]
     movz    x10, #0x0020
@@ -3621,8 +3621,8 @@ _lookup_struct:
 .L152:
     mov     x9, #0
     mov     x0, x9
-    b       .L726
-.L726:
+    b       .L950
+.L950:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -3670,7 +3670,7 @@ _struct_field_index:
     cbz     w10, .L156
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L727
+    b       .L951
 .L156:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
@@ -3688,8 +3688,8 @@ _struct_field_index:
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x0, x9
-    b       .L727
-.L727:
+    b       .L951
+.L951:
     add     sp, sp, #304
     ldp     x29, x30, [sp], #16
     ret
@@ -3724,7 +3724,7 @@ _struct_field_type:
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x0, x9
-    b       .L728
+    b       .L952
 .L159:
     ldr     x9, [sp, #16]
     movz    x10, #0x0001
@@ -3739,8 +3739,8 @@ _struct_field_type:
 .L158:
     mov     x9, #0
     mov     x0, x9
-    b       .L728
-.L728:
+    b       .L952
+.L952:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -3780,7 +3780,7 @@ _str_table_init:
     add     x10, x9, x12
     mov     x9, #0
     str     x9, [x10]
-.L729:
+.L953:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -3893,8 +3893,8 @@ _str_table_add:
     str     x12, [x10]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L730
-.L730:
+    b       .L954
+.L954:
     add     sp, sp, #656
     ldp     x29, x30, [sp], #16
     ret
@@ -4057,7 +4057,7 @@ _str_unescape:
     add     x11, x9, x10
     ldr     x9, [sp, #48]
     str     x9, [x11]
-.L731:
+.L955:
     add     sp, sp, #848
     ldp     x29, x30, [sp], #16
     ret
@@ -4089,7 +4089,7 @@ _ps_init:
     mov     x1, x10
     bl      _lex_next
     str     x0, [sp, #96]
-.L732:
+.L956:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -4111,7 +4111,7 @@ _ps_advance:
     mov     x1, x10
     bl      _lex_next
     str     x0, [sp, #48]
-.L733:
+.L957:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -4129,8 +4129,8 @@ _ps_kind:
     add     x11, x9, x10
     ldr     w9, [x11]
     mov     w0, w9
-    b       .L734
-.L734:
+    b       .L958
+.L958:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -4236,8 +4236,8 @@ _mk_expr:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L735
-.L735:
+    b       .L959
+.L959:
     add     sp, sp, #608
     ldp     x29, x30, [sp], #16
     ret
@@ -4292,7 +4292,7 @@ _parse_primary:
     str     x0, [sp, #464]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L171:
     ldr     w9, [sp, #16]
     movz    x10, #0x000c
@@ -4327,7 +4327,7 @@ _parse_primary:
     str     x0, [sp, #608]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L172:
     ldr     w9, [sp, #16]
     movz    x10, #0x000d
@@ -4380,7 +4380,7 @@ _parse_primary:
     str     x11, [x17]
     ldr     x9, [sp, #48]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L173:
     ldr     w9, [sp, #16]
     movz    x10, #0x0011
@@ -4402,7 +4402,7 @@ _parse_primary:
     str     x0, [sp, #888]
     ldr     x9, [sp, #56]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L174:
     ldr     w9, [sp, #16]
     movz    x10, #0x000e
@@ -4578,7 +4578,7 @@ _parse_primary:
 .L183:
     ldr     x9, [sp, #80]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L176:
     bl      _cur_func
     mov     x9, x0
@@ -4649,7 +4649,7 @@ _parse_primary:
     str     x9, [x11]
     ldr     x9, [sp, #160]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L185:
 .L184:
     bl      _cur_prog
@@ -4699,7 +4699,7 @@ _parse_primary:
     str     x9, [x11]
     ldr     x9, [sp, #200]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L187:
     ldr     x9, [sp, #184]
     ldr     x10, [sp, #64]
@@ -4752,7 +4752,7 @@ _parse_primary:
     str     x9, [x17]
     ldr     x9, [sp, #216]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L188:
 .L186:
     ldr     x9, [sp, #0]
@@ -4774,7 +4774,7 @@ _parse_primary:
     str     x9, [x11]
     ldr     x9, [sp, #224]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L175:
     ldr     w9, [sp, #16]
     movz    x10, #0x0010
@@ -4855,7 +4855,7 @@ _parse_primary:
     str     x0, [sp, #2952]
     ldr     x9, [sp, #248]
     mov     x0, x9
-    b       .L736
+    b       .L960
 .L189:
     adrp    x9, L_str17@PAGE
     add     x9, x9, L_str17@PAGEOFF
@@ -4870,8 +4870,8 @@ _parse_primary:
     str     x0, [sp, #3000]
     mov     x9, #0
     mov     x0, x9
-    b       .L736
-.L736:
+    b       .L960
+.L960:
     add     sp, sp, #3024
     ldp     x29, x30, [sp], #16
     ret
@@ -5551,15 +5551,15 @@ _parse_postfix:
 .L213:
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L737
+    b       .L961
 .L217:
 .L212:
     b       .L190
 .L191:
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L737
-.L737:
+    b       .L961
+.L961:
     add     sp, sp, #3408
     ldp     x29, x30, [sp], #16
     ret
@@ -5627,7 +5627,7 @@ _parse_unary:
 .L219:
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L738
+    b       .L962
 .L218:
     ldr     w9, [sp, #8]
     movz    x10, #0x001b
@@ -5670,15 +5670,15 @@ _parse_unary:
     str     x11, [x17]
     ldr     x9, [sp, #48]
     mov     x0, x9
-    b       .L738
+    b       .L962
 .L221:
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_postfix
     mov     x10, x0
     mov     x0, x10
-    b       .L738
-.L738:
+    b       .L962
+.L962:
     add     sp, sp, #544
     ldp     x29, x30, [sp], #16
     ret
@@ -5696,7 +5696,7 @@ _bin_prec:
     cbz     w11, .L222
     movz    x9, #0x0006
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L222:
     ldr     w9, [sp, #0]
     movz    x10, #0x001a
@@ -5705,7 +5705,7 @@ _bin_prec:
     cbz     w11, .L223
     movz    x9, #0x0006
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L223:
     ldr     w9, [sp, #0]
     movz    x10, #0x0018
@@ -5714,7 +5714,7 @@ _bin_prec:
     cbz     w11, .L224
     movz    x9, #0x0005
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L224:
     ldr     w9, [sp, #0]
     movz    x10, #0x0019
@@ -5723,7 +5723,7 @@ _bin_prec:
     cbz     w11, .L225
     movz    x9, #0x0005
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L225:
     ldr     w9, [sp, #0]
     movz    x10, #0x002b
@@ -5732,7 +5732,7 @@ _bin_prec:
     cbz     w11, .L226
     movz    x9, #0x0005
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L226:
     ldr     w9, [sp, #0]
     movz    x10, #0x002c
@@ -5741,7 +5741,7 @@ _bin_prec:
     cbz     w11, .L227
     movz    x9, #0x0005
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L227:
     ldr     w9, [sp, #0]
     movz    x10, #0x001b
@@ -5750,7 +5750,7 @@ _bin_prec:
     cbz     w11, .L228
     movz    x9, #0x0004
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L228:
     ldr     w9, [sp, #0]
     movz    x10, #0x001d
@@ -5759,7 +5759,7 @@ _bin_prec:
     cbz     w11, .L229
     movz    x9, #0x0003
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L229:
     ldr     w9, [sp, #0]
     movz    x10, #0x001c
@@ -5768,7 +5768,7 @@ _bin_prec:
     cbz     w11, .L230
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L230:
     ldr     w9, [sp, #0]
     movz    x10, #0x001f
@@ -5777,7 +5777,7 @@ _bin_prec:
     cbz     w11, .L231
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L231:
     ldr     w9, [sp, #0]
     movz    x10, #0x0020
@@ -5786,7 +5786,7 @@ _bin_prec:
     cbz     w11, .L232
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L232:
     ldr     w9, [sp, #0]
     movz    x10, #0x0021
@@ -5795,7 +5795,7 @@ _bin_prec:
     cbz     w11, .L233
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L233:
     ldr     w9, [sp, #0]
     movz    x10, #0x0022
@@ -5804,7 +5804,7 @@ _bin_prec:
     cbz     w11, .L234
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L234:
     ldr     w9, [sp, #0]
     movz    x10, #0x0023
@@ -5813,7 +5813,7 @@ _bin_prec:
     cbz     w11, .L235
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L235:
     ldr     w9, [sp, #0]
     movz    x10, #0x0024
@@ -5822,12 +5822,12 @@ _bin_prec:
     cbz     w11, .L236
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L739
+    b       .L963
 .L236:
     mov     x9, #0
     mov     x0, x9
-    b       .L739
-.L739:
+    b       .L963
+.L963:
     add     sp, sp, #496
     ldp     x29, x30, [sp], #16
     ret
@@ -6092,8 +6092,8 @@ _parse_expr:
 .L238:
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L740
-.L740:
+    b       .L964
+.L964:
     add     sp, sp, #1280
     ldp     x29, x30, [sp], #16
     ret
@@ -6174,8 +6174,8 @@ _mk_stmt:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L741
-.L741:
+    b       .L965
+.L965:
     add     sp, sp, #448
     ldp     x29, x30, [sp], #16
     ret
@@ -6206,7 +6206,7 @@ _ps_expect:
 .L256:
     bl      _ps_advance
     str     x0, [sp, #88]
-.L742:
+.L966:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -6227,12 +6227,12 @@ _ps_accept:
     str     x0, [sp, #32]
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L743
+    b       .L967
 .L257:
     mov     x9, #0
     mov     w0, w9
-    b       .L743
-.L743:
+    b       .L967
+.L967:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -6253,7 +6253,7 @@ _bytes_eq_at:
     cbz     w11, .L258
     mov     x9, #0
     mov     w0, w9
-    b       .L744
+    b       .L968
 .L258:
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
@@ -6272,8 +6272,8 @@ _bytes_eq_at:
     bl      _bytes_eq
     mov     x12, x0
     mov     w0, w12
-    b       .L744
-.L744:
+    b       .L968
+.L968:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -6304,7 +6304,7 @@ _parse_type:
     bl      _mk_ptr
     mov     x11, x0
     mov     x0, x11
-    b       .L745
+    b       .L969
 .L259:
     bl      _ps_kind
     mov     x9, x0
@@ -6507,8 +6507,8 @@ _parse_type:
     str     x0, [sp, #1048]
     ldr     x9, [sp, #104]
     mov     x0, x9
-    b       .L745
-.L745:
+    b       .L969
+.L969:
     add     sp, sp, #1072
     ldp     x29, x30, [sp], #16
     ret
@@ -6575,8 +6575,8 @@ _parse_block:
     str     x0, [sp, #216]
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L746
-.L746:
+    b       .L970
+.L970:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -6721,7 +6721,7 @@ _parse_stmt:
 .L277:
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L747
+    b       .L971
 .L273:
     ldr     w9, [sp, #8]
     movz    x10, #0x0004
@@ -6765,7 +6765,7 @@ _parse_stmt:
 .L279:
     ldr     x9, [sp, #56]
     mov     x0, x9
-    b       .L747
+    b       .L971
 .L278:
     ldr     w9, [sp, #8]
     movz    x10, #0x0005
@@ -6858,7 +6858,7 @@ _parse_stmt:
 .L283:
     ldr     x9, [sp, #72]
     mov     x0, x9
-    b       .L747
+    b       .L971
 .L281:
     ldr     w9, [sp, #8]
     movz    x10, #0x0008
@@ -6913,7 +6913,7 @@ _parse_stmt:
     str     x10, [x17]
     ldr     x9, [sp, #88]
     mov     x0, x9
-    b       .L747
+    b       .L971
 .L286:
     ldr     w9, [sp, #8]
     movz    x10, #0x0007
@@ -6941,7 +6941,7 @@ _parse_stmt:
     str     x10, [x17]
     ldr     x9, [sp, #96]
     mov     x0, x9
-    b       .L747
+    b       .L971
 .L288:
     ldr     w9, [sp, #8]
     movz    x10, #0x0009
@@ -6957,7 +6957,7 @@ _parse_stmt:
     bl      _mk_stmt
     mov     x11, x0
     mov     x0, x11
-    b       .L747
+    b       .L971
 .L289:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
@@ -7011,7 +7011,7 @@ _parse_stmt:
     str     x9, [x11]
     ldr     x9, [sp, #120]
     mov     x0, x9
-    b       .L747
+    b       .L971
 .L291:
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
@@ -7049,7 +7049,7 @@ _parse_stmt:
 .L292:
     ldr     x9, [sp, #128]
     mov     x0, x9
-    b       .L747
+    b       .L971
 .L290:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
@@ -7065,8 +7065,8 @@ _parse_stmt:
     str     x9, [x11]
     ldr     x9, [sp, #136]
     mov     x0, x9
-    b       .L747
-.L747:
+    b       .L971
+.L971:
     add     sp, sp, #2128
     ldp     x29, x30, [sp], #16
     ret
@@ -7116,8 +7116,8 @@ _mk_program:
     str     x9, [x11]
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L748
-.L748:
+    b       .L972
+.L972:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -7435,8 +7435,8 @@ _parse_fun:
     str     x0, [sp, #1568]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L749
-.L749:
+    b       .L973
+.L973:
     add     sp, sp, #1584
     ldp     x29, x30, [sp], #16
     ret
@@ -7553,8 +7553,8 @@ _parse_const_decl:
     str     x0, [sp, #528]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L750
-.L750:
+    b       .L974
+.L974:
     add     sp, sp, #544
     ldp     x29, x30, [sp], #16
     ret
@@ -7657,8 +7657,8 @@ _parse_bss_decl:
     str     x0, [sp, #472]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L751
-.L751:
+    b       .L975
+.L975:
     add     sp, sp, #496
     ldp     x29, x30, [sp], #16
     ret
@@ -7919,8 +7919,8 @@ _parse_struct_decl:
     str     x9, [x11]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L752
-.L752:
+    b       .L976
+.L976:
     add     sp, sp, #1312
     ldp     x29, x30, [sp], #16
     ret
@@ -8127,8 +8127,8 @@ _parse:
     str     x9, [x11]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L753
-.L753:
+    b       .L977
+.L977:
     add     sp, sp, #976
     ldp     x29, x30, [sp], #16
     ret
@@ -8152,8 +8152,8 @@ _ir_init:
     str     x0, [sp, #40]
     ldr     x9, [sp, #0]
     mov     x0, x9
-    b       .L754
-.L754:
+    b       .L978
+.L978:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -8172,15 +8172,15 @@ _ir_width_of:
     cbz     w11, .L334
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L755
+    b       .L979
 .L334:
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _type_width
     mov     x10, x0
     mov     x0, x10
-    b       .L755
-.L755:
+    b       .L979
+.L979:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -8276,8 +8276,8 @@ _mk_ins:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L756
-.L756:
+    b       .L980
+.L980:
     add     sp, sp, #544
     ldp     x29, x30, [sp], #16
     ret
@@ -8369,8 +8369,8 @@ _mk_ir_fn:
     str     x9, [x11]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L757
-.L757:
+    b       .L981
+.L981:
     add     sp, sp, #512
     ldp     x29, x30, [sp], #16
     ret
@@ -8400,7 +8400,7 @@ _ir_emit:
     add     x11, x9, x10
     ldr     x9, [sp, #8]
     str     x9, [x11]
-    b       .L758
+    b       .L982
 .L335:
     ldr     x9, [sp, #0]
     movz    x10, #0x0060
@@ -8417,7 +8417,7 @@ _ir_emit:
     add     x11, x9, x10
     ldr     x9, [sp, #8]
     str     x9, [x11]
-.L758:
+.L982:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -8497,8 +8497,8 @@ _mk_builder:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L759
-.L759:
+    b       .L983
+.L983:
     add     sp, sp, #416
     ldp     x29, x30, [sp], #16
     ret
@@ -8552,8 +8552,8 @@ _ir_new_slot:
     str     x9, [x10]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L760
-.L760:
+    b       .L984
+.L984:
     add     sp, sp, #304
     ldp     x29, x30, [sp], #16
     ret
@@ -8585,8 +8585,8 @@ _ir_new_label:
     str     x12, [x10]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L761
-.L761:
+    b       .L985
+.L985:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -8622,7 +8622,7 @@ _ir_emit_label:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #144]
-.L762:
+.L986:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -8658,7 +8658,7 @@ _ir_emit_jmp:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #144]
-.L763:
+.L987:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -8700,7 +8700,7 @@ _ir_emit_jz:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #184]
-.L764:
+.L988:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -8765,7 +8765,7 @@ _lower_expr:
     str     x0, [sp, #576]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L337:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -8844,7 +8844,7 @@ _lower_expr:
     str     x0, [sp, #1008]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L338:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -8898,7 +8898,7 @@ _lower_expr:
     str     x0, [sp, #1296]
     ldr     x9, [sp, #56]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L339:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -8997,7 +8997,7 @@ _lower_expr:
     str     x0, [sp, #1816]
     ldr     x9, [sp, #88]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L340:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9016,7 +9016,7 @@ _lower_expr:
     bl      _lower_cmp
     mov     x12, x0
     mov     x0, x12
-    b       .L765
+    b       .L989
 .L341:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9035,7 +9035,7 @@ _lower_expr:
     bl      _lower_cmp
     mov     x12, x0
     mov     x0, x12
-    b       .L765
+    b       .L989
 .L342:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9054,7 +9054,7 @@ _lower_expr:
     bl      _lower_cmp
     mov     x12, x0
     mov     x0, x12
-    b       .L765
+    b       .L989
 .L343:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9073,7 +9073,7 @@ _lower_expr:
     bl      _lower_cmp
     mov     x12, x0
     mov     x0, x12
-    b       .L765
+    b       .L989
 .L344:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9092,7 +9092,7 @@ _lower_expr:
     bl      _lower_cmp
     mov     x12, x0
     mov     x0, x12
-    b       .L765
+    b       .L989
 .L345:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9111,7 +9111,7 @@ _lower_expr:
     bl      _lower_cmp
     mov     x12, x0
     mov     x0, x12
-    b       .L765
+    b       .L989
 .L346:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9170,7 +9170,7 @@ _lower_expr:
     str     x0, [sp, #2616]
     ldr     x9, [sp, #104]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L347:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9246,7 +9246,7 @@ _lower_expr:
     str     x0, [sp, #3000]
     ldr     x9, [sp, #136]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L348:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9308,7 +9308,7 @@ _lower_expr:
     str     x0, [sp, #3344]
     ldr     x9, [sp, #152]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L349:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -9652,12 +9652,12 @@ _lower_expr:
     str     x0, [sp, #5144]
     ldr     x9, [sp, #288]
     mov     x0, x9
-    b       .L765
+    b       .L989
 .L350:
     mov     x9, #0
     mov     x0, x9
-    b       .L765
-.L765:
+    b       .L989
+.L989:
     movz    x16, #0x1430
     add     sp, sp, x16
     ldp     x29, x30, [sp], #16
@@ -9757,8 +9757,8 @@ _lower_cmp:
     str     x0, [sp, #496]
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L766
-.L766:
+    b       .L990
+.L990:
     add     sp, sp, #512
     ldp     x29, x30, [sp], #16
     ret
@@ -10026,7 +10026,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #1720]
-    b       .L767
+    b       .L991
 .L365:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
@@ -10083,7 +10083,7 @@ _lower_stmt:
     bl      _ir_emit
     str     x0, [sp, #2000]
 .L361:
-    b       .L767
+    b       .L991
 .L360:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10169,7 +10169,7 @@ _lower_stmt:
     bl      _ir_emit
     str     x0, [sp, #2472]
 .L367:
-    b       .L767
+    b       .L991
 .L366:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10273,7 +10273,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #3016]
-    b       .L767
+    b       .L991
 .L368:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10325,7 +10325,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #3288]
-    b       .L767
+    b       .L991
 .L372:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
@@ -10356,7 +10356,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #3448]
-    b       .L767
+    b       .L991
 .L371:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10384,7 +10384,7 @@ _lower_stmt:
     bl      _lower_expr
     str     x0, [sp, #3592]
 .L374:
-    b       .L767
+    b       .L991
 .L373:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10440,7 +10440,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit_label
     str     x0, [sp, #3856]
-    b       .L767
+    b       .L991
 .L376:
     ldr     x9, [sp, #0]
     mov     x0, x9
@@ -10474,7 +10474,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit_label
     str     x0, [sp, #3992]
-    b       .L767
+    b       .L991
 .L375:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10574,7 +10574,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit_label
     str     x0, [sp, #4520]
-    b       .L767
+    b       .L991
 .L377:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10656,7 +10656,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit_label
     str     x0, [sp, #4968]
-    b       .L767
+    b       .L991
 .L378:
     ldr     x9, [sp, #8]
     mov     x10, #0
@@ -10711,9 +10711,9 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_emit_jmp
     str     x0, [sp, #5256]
-    b       .L767
+    b       .L991
 .L379:
-.L767:
+.L991:
     movz    x16, #0x1490
     add     sp, sp, x16
     ldp     x29, x30, [sp], #16
@@ -10747,7 +10747,7 @@ _lower_block:
     str     x9, [sp, #16]
     b       .L381
 .L382:
-.L768:
+.L992:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -10942,8 +10942,8 @@ _lower_one_fn:
     str     x9, [x11]
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L769
-.L769:
+    b       .L993
+.L993:
     add     sp, sp, #1152
     ldp     x29, x30, [sp], #16
     ret
@@ -10980,8 +10980,8 @@ _ir_count_ins:
 .L389:
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L770
-.L770:
+    b       .L994
+.L994:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -11002,7 +11002,7 @@ _ir_has_dst:
     cbz     w11, .L390
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L390:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11014,7 +11014,7 @@ _ir_has_dst:
     cbz     w11, .L391
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L391:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11026,7 +11026,7 @@ _ir_has_dst:
     cbz     w11, .L392
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L392:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11038,7 +11038,7 @@ _ir_has_dst:
     cbz     w11, .L393
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L393:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11050,7 +11050,7 @@ _ir_has_dst:
     cbz     w11, .L394
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L394:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11062,7 +11062,7 @@ _ir_has_dst:
     cbz     w11, .L395
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L395:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11074,7 +11074,7 @@ _ir_has_dst:
     cbz     w11, .L396
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L396:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11086,7 +11086,7 @@ _ir_has_dst:
     cbz     w11, .L397
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L397:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11098,7 +11098,7 @@ _ir_has_dst:
     cbz     w11, .L398
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L398:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11110,7 +11110,7 @@ _ir_has_dst:
     cbz     w11, .L399
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L399:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11122,7 +11122,7 @@ _ir_has_dst:
     cbz     w11, .L400
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L400:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11134,7 +11134,7 @@ _ir_has_dst:
     cbz     w11, .L401
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L401:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11146,12 +11146,12 @@ _ir_has_dst:
     cbz     w11, .L402
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L771
+    b       .L995
 .L402:
     mov     x9, #0
     mov     x0, x9
-    b       .L771
-.L771:
+    b       .L995
+.L995:
     add     sp, sp, #752
     ldp     x29, x30, [sp], #16
     ret
@@ -11183,7 +11183,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L403:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11205,7 +11205,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L404:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11237,7 +11237,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L405:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11269,7 +11269,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L406:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11301,7 +11301,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L407:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11333,7 +11333,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L408:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11365,7 +11365,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L409:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11397,7 +11397,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L410:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11429,7 +11429,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L411:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11461,7 +11461,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L412:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11483,7 +11483,7 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L413:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11513,11 +11513,11 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L415:
     mov     x9, #0
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L414:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -11566,12 +11566,12 @@ _collect_uses:
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x0, x9
-    b       .L772
+    b       .L996
 .L416:
     mov     x9, #0
     mov     x0, x9
-    b       .L772
-.L772:
+    b       .L996
+.L996:
     add     sp, sp, #2496
     ldp     x29, x30, [sp], #16
     ret
@@ -12230,7 +12230,7 @@ _regalloc:
     str     x11, [sp, #128]
     b       .L450
 .L451:
-.L773:
+.L997:
     add     sp, sp, #3600
     ldp     x29, x30, [sp], #16
     ret
@@ -12265,7 +12265,7 @@ _finalize_frame:
     add     x11, x9, x10
     ldr     x9, [sp, #16]
     str     x9, [x11]
-.L774:
+.L998:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -12347,8 +12347,8 @@ _lower:
 .L466:
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L775
-.L775:
+    b       .L999
+.L999:
     add     sp, sp, #368
     ldp     x29, x30, [sp], #16
     ret
@@ -12682,7 +12682,7 @@ _dump_ir:
     str     x9, [sp, #24]
     b       .L469
 .L470:
-.L776:
+.L1000:
     add     sp, sp, #1664
     ldp     x29, x30, [sp], #16
     ret
@@ -12703,7 +12703,7 @@ _set_target:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L777:
+.L1001:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -12723,8 +12723,8 @@ _get_target:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L778
-.L778:
+    b       .L1002
+.L1002:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -12750,7 +12750,7 @@ _out_reg_x:
     mov     x1, x12
     bl      _out_u64
     str     x0, [sp, #72]
-.L779:
+.L1003:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -12776,7 +12776,7 @@ _out_reg_w:
     mov     x1, x12
     bl      _out_u64
     str     x0, [sp, #72]
-.L780:
+.L1004:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -12800,7 +12800,7 @@ _out_x_n:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #56]
-.L781:
+.L1005:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -12824,7 +12824,7 @@ _out_w_n:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #56]
-.L782:
+.L1006:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -12848,7 +12848,7 @@ _out_reg_wx:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #64]
-    b       .L783
+    b       .L1007
 .L473:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
@@ -12856,7 +12856,7 @@ _out_reg_wx:
     mov     x1, x10
     bl      _out_w_n
     str     x0, [sp, #88]
-.L783:
+.L1007:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -12886,7 +12886,7 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #144]
-    b       .L784
+    b       .L1008
 .L474:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
@@ -12906,7 +12906,7 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #216]
-    b       .L784
+    b       .L1008
 .L475:
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
@@ -12926,7 +12926,7 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #288]
-    b       .L784
+    b       .L1008
 .L476:
     adrp    x9, L_str58@PAGE
     add     x9, x9, L_str58@PAGEOFF
@@ -12941,7 +12941,7 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #336]
-.L784:
+.L1008:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -12985,7 +12985,7 @@ _out_sp_tail:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #160]
-.L785:
+.L1009:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -13029,7 +13029,7 @@ _out_mem_tail:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #160]
-.L786:
+.L1010:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -13111,7 +13111,7 @@ _emit_movi:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #576]
-    b       .L787
+    b       .L1011
 .L477:
     movz    x9, #0x0004
     str     x9, [sp, #112]
@@ -13359,7 +13359,7 @@ _emit_movi:
     str     x11, [sp, #176]
     b       .L486
 .L487:
-.L787:
+.L1011:
     add     sp, sp, #1568
     ldp     x29, x30, [sp], #16
     ret
@@ -13380,7 +13380,7 @@ _set_src:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L788:
+.L1012:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -13400,8 +13400,8 @@ _get_src:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L789
-.L789:
+    b       .L1013
+.L1013:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -13417,8 +13417,8 @@ _slot_off:
     movz    x10, #0x0008
     mul     x11, x9, x10
     mov     x0, x11
-    b       .L790
-.L790:
+    b       .L1014
+.L1014:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -13447,12 +13447,12 @@ _in_reg:
     cbz     w11, .L492
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L791
+    b       .L1015
 .L492:
     mov     x9, #0
     mov     x0, x9
-    b       .L791
-.L791:
+    b       .L1015
+.L1015:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -13485,12 +13485,12 @@ _dst_x_reg:
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L792
+    b       .L1016
 .L493:
     movz    x9, #0x0010
     mov     x0, x9
-    b       .L792
-.L792:
+    b       .L1016
+.L1016:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -13554,7 +13554,7 @@ _emit_ldr_x:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #256]
-.L793:
+.L1017:
     add     sp, sp, #272
     ldp     x29, x30, [sp], #16
     ret
@@ -13618,7 +13618,7 @@ _emit_str_x:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #256]
-.L794:
+.L1018:
     add     sp, sp, #272
     ldp     x29, x30, [sp], #16
     ret
@@ -13675,7 +13675,7 @@ _emit_mov_x_x:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #216]
-.L795:
+.L1019:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -13732,7 +13732,7 @@ _emit_mov_w_w:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #216]
-.L796:
+.L1020:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -13763,7 +13763,7 @@ _emit_ldr_w:
     mov     x1, x10
     bl      _out_sp_tail
     str     x0, [sp, #88]
-.L797:
+.L1021:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -13804,7 +13804,7 @@ _emit_load_slot_to_x:
     mov     x2, x13
     bl      _emit_mov_x_x
     str     x0, [sp, #192]
-    b       .L798
+    b       .L1022
 .L494:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
@@ -13816,7 +13816,7 @@ _emit_load_slot_to_x:
     mov     x2, x13
     bl      _emit_ldr_x
     str     x0, [sp, #240]
-.L798:
+.L1022:
     add     sp, sp, #256
     ldp     x29, x30, [sp], #16
     ret
@@ -13845,7 +13845,7 @@ _emit_spill_x:
     cmp     x9, x10
     cset    w11, lo
     cbz     w11, .L495
-    b       .L799
+    b       .L1023
 .L495:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
@@ -13857,7 +13857,7 @@ _emit_spill_x:
     mov     x2, x13
     bl      _emit_str_x
     str     x0, [sp, #176]
-.L799:
+.L1023:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -13892,7 +13892,7 @@ _ensure_src_x:
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L800
+    b       .L1024
 .L496:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
@@ -13906,8 +13906,8 @@ _ensure_src_x:
     str     x0, [sp, #216]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L800
-.L800:
+    b       .L1024
+.L1024:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -13942,7 +13942,7 @@ _ensure_src_w:
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L801
+    b       .L1025
 .L497:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
@@ -13956,8 +13956,8 @@ _ensure_src_w:
     str     x0, [sp, #216]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L801
-.L801:
+    b       .L1025
+.L1025:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -13987,7 +13987,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #224]
-    b       .L802
+    b       .L1026
 .L498:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
@@ -14007,7 +14007,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #296]
-    b       .L802
+    b       .L1026
 .L499:
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
@@ -14027,7 +14027,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #368]
-    b       .L802
+    b       .L1026
 .L500:
     ldr     x9, [sp, #8]
     movz    x10, #0x0003
@@ -14047,7 +14047,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #440]
-    b       .L802
+    b       .L1026
 .L501:
     ldr     x9, [sp, #8]
     movz    x10, #0x0004
@@ -14067,7 +14067,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #512]
-    b       .L802
+    b       .L1026
 .L502:
     ldr     x9, [sp, #8]
     movz    x10, #0x0005
@@ -14087,7 +14087,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #584]
-    b       .L802
+    b       .L1026
 .L503:
     ldr     x9, [sp, #8]
     movz    x10, #0x0006
@@ -14107,7 +14107,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #656]
-    b       .L802
+    b       .L1026
 .L504:
     ldr     x9, [sp, #8]
     movz    x10, #0x0007
@@ -14127,7 +14127,7 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #728]
-    b       .L802
+    b       .L1026
 .L505:
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
@@ -14147,9 +14147,9 @@ _out_binop_mnemonic:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #800]
-    b       .L802
+    b       .L1026
 .L506:
-.L802:
+.L1026:
     add     sp, sp, #816
     ldp     x29, x30, [sp], #16
     ret
@@ -14196,7 +14196,7 @@ _emit_i_movi:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #192]
-.L803:
+.L1027:
     add     sp, sp, #208
     ldp     x29, x30, [sp], #16
     ret
@@ -14372,7 +14372,7 @@ _emit_i_label_addr:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #944]
-    b       .L804
+    b       .L1028
 .L507:
     adrp    x9, L_str95@PAGE
     add     x9, x9, L_str95@PAGEOFF
@@ -14496,7 +14496,7 @@ _emit_i_label_addr:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #1448]
-.L804:
+.L1028:
     add     sp, sp, #1456
     ldp     x29, x30, [sp], #16
     ret
@@ -14581,7 +14581,7 @@ _emit_i_addr_local:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #376]
-.L805:
+.L1029:
     add     sp, sp, #384
     ldp     x29, x30, [sp], #16
     ret
@@ -14698,7 +14698,7 @@ _emit_i_load_local:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #528]
-.L806:
+.L1030:
     add     sp, sp, #544
     ldp     x29, x30, [sp], #16
     ret
@@ -14834,7 +14834,7 @@ _emit_i_store_local:
     str     x0, [sp, #664]
 .L517:
 .L515:
-.L807:
+.L1031:
     add     sp, sp, #672
     ldp     x29, x30, [sp], #16
     ret
@@ -14960,7 +14960,7 @@ _emit_i_load_mem:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #520]
-.L808:
+.L1032:
     add     sp, sp, #528
     ldp     x29, x30, [sp], #16
     ret
@@ -15105,7 +15105,7 @@ _emit_i_store_mem:
     str     x0, [sp, #656]
 .L527:
 .L525:
-.L809:
+.L1033:
     add     sp, sp, #672
     ldp     x29, x30, [sp], #16
     ret
@@ -15308,7 +15308,7 @@ _emit_i_binop:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #912]
-.L810:
+.L1034:
     add     sp, sp, #928
     ldp     x29, x30, [sp], #16
     ret
@@ -15338,7 +15338,7 @@ _out_cc:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #176]
-    b       .L811
+    b       .L1035
 .L531:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
@@ -15358,7 +15358,7 @@ _out_cc:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #248]
-    b       .L811
+    b       .L1035
 .L532:
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
@@ -15378,7 +15378,7 @@ _out_cc:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #320]
-    b       .L811
+    b       .L1035
 .L533:
     ldr     x9, [sp, #8]
     movz    x10, #0x0003
@@ -15398,7 +15398,7 @@ _out_cc:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #392]
-    b       .L811
+    b       .L1035
 .L534:
     ldr     x9, [sp, #8]
     movz    x10, #0x0004
@@ -15418,7 +15418,7 @@ _out_cc:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #464]
-    b       .L811
+    b       .L1035
 .L535:
     ldr     x9, [sp, #8]
     movz    x10, #0x0005
@@ -15438,9 +15438,9 @@ _out_cc:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #536]
-    b       .L811
+    b       .L1035
 .L536:
-.L811:
+.L1035:
     add     sp, sp, #544
     ldp     x29, x30, [sp], #16
     ret
@@ -15645,7 +15645,7 @@ _emit_i_cmp:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #912]
-.L812:
+.L1036:
     add     sp, sp, #928
     ldp     x29, x30, [sp], #16
     ret
@@ -15782,7 +15782,7 @@ _emit_i_syscall:
     mov     x2, x10
     bl      _emit_mov_x_x
     str     x0, [sp, #728]
-    b       .L813
+    b       .L1037
 .L544:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -15797,7 +15797,7 @@ _emit_i_syscall:
     mov     x2, x13
     bl      _emit_str_x
     str     x0, [sp, #800]
-.L813:
+.L1037:
     add     sp, sp, #816
     ldp     x29, x30, [sp], #16
     ret
@@ -15843,7 +15843,7 @@ _emit_i_call:
     mov     x2, x11
     bl      _emit_i_syscall
     str     x0, [sp, #232]
-    b       .L814
+    b       .L1038
 .L545:
     ldr     x9, [sp, #16]
     movz    x10, #0x0060
@@ -15945,7 +15945,7 @@ _emit_i_call:
     mov     x2, x10
     bl      _emit_mov_x_x
     str     x0, [sp, #752]
-    b       .L814
+    b       .L1038
 .L548:
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -15960,7 +15960,7 @@ _emit_i_call:
     mov     x2, x13
     bl      _emit_str_x
     str     x0, [sp, #824]
-.L814:
+.L1038:
     add     sp, sp, #832
     ldp     x29, x30, [sp], #16
     ret
@@ -16117,7 +16117,7 @@ _emit_i_ret:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #736]
-.L815:
+.L1039:
     add     sp, sp, #752
     ldp     x29, x30, [sp], #16
     ret
@@ -16157,7 +16157,7 @@ _emit_i_jmp:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #144]
-.L816:
+.L1040:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -16231,7 +16231,7 @@ _emit_i_jz:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #312]
-.L817:
+.L1041:
     add     sp, sp, #320
     ldp     x29, x30, [sp], #16
     ret
@@ -16278,7 +16278,7 @@ _emit_i_label:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #184]
-.L818:
+.L1042:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -16310,7 +16310,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_movi
     str     x0, [sp, #120]
-    b       .L819
+    b       .L1043
 .L558:
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
@@ -16325,7 +16325,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_label_addr
     str     x0, [sp, #176]
-    b       .L819
+    b       .L1043
 .L559:
     ldr     x9, [sp, #32]
     movz    x10, #0x0002
@@ -16340,7 +16340,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_addr_local
     str     x0, [sp, #232]
-    b       .L819
+    b       .L1043
 .L560:
     ldr     x9, [sp, #32]
     movz    x10, #0x0003
@@ -16355,7 +16355,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_load_local
     str     x0, [sp, #288]
-    b       .L819
+    b       .L1043
 .L561:
     ldr     x9, [sp, #32]
     movz    x10, #0x0004
@@ -16370,7 +16370,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_store_local
     str     x0, [sp, #344]
-    b       .L819
+    b       .L1043
 .L562:
     ldr     x9, [sp, #32]
     movz    x10, #0x0005
@@ -16385,7 +16385,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_load_mem
     str     x0, [sp, #400]
-    b       .L819
+    b       .L1043
 .L563:
     ldr     x9, [sp, #32]
     movz    x10, #0x0006
@@ -16400,7 +16400,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_store_mem
     str     x0, [sp, #456]
-    b       .L819
+    b       .L1043
 .L564:
     ldr     x9, [sp, #32]
     movz    x10, #0x0007
@@ -16415,7 +16415,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_binop
     str     x0, [sp, #512]
-    b       .L819
+    b       .L1043
 .L565:
     ldr     x9, [sp, #32]
     movz    x10, #0x0008
@@ -16432,7 +16432,7 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #576]
-    b       .L819
+    b       .L1043
 .L566:
     ldr     x9, [sp, #32]
     movz    x10, #0x0009
@@ -16449,7 +16449,7 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #640]
-    b       .L819
+    b       .L1043
 .L567:
     ldr     x9, [sp, #32]
     movz    x10, #0x000a
@@ -16466,7 +16466,7 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #704]
-    b       .L819
+    b       .L1043
 .L568:
     ldr     x9, [sp, #32]
     movz    x10, #0x000b
@@ -16483,7 +16483,7 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #768]
-    b       .L819
+    b       .L1043
 .L569:
     ldr     x9, [sp, #32]
     movz    x10, #0x000c
@@ -16500,7 +16500,7 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #832]
-    b       .L819
+    b       .L1043
 .L570:
     ldr     x9, [sp, #32]
     movz    x10, #0x000d
@@ -16517,7 +16517,7 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #896]
-    b       .L819
+    b       .L1043
 .L571:
     ldr     x9, [sp, #32]
     movz    x10, #0x000e
@@ -16532,7 +16532,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_call
     str     x0, [sp, #952]
-    b       .L819
+    b       .L1043
 .L572:
     ldr     x9, [sp, #32]
     movz    x10, #0x000f
@@ -16549,7 +16549,7 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_ret
     str     x0, [sp, #1016]
-    b       .L819
+    b       .L1043
 .L573:
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
@@ -16562,7 +16562,7 @@ _emit_instr:
     mov     x1, x10
     bl      _emit_i_jmp
     str     x0, [sp, #1064]
-    b       .L819
+    b       .L1043
 .L574:
     ldr     x9, [sp, #32]
     movz    x10, #0x0011
@@ -16577,7 +16577,7 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_jz
     str     x0, [sp, #1120]
-    b       .L819
+    b       .L1043
 .L575:
     ldr     x9, [sp, #32]
     movz    x10, #0x0012
@@ -16590,9 +16590,9 @@ _emit_instr:
     mov     x1, x10
     bl      _emit_i_label
     str     x0, [sp, #1168]
-    b       .L819
+    b       .L1043
 .L576:
-.L819:
+.L1043:
     add     sp, sp, #1184
     ldp     x29, x30, [sp], #16
     ret
@@ -16634,7 +16634,7 @@ _emit_sym:
     mov     x2, x10
     bl      _out_bytes
     str     x0, [sp, #152]
-.L820:
+.L1044:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -16778,7 +16778,7 @@ _emit_prologue:
     str     x0, [sp, #672]
 .L580:
 .L578:
-.L821:
+.L1045:
     add     sp, sp, #688
     ldp     x29, x30, [sp], #16
     ret
@@ -16908,7 +16908,7 @@ _emit_epilogue:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #584]
-.L822:
+.L1046:
     add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
@@ -16938,7 +16938,7 @@ _emit_text_section:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #104]
-    b       .L823
+    b       .L1047
 .L584:
     adrp    x9, L_str133@PAGE
     add     x9, x9, L_str133@PAGEOFF
@@ -16953,7 +16953,7 @@ _emit_text_section:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #152]
-.L823:
+.L1047:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -17038,7 +17038,7 @@ _emit_param_spill:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #376]
-    b       .L824
+    b       .L1048
 .L589:
     ldr     x9, [sp, #24]
     movz    x10, #0x0004
@@ -17065,7 +17065,7 @@ _emit_param_spill:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #488]
-    b       .L824
+    b       .L1048
 .L590:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
@@ -17087,7 +17087,7 @@ _emit_param_spill:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #576]
-.L824:
+.L1048:
     add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
@@ -17167,7 +17167,7 @@ _emit_fn:
     mov     x2, x11
     bl      _emit_epilogue
     str     x0, [sp, #328]
-.L825:
+.L1049:
     add     sp, sp, #336
     ldp     x29, x30, [sp], #16
     ret
@@ -17220,7 +17220,7 @@ _emit_string_byte:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #224]
-.L826:
+.L1050:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -17240,7 +17240,7 @@ _emit_strings:
     cmp     x9, x10
     cset    w11, eq
     cbz     w11, .L595
-    b       .L827
+    b       .L1051
 .L595:
     adrp    x9, L_str135@PAGE
     add     x9, x9, L_str135@PAGEOFF
@@ -17343,7 +17343,7 @@ _emit_strings:
     str     x9, [sp, #32]
     b       .L596
 .L597:
-.L827:
+.L1051:
     add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
@@ -17367,7 +17367,7 @@ _emit_macos_start:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #64]
-.L828:
+.L1052:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -17387,7 +17387,7 @@ _emit_bsses:
     cmp     x9, x10
     cset    w11, eq
     cbz     w11, .L600
-    b       .L829
+    b       .L1053
 .L600:
     ldr     x9, [sp, #0]
     movz    x10, #0x000a
@@ -17483,7 +17483,7 @@ _emit_bsses:
     str     x9, [sp, #16]
     b       .L601
 .L602:
-.L829:
+.L1053:
     add     sp, sp, #560
     ldp     x29, x30, [sp], #16
     ret
@@ -17670,7 +17670,10222 @@ _codegen:
     mov     x0, x9
     bl      _out_flush
     str     x0, [sp, #920]
+.L1054:
+    add     sp, sp, #928
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _sha_rotr
+_sha_rotr:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #112
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    lsr     x11, x9, x10
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0020
+    ldr     x12, [sp, #8]
+    sub     x13, x10, x12
+    lsl     x10, x9, x13
+    orr     x9, x11, x10
+    movz    x10, #0xffff
+    movk    x10, #0xffff, lsl #16
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1055
+.L1055:
+    add     sp, sp, #112
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _sha_k_init
+_sha_k_init:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #3088
+    adrp    x9, _SHA_K@PAGE
+    add     x9, x9, _SHA_K@PAGEOFF
+    str     x9, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x2f98
+    movk    x9, #0x428a, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x4491
+    movk    x9, #0x7137, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xfbcf
+    movk    x9, #0xb5c0, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xdba5
+    movk    x9, #0xe9b5, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xc25b
+    movk    x9, #0x3956, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0005
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x11f1
+    movk    x9, #0x59f1, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0006
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x82a4
+    movk    x9, #0x923f, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x5ed5
+    movk    x9, #0xab1c, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xaa98
+    movk    x9, #0xd807, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0009
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x5b01
+    movk    x9, #0x1283, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000a
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x85be
+    movk    x9, #0x2431, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x7dc3
+    movk    x9, #0x550c, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000c
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x5d74
+    movk    x9, #0x72be, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000d
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xb1fe
+    movk    x9, #0x80de, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000e
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x06a7
+    movk    x9, #0x9bdc, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000f
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xf174
+    movk    x9, #0xc19b, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0010
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x69c1
+    movk    x9, #0xe49b, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0011
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x4786
+    movk    x9, #0xefbe, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0012
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x9dc6
+    movk    x9, #0x0fc1, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0013
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xa1cc
+    movk    x9, #0x240c, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0014
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x2c6f
+    movk    x9, #0x2de9, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0015
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x84aa
+    movk    x9, #0x4a74, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0016
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xa9dc
+    movk    x9, #0x5cb0, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0017
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x88da
+    movk    x9, #0x76f9, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x5152
+    movk    x9, #0x983e, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xc66d
+    movk    x9, #0xa831, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001a
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x27c8
+    movk    x9, #0xb003, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001b
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x7fc7
+    movk    x9, #0xbf59, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001c
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x0bf3
+    movk    x9, #0xc6e0, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001d
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x9147
+    movk    x9, #0xd5a7, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001e
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x6351
+    movk    x9, #0x06ca, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x2967
+    movk    x9, #0x1429, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0020
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x0a85
+    movk    x9, #0x27b7, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0021
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x2138
+    movk    x9, #0x2e1b, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0022
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x6dfc
+    movk    x9, #0x4d2c, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0023
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x0d13
+    movk    x9, #0x5338, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0024
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x7354
+    movk    x9, #0x650a, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0025
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x0abb
+    movk    x9, #0x766a, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0026
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xc92e
+    movk    x9, #0x81c2, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0027
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x2c85
+    movk    x9, #0x9272, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0028
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xe8a1
+    movk    x9, #0xa2bf, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0029
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x664b
+    movk    x9, #0xa81a, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x002a
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x8b70
+    movk    x9, #0xc24b, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x002b
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x51a3
+    movk    x9, #0xc76c, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x002c
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xe819
+    movk    x9, #0xd192, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x002d
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x0624
+    movk    x9, #0xd699, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x002e
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x3585
+    movk    x9, #0xf40e, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x002f
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xa070
+    movk    x9, #0x106a, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0030
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xc116
+    movk    x9, #0x19a4, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0031
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x6c08
+    movk    x9, #0x1e37, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0032
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x774c
+    movk    x9, #0x2748, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0033
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xbcb5
+    movk    x9, #0x34b0, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0034
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x0cb3
+    movk    x9, #0x391c, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0035
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xaa4a
+    movk    x9, #0x4ed8, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0036
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xca4f
+    movk    x9, #0x5b9c, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0037
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x6ff3
+    movk    x9, #0x682e, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0038
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x82ee
+    movk    x9, #0x748f, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0039
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x636f
+    movk    x9, #0x78a5, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x003a
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x7814
+    movk    x9, #0x84c8, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x003b
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x0208
+    movk    x9, #0x8cc7, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x003c
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xfffa
+    movk    x9, #0x90be, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x003d
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x6ceb
+    movk    x9, #0xa450, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x003e
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xa3f7
+    movk    x9, #0xbef9, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x003f
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x78f2
+    movk    x9, #0xc671, lsl #16
+    str     x9, [x10]
+.L1056:
+    add     sp, sp, #3088
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _sha_h_init
+_sha_h_init:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #400
+    adrp    x9, _SHA_H@PAGE
+    add     x9, x9, _SHA_H@PAGEOFF
+    str     x9, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xe667
+    movk    x9, #0x6a09, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xae85
+    movk    x9, #0xbb67, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xf372
+    movk    x9, #0x3c6e, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xf53a
+    movk    x9, #0xa54f, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x527f
+    movk    x9, #0x510e, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0005
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x688c
+    movk    x9, #0x9b05, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0006
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xd9ab
+    movk    x9, #0x1f83, lsl #16
+    str     x9, [x10]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0xcd19
+    movk    x9, #0x5be0, lsl #16
+    str     x9, [x10]
+.L1057:
+    add     sp, sp, #400
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _sha_w32be
+_sha_w32be:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #272
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldrb    w9, [x11]
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    ldrb    w9, [x11]
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    add     x11, x9, x10
+    ldrb    w9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    add     x11, x9, x10
+    ldrb    w9, [x11]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0018
+    lsl     x11, x9, x10
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0010
+    lsl     x12, x9, x10
+    orr     x9, x11, x12
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0008
+    lsl     x12, x10, x11
+    orr     x10, x9, x12
+    ldr     x9, [sp, #32]
+    orr     x11, x10, x9
+    mov     x0, x11
+    b       .L1058
+.L1058:
+    add     sp, sp, #272
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _sha_put_be64
+_sha_put_be64:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #656
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x11, #0
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x0038
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0001
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x0030
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0002
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x0028
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0003
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x0020
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0004
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x0018
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0005
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x0010
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0006
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x0008
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0007
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    movz    x11, #0x00ff
+    and     x12, x9, x11
+    strb    w12, [x10]
+.L1059:
+    add     sp, sp, #656
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _sha256_block
+_sha256_block:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #3104
+    str     x0, [sp, #0]
+    adrp    x9, _SHA_W@PAGE
+    add     x9, x9, _SHA_W@PAGEOFF
+    str     x9, [sp, #8]
+    adrp    x9, _SHA_K@PAGE
+    add     x9, x9, _SHA_K@PAGEOFF
+    str     x9, [sp, #16]
+    adrp    x9, _SHA_H@PAGE
+    add     x9, x9, _SHA_H@PAGEOFF
+    str     x9, [sp, #24]
+    mov     x9, #0
+    str     x9, [sp, #32]
+.L616:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L617
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x16, x9, x12
+    str     x16, [sp, #272]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0004
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    mov     x0, x10
+    bl      _sha_w32be
+    mov     x9, x0
+    ldr     x17, [sp, #272]
+    str     x9, [x17]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    b       .L616
+.L617:
+    movz    x9, #0x0010
+    str     x9, [sp, #32]
+.L618:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0040
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L619
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x000f
+    sub     x12, x10, x11
+    movz    x10, #0x0008
+    mul     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [x10]
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    str     x0, [sp, #464]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0012
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    mov     x11, x0
+    ldr     w16, [sp, #464]
+    eor     w9, w16, w11
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0003
+    lsr     x12, x10, x11
+    eor     w10, w9, w12
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     w11, w10, w9
+    str     x11, [sp, #48]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0002
+    sub     x12, x10, x11
+    movz    x10, #0x0008
+    mul     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [x10]
+    str     x9, [sp, #56]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0011
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    str     x0, [sp, #632]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0013
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    mov     x11, x0
+    ldr     w16, [sp, #632]
+    eor     w9, w16, w11
+    ldr     x10, [sp, #56]
+    movz    x11, #0x000a
+    lsr     x12, x10, x11
+    eor     w10, w9, w12
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     w11, w10, w9
+    str     x11, [sp, #64]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #8]
+    ldr     x11, [sp, #32]
+    movz    x12, #0x0010
+    sub     x13, x11, x12
+    movz    x11, #0x0008
+    mul     x12, x13, x11
+    add     x11, x9, x12
+    ldr     x9, [x11]
+    ldr     x11, [sp, #48]
+    add     x12, x9, x11
+    ldr     x9, [sp, #8]
+    ldr     x11, [sp, #32]
+    movz    x13, #0x0007
+    sub     x14, x11, x13
+    movz    x11, #0x0008
+    mul     x13, x14, x11
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    add     x11, x12, x9
+    ldr     x9, [sp, #64]
+    add     x12, x11, x9
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    b       .L618
+.L619:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #72]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #80]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0002
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0003
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0004
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #104]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0005
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #112]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0006
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #120]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0007
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #128]
+    mov     x9, #0
+    str     x9, [sp, #32]
+.L620:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0040
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L621
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0006
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    str     x0, [sp, #1400]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x000b
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    mov     x11, x0
+    ldr     w16, [sp, #1400]
+    eor     w16, w16, w11
+    str     x16, [sp, #1432]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    mov     x11, x0
+    ldr     w16, [sp, #1432]
+    eor     w9, w16, w11
+    movz    x10, #0xffff
+    movk    x10, #0xffff, lsl #16
+    and     w11, w9, w10
+    str     x11, [sp, #136]
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #112]
+    and     x11, x9, x10
+    ldr     x9, [sp, #104]
+    movz    x10, #0xffff
+    movk    x10, #0xffff, lsl #16
+    eor     x12, x9, x10
+    ldr     x9, [sp, #120]
+    and     x10, x12, x9
+    eor     x9, x11, x10
+    movz    x10, #0xffff
+    movk    x10, #0xffff, lsl #16
+    and     x11, x9, x10
+    str     x11, [sp, #144]
+    ldr     x9, [sp, #128]
+    ldr     x10, [sp, #136]
+    add     x11, x9, x10
+    ldr     x9, [sp, #144]
+    add     x10, x11, x9
+    ldr     x9, [sp, #16]
+    ldr     x11, [sp, #32]
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    add     x11, x10, x9
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #32]
+    movz    x12, #0x0008
+    mul     x13, x10, x12
+    add     x10, x9, x13
+    ldr     x9, [x10]
+    add     x10, x11, x9
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x10, x9
+    str     x11, [sp, #152]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    str     x0, [sp, #1760]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x000d
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    mov     x11, x0
+    ldr     w16, [sp, #1760]
+    eor     w16, w16, w11
+    str     x16, [sp, #1792]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0016
+    mov     x0, x9
+    mov     x1, x10
+    bl      _sha_rotr
+    mov     x11, x0
+    ldr     w16, [sp, #1792]
+    eor     w9, w16, w11
+    movz    x10, #0xffff
+    movk    x10, #0xffff, lsl #16
+    and     w11, w9, w10
+    str     x11, [sp, #160]
+    ldr     x9, [sp, #72]
+    ldr     x10, [sp, #80]
+    and     x11, x9, x10
+    ldr     x9, [sp, #72]
+    ldr     x10, [sp, #88]
+    and     x12, x9, x10
+    eor     x9, x11, x12
+    ldr     x10, [sp, #80]
+    ldr     x11, [sp, #88]
+    and     x12, x10, x11
+    eor     x10, x9, x12
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x10, x9
+    str     x11, [sp, #168]
+    ldr     x9, [sp, #160]
+    ldr     x10, [sp, #168]
+    add     x11, x9, x10
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x10, x11, x9
+    str     x10, [sp, #176]
+    ldr     x9, [sp, #120]
+    str     x9, [sp, #128]
+    ldr     x9, [sp, #112]
+    str     x9, [sp, #120]
+    ldr     x9, [sp, #104]
+    str     x9, [sp, #112]
+    ldr     x9, [sp, #96]
+    ldr     x10, [sp, #152]
+    add     x11, x9, x10
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x10, x11, x9
+    str     x10, [sp, #104]
+    ldr     x9, [sp, #88]
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #80]
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #72]
+    str     x9, [sp, #80]
+    ldr     x9, [sp, #152]
+    ldr     x10, [sp, #176]
+    add     x11, x9, x10
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x10, x11, x9
+    str     x10, [sp, #72]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    b       .L620
+.L621:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    mov     x11, #0
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #72]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0001
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #80]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0002
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0002
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #88]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0003
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0003
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #96]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0004
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0004
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #104]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0005
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0005
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #112]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0006
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0006
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #120]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0007
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0007
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x9, x13
+    ldr     x9, [x11]
+    ldr     x11, [sp, #128]
+    add     x12, x9, x11
+    movz    x9, #0xffff
+    movk    x9, #0xffff, lsl #16
+    and     x11, x12, x9
+    str     x11, [x10]
+.L1060:
+    add     sp, sp, #3104
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _sha256
+_sha256:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #1248
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    bl      _sha_k_init
+    str     x0, [sp, #96]
+    bl      _sha_h_init
+    str     x0, [sp, #104]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0040
+    udiv     x11, x9, x10
+    str     x11, [sp, #24]
+    mov     x9, #0
+    str     x9, [sp, #32]
+.L622:
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #24]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L623
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0040
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    mov     x0, x10
+    bl      _sha256_block
+    str     x0, [sp, #208]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    b       .L622
+.L623:
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0040
+    mul     x12, x10, x11
+    sub     x10, x9, x12
+    str     x10, [sp, #40]
+    adrp    x9, _SHA_BLK@PAGE
+    add     x9, x9, _SHA_BLK@PAGEOFF
+    str     x9, [sp, #48]
+    mov     x9, #0
+    str     x9, [sp, #56]
+.L624:
+    ldr     x9, [sp, #56]
+    ldr     x10, [sp, #40]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L625
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #56]
+    add     x11, x9, x10
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    movz    x12, #0x0040
+    mul     x13, x10, x12
+    ldr     x10, [sp, #56]
+    add     x12, x13, x10
+    add     x10, x9, x12
+    ldrb    w9, [x10]
+    strb    w9, [x11]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    b       .L624
+.L625:
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #40]
+    add     x11, x9, x10
+    movz    x9, #0x0080
+    strb    w9, [x11]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+.L626:
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0040
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L627
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #56]
+    add     x11, x9, x10
+    mov     x9, #0
+    strb    w9, [x11]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    b       .L626
+.L627:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    mul     x11, x9, x10
+    str     x11, [sp, #64]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0038
+    cmp     x9, x10
+    cset    w11, hs
+    cbz     w11, .L628
+    ldr     x9, [sp, #48]
+    mov     x0, x9
+    bl      _sha256_block
+    str     x0, [sp, #624]
+    mov     x9, #0
+    str     x9, [sp, #56]
+.L629:
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0040
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L630
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #56]
+    add     x11, x9, x10
+    mov     x9, #0
+    strb    w9, [x11]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    b       .L629
+.L630:
+.L628:
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0038
+    ldr     x11, [sp, #64]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _sha_put_be64
+    str     x0, [sp, #744]
+    ldr     x9, [sp, #48]
+    mov     x0, x9
+    bl      _sha256_block
+    str     x0, [sp, #760]
+    adrp    x9, _SHA_H@PAGE
+    add     x9, x9, _SHA_H@PAGEOFF
+    str     x9, [sp, #72]
+    mov     x9, #0
+    str     x9, [sp, #80]
+.L631:
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L632
+    ldr     x9, [sp, #72]
+    ldr     x10, [sp, #80]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #80]
+    movz    x11, #0x0004
+    mul     x12, x10, x11
+    mov     x10, #0
+    add     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [sp, #88]
+    movz    x11, #0x0018
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #80]
+    movz    x11, #0x0004
+    mul     x12, x10, x11
+    movz    x10, #0x0001
+    add     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [sp, #88]
+    movz    x11, #0x0010
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #80]
+    movz    x11, #0x0004
+    mul     x12, x10, x11
+    movz    x10, #0x0002
+    add     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [sp, #88]
+    movz    x11, #0x0008
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #80]
+    movz    x11, #0x0004
+    mul     x12, x10, x11
+    movz    x10, #0x0003
+    add     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [sp, #88]
+    movz    x11, #0x00ff
+    and     x12, x9, x11
+    strb    w12, [x10]
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #80]
+    b       .L631
+.L632:
+.L1061:
+    add     sp, sp, #1248
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _m5
+_m5:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1062
+.L1062:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _m7
+_m7:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x007f
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1063
+.L1063:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _m12
+_m12:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0fff
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1064
+.L1064:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _m16
+_m16:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0xffff
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1065
+.L1065:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _m19
+_m19:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0xffff
+    movk    x10, #0x0007, lsl #16
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1066
+.L1066:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _m21
+_m21:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0xffff
+    movk    x10, #0x001f, lsl #16
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1067
+.L1067:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _m26
+_m26:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0xffff
+    movk    x10, #0x03ff, lsl #16
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1068
+.L1068:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_movz
+_enc_movz:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xd280, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0015
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m16
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1069
+.L1069:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_movk
+_enc_movk:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xf280, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0015
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m16
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1070
+.L1070:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_mov_reg
+_enc_mov_reg:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #128
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x16, #0xaa00, lsl #16
+    str     x16, [sp, #16]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #16]
+    orr     x9, x16, x11
+    movz    x10, #0x001f
+    movz    x11, #0x0005
+    lsl     x12, x10, x11
+    orr     x16, x9, x12
+    str     x16, [sp, #88]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #88]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1071
+.L1071:
+    add     sp, sp, #128
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_stp_pre
+_enc_stp_pre:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #192
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    movz    x16, #0xa980, lsl #16
+    str     x16, [sp, #32]
+    ldr     x9, [sp, #24]
+    mov     x0, x9
+    bl      _m7
+    mov     x10, x0
+    movz    x9, #0x000f
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #32]
+    orr     x16, x16, x11
+    str     x16, [sp, #72]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #72]
+    orr     x16, x16, x11
+    str     x16, [sp, #112]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #112]
+    orr     x16, x16, x11
+    str     x16, [sp, #152]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #152]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1072
+.L1072:
+    add     sp, sp, #192
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_ldp_post
+_enc_ldp_post:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #192
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    movz    x16, #0xa8c0, lsl #16
+    str     x16, [sp, #32]
+    ldr     x9, [sp, #24]
+    mov     x0, x9
+    bl      _m7
+    mov     x10, x0
+    movz    x9, #0x000f
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #32]
+    orr     x16, x16, x11
+    str     x16, [sp, #72]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #72]
+    orr     x16, x16, x11
+    str     x16, [sp, #112]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #112]
+    orr     x16, x16, x11
+    str     x16, [sp, #152]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #152]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1073
+.L1073:
+    add     sp, sp, #192
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_add_imm
+_enc_add_imm:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x9100, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1074
+.L1074:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_sub_imm
+_enc_sub_imm:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xd100, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1075
+.L1075:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_add_reg
+_enc_add_reg:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x8b00, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1076
+.L1076:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_sub_reg
+_enc_sub_reg:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xcb00, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1077
+.L1077:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_sub_ext_sp
+_enc_sub_ext_sp:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    movz    x16, #0x63ff
+    movk    x16, #0xcb20, lsl #16
+    str     x16, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #8]
+    orr     x9, x16, x11
+    mov     x0, x9
+    b       .L1078
+.L1078:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_add_ext_sp
+_enc_add_ext_sp:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    movz    x16, #0x63ff
+    movk    x16, #0x8b20, lsl #16
+    str     x16, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #8]
+    orr     x9, x16, x11
+    mov     x0, x9
+    b       .L1079
+.L1079:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_mul
+_enc_mul:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #176
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x7c00
+    movk    x16, #0x9b00, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x9, x16, x11
+    movz    x10, #0x001f
+    movz    x11, #0x000a
+    lsl     x12, x10, x11
+    orr     x16, x9, x12
+    str     x16, [sp, #96]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #96]
+    orr     x16, x16, x11
+    str     x16, [sp, #136]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #136]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1080
+.L1080:
+    add     sp, sp, #176
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_udiv
+_enc_udiv:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x0800
+    movk    x16, #0x9ac0, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1081
+.L1081:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_and
+_enc_and:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x8a00, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1082
+.L1082:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_orr
+_enc_orr:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xaa00, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1083
+.L1083:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_eor
+_enc_eor:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xca00, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1084
+.L1084:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_lslv
+_enc_lslv:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x2000
+    movk    x16, #0x9ac0, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1085
+.L1085:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_lsrv
+_enc_lsrv:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x2400
+    movk    x16, #0x9ac0, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1086
+.L1086:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_ldr_x
+_enc_ldr_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xf940, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1087
+.L1087:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_ldr_w
+_enc_ldr_w:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xb940, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1088
+.L1088:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_ldrb
+_enc_ldrb:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x3940, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1089
+.L1089:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_str_x
+_enc_str_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xf900, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1090
+.L1090:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_str_w
+_enc_str_w:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0xb900, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1091
+.L1091:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_strb
+_enc_strb:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x3900, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m12
+    mov     x10, x0
+    movz    x9, #0x000a
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1092
+.L1092:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_adrp
+_enc_adrp:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #208
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m21
+    mov     x10, x0
+    str     x10, [sp, #16]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0003
+    and     x11, x9, x10
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0002
+    lsr     x11, x9, x10
+    str     x11, [sp, #32]
+    movz    x9, #0x9000, lsl #16
+    ldr     x10, [sp, #24]
+    movz    x11, #0x001d
+    lsl     x12, x10, x11
+    orr     x10, x9, x12
+    ldr     x9, [sp, #32]
+    movz    x11, #0x0005
+    lsl     x12, x9, x11
+    orr     x16, x10, x12
+    str     x16, [sp, #168]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #168]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1093
+.L1093:
+    add     sp, sp, #208
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_add_pageoff
+_enc_add_pageoff:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_add_imm
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1094
+.L1094:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_bl
+_enc_bl:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    str     x0, [sp, #0]
+    movz    x16, #0x9400, lsl #16
+    str     x16, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m26
+    mov     x10, x0
+    ldr     x16, [sp, #8]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1095
+.L1095:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_b
+_enc_b:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    str     x0, [sp, #0]
+    movz    x16, #0x1400, lsl #16
+    str     x16, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m26
+    mov     x10, x0
+    ldr     x16, [sp, #8]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1096
+.L1096:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_cbz_w
+_enc_cbz_w:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #96
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x16, #0x3400, lsl #16
+    str     x16, [sp, #16]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m19
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #16]
+    orr     x16, x16, x11
+    str     x16, [sp, #56]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #56]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1097
+.L1097:
+    add     sp, sp, #96
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_cmp_reg
+_enc_cmp_reg:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #128
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x16, #0xeb00, lsl #16
+    str     x16, [sp, #16]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #16]
+    orr     x16, x16, x11
+    str     x16, [sp, #56]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #56]
+    orr     x9, x16, x11
+    movz    x10, #0x001f
+    orr     x11, x9, x10
+    mov     x0, x11
+    b       .L1098
+.L1098:
+    add     sp, sp, #128
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_cset
+_enc_cset:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #96
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x9, #0x07e0
+    movk    x9, #0x1a9f, lsl #16
+    ldr     x10, [sp, #8]
+    movz    x11, #0x000f
+    and     x12, x10, x11
+    movz    x10, #0x000c
+    lsl     x11, x12, x10
+    orr     x16, x9, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #64]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1099
+.L1099:
+    add     sp, sp, #96
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_svc
+_enc_svc:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    movz    x16, #0x0001
+    movk    x16, #0xd400, lsl #16
+    str     x16, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m16
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #8]
+    orr     x9, x16, x11
+    mov     x0, x9
+    b       .L1100
+.L1100:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_ret
+_enc_ret:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    movz    x9, #0x03c0
+    movk    x9, #0xd65f, lsl #16
+    movz    x10, #0x001e
+    movz    x11, #0x0005
+    lsl     x12, x10, x11
+    orr     x10, x9, x12
+    mov     x0, x10
+    b       .L1101
+.L1101:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_img_cap
+_mo_img_cap:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #16
+    movz    x9, #0x0010, lsl #16
+    mov     x0, x9
+    b       .L1102
+.L1102:
+    add     sp, sp, #16
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_uuid_from_code
+_mo_uuid_from_code:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #384
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _MO_DIGEST@PAGE
+    add     x9, x9, _MO_DIGEST@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _sha256
+    str     x0, [sp, #72]
+    adrp    x9, _MO_UUID@PAGE
+    add     x9, x9, _MO_UUID@PAGEOFF
+    str     x9, [sp, #24]
+    mov     x9, #0
+    str     x9, [sp, #32]
+.L633:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L634
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #32]
+    add     x11, x9, x10
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #32]
+    add     x12, x9, x10
+    ldrb    w9, [x12]
+    strb    w9, [x11]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    b       .L633
+.L634:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0006
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0006
+    add     x12, x9, x10
+    ldrb    w9, [x12]
+    movz    x10, #0x000f
+    and     w12, w9, w10
+    movz    x9, #0x0040
+    orr     w10, w12, w9
+    strb    w10, [x11]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldrb    w9, [x12]
+    movz    x10, #0x003f
+    and     w12, w9, w10
+    movz    x9, #0x0080
+    orr     w10, w12, w9
+    strb    w10, [x11]
+.L1103:
+    add     sp, sp, #384
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_emit_uuid
+_mo_emit_uuid:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    adrp    x9, _MO_UUID@PAGE
+    add     x9, x9, _MO_UUID@PAGEOFF
+    str     x9, [sp, #8]
+    mov     x9, #0
+    str     x9, [sp, #16]
+.L635:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L636
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #104]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #16]
+    b       .L635
+.L636:
+.L1104:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mc_get
+_mc_get:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    adrp    x9, _MO_CUR@PAGE
+    add     x9, x9, _MO_CUR@PAGEOFF
+    str     x9, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    b       .L1105
+.L1105:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mc_set
+_mc_set:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    adrp    x9, _MO_CUR@PAGE
+    add     x9, x9, _MO_CUR@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    str     x9, [x10]
+.L1106:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _e8
+_e8:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #112
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    bl      _mc_get
+    mov     x9, x0
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    add     x11, x9, x10
+    ldr     x9, [sp, #8]
+    movz    x10, #0x00ff
+    and     x12, x9, x10
+    strb    w12, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    mov     x0, x11
+    bl      _mc_set
+    str     x0, [sp, #104]
+.L1107:
+    add     sp, sp, #112
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _e32
+_e32:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #160
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #32]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e8
+    str     x0, [sp, #72]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e8
+    str     x0, [sp, #112]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e8
+    str     x0, [sp, #152]
+.L1108:
+    add     sp, sp, #160
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _e64
+_e64:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #32]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e32
+    str     x0, [sp, #72]
+.L1109:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _eb32
+_eb32:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #160
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e8
+    str     x0, [sp, #48]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e8
+    str     x0, [sp, #88]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e8
+    str     x0, [sp, #128]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #152]
+.L1110:
+    add     sp, sp, #160
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _eb64
+_eb64:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    lsr     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _eb32
+    str     x0, [sp, #48]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #72]
+.L1111:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _ezeros
+_ezeros:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #112
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    mov     x9, #0
+    str     x9, [sp, #16]
+.L637:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L638
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #72]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #16]
+    b       .L637
+.L638:
+.L1112:
+    add     sp, sp, #112
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _ename16
+_ename16:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #208
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    mov     x9, #0
+    str     x9, [sp, #24]
+.L639:
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L640
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #24]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #104]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #24]
+    b       .L639
+.L640:
+.L641:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L642
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #176]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #24]
+    b       .L641
+.L642:
+.L1113:
+    add     sp, sp, #208
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_emit_headers
+_mo_emit_headers:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #2384
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0xfacf
+    movk    x10, #0xfeed, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #128]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000c
+    movk    x10, #0x0100, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #152]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #176]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #200]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000a
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #224]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0208
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #248]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0085
+    movk    x10, #0x0020, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #272]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #296]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #320]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #344]
+    adrp    x9, L_str142@PAGE
+    add     x9, x9, L_str142@PAGEOFF
+    str     x9, [sp, #24]
+    movz    x9, #0x000a
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    ldr     x11, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #392]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #416]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001, lsl #32
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #440]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #464]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #488]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #512]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #536]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #560]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #584]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #608]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0098
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #632]
+    adrp    x9, L_str143@PAGE
+    add     x9, x9, L_str143@PAGEOFF
+    str     x9, [sp, #40]
+    movz    x9, #0x0006
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #680]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001, lsl #32
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #704]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #728]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #752]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #776]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #800]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0005
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #824]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #848]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #872]
+    adrp    x9, L_str144@PAGE
+    add     x9, x9, L_str144@PAGEOFF
+    str     x9, [sp, #56]
+    movz    x9, #0x0006
+    str     x9, [sp, #64]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #56]
+    ldr     x11, [sp, #64]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #920]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #952]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0228
+    movk    x10, #0x0001, lsl #32
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #976]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1000]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0228
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1024]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1048]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1072]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1096]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0400
+    movk    x10, #0x8000, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1120]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1144]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1168]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1192]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1216]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1240]
+    adrp    x9, L_str145@PAGE
+    add     x9, x9, L_str145@PAGEOFF
+    str     x9, [sp, #72]
+    movz    x9, #0x000a
+    str     x9, [sp, #80]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #72]
+    ldr     x11, [sp, #80]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #1288]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    movk    x10, #0x0001, lsl #32
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1312]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1336]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1360]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x00ee
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1384]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1408]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1432]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1456]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1480]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000e
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1504]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0020
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1528]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000c
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1552]
+    adrp    x9, L_str146@PAGE
+    add     x9, x9, L_str146@PAGEOFF
+    str     x9, [sp, #88]
+    movz    x9, #0x000d
+    str     x9, [sp, #96]
+    mov     x9, #0
+    str     x9, [sp, #104]
+.L643:
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #96]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L644
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #88]
+    ldr     x11, [sp, #104]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #1648]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #104]
+    b       .L643
+.L644:
+.L645:
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0014
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L646
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #1720]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #104]
+    b       .L645
+.L646:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1768]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1792]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1816]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1840]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1864]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1888]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1912]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0050
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1936]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ezeros
+    str     x0, [sp, #1960]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001b
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1984]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2008]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _mo_emit_uuid
+    str     x0, [sp, #2024]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0032
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2048]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2072]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2096]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2120]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2144]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2168]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0028
+    movk    x10, #0x8000, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2192]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2216]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0228
+    ldr     x11, [sp, #16]
+    add     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e64
+    str     x0, [sp, #2256]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #2280]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001d
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2304]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2328]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2352]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x00ee
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2376]
+.L1114:
+    add     sp, sp, #2384
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _emit_macho_image
+_emit_macho_image:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #368
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    adrp    x9, _MO_IMG@PAGE
+    add     x9, x9, _MO_IMG@PAGEOFF
+    str     x9, [sp, #32]
+    movz    x9, #0x0228
+    ldr     x10, [sp, #16]
+    add     x11, x9, x10
+    movz    x9, #0x4000
+    cmp     x11, x9
+    cset    w10, hi
+    cbz     w10, .L647
+    movz    x9, #0x0048
+    mov     x0, x9
+    bl      _io_exit
+    str     x0, [sp, #112]
+.L647:
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mo_uuid_from_code
+    str     x0, [sp, #136]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _mc_set
+    str     x0, [sp, #152]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _mo_emit_headers
+    str     x0, [sp, #184]
+    mov     x9, #0
+    str     x9, [sp, #40]
+.L648:
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L649
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #40]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #264]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #40]
+    b       .L648
+.L649:
+    bl      _mc_get
+    mov     x9, x0
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x4000
+    ldr     x11, [sp, #48]
+    sub     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _ezeros
+    str     x0, [sp, #336]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mo_sign_and_write
+    str     x0, [sp, #360]
+.L1115:
+    add     sp, sp, #368
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_sign_and_write
+_mo_sign_and_write:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _mo_sign_and_write_n
+    str     x0, [sp, #40]
+.L1116:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_sign_and_write_n
+_mo_sign_and_write_n:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #1216
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0004
+    mul     x11, x9, x10
+    str     x11, [sp, #24]
+    movz    x9, #0x0058
+    movz    x10, #0x0002
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0020
+    mul     x12, x9, x10
+    add     x9, x11, x12
+    str     x9, [sp, #32]
+    movz    x9, #0x0014
+    ldr     x10, [sp, #32]
+    add     x11, x9, x10
+    str     x11, [sp, #40]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x4000
+    mul     x11, x9, x10
+    str     x11, [sp, #48]
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #40]
+    add     x16, x9, x10
+    str     x16, [sp, #216]
+    bl      _mo_img_cap
+    mov     x9, x0
+    ldr     x16, [sp, #216]
+    cmp     x16, x9
+    cset    w10, hi
+    cbz     w10, .L650
+    movz    x9, #0x0047
+    mov     x0, x9
+    bl      _io_exit
+    str     x0, [sp, #248]
+.L650:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0cc0
+    movk    x10, #0xfade, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #272]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #296]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #320]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #344]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0014
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #368]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0c02
+    movk    x10, #0xfade, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #392]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #416]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0400
+    movk    x10, #0x0002, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #440]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #464]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x005a
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #488]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0058
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #512]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #536]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #560]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #584]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0020
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #608]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #632]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #656]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x000c
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #680]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #704]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #728]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #752]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb32
+    str     x0, [sp, #776]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb64
+    str     x0, [sp, #800]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb64
+    str     x0, [sp, #824]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb64
+    str     x0, [sp, #848]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _eb64
+    str     x0, [sp, #872]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0061
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #896]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #920]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0020
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _ezeros
+    str     x0, [sp, #960]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x006e
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    mov     x9, #0
+    str     x9, [sp, #64]
+.L651:
+    ldr     x9, [sp, #64]
+    ldr     x10, [sp, #24]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L652
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #64]
+    movz    x11, #0x1000
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    movz    x9, #0x1000
+    ldr     x11, [sp, #8]
+    ldr     x12, [sp, #56]
+    add     x13, x11, x12
+    ldr     x11, [sp, #64]
+    movz    x12, #0x0020
+    mul     x14, x11, x12
+    add     x11, x13, x14
+    mov     x0, x10
+    mov     x1, x9
+    mov     x2, x11
+    bl      _sha256
+    str     x0, [sp, #1128]
+    ldr     x9, [sp, #64]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #64]
+    b       .L651
+.L652:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #48]
+    ldr     x12, [sp, #40]
+    add     x13, x11, x12
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x13
+    bl      _io_write
+    str     x0, [sp, #1200]
+.L1117:
+    add     sp, sp, #1216
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _emit_macho_signed
+_emit_macho_signed:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #896
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _MO_CODE@PAGE
+    add     x9, x9, _MO_CODE@PAGEOFF
+    str     x9, [sp, #16]
+    mov     x9, #0
+    ldr     x10, [sp, #8]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    str     x12, [sp, #24]
+    movz    x9, #0x0010
+    movz    x10, #0x0001
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    str     x12, [sp, #32]
+    movz    x9, #0x0080
+    mov     x0, x9
+    bl      _enc_svc
+    mov     x10, x0
+    str     x10, [sp, #40]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    movz    x10, #0x00ff
+    and     x12, x9, x10
+    strb    w12, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0008
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0002
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0010
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0003
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0018
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0004
+    add     x11, x9, x10
+    ldr     x9, [sp, #32]
+    movz    x10, #0x00ff
+    and     x12, x9, x10
+    strb    w12, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0005
+    add     x11, x9, x10
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0008
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0006
+    add     x11, x9, x10
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0010
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0007
+    add     x11, x9, x10
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0018
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    movz    x10, #0x00ff
+    and     x12, x9, x10
+    strb    w12, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0008
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x000a
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0010
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x000b
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0018
+    lsr     x12, x9, x10
+    movz    x9, #0x00ff
+    and     x10, x12, x9
+    strb    w10, [x11]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x000c
+    mov     x12, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _emit_macho_image
+    str     x0, [sp, #888]
+.L1118:
+    add     sp, sp, #896
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_emit_headers_bss
+_mo_emit_headers_bss:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #3184
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    str     x4, [sp, #32]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x4000
+    mul     x11, x9, x10
+    str     x11, [sp, #40]
+    movz    x9, #0x0001, lsl #32
+    ldr     x10, [sp, #40]
+    add     x11, x9, x10
+    str     x11, [sp, #48]
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #32]
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    movz    x9, #0x006e
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0080
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    str     x10, [sp, #64]
+    ldr     x9, [sp, #0]
+    movz    x10, #0xfacf
+    movk    x10, #0xfeed, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #320]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000c
+    movk    x10, #0x0100, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #344]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #368]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #392]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #416]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x02a0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #440]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0085
+    movk    x10, #0x0020, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #464]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #488]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #512]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #536]
+    adrp    x9, L_str147@PAGE
+    add     x9, x9, L_str147@PAGEOFF
+    str     x9, [sp, #72]
+    movz    x9, #0x000a
+    str     x9, [sp, #80]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #72]
+    ldr     x11, [sp, #80]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #584]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #608]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001, lsl #32
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #632]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #656]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #680]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #704]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #728]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #752]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #776]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #800]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0098
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #824]
+    adrp    x9, L_str148@PAGE
+    add     x9, x9, L_str148@PAGEOFF
+    str     x9, [sp, #88]
+    movz    x9, #0x0006
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #88]
+    ldr     x11, [sp, #96]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #872]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001, lsl #32
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #896]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #920]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #944]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #968]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #992]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0005
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1016]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1040]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1064]
+    adrp    x9, L_str149@PAGE
+    add     x9, x9, L_str149@PAGEOFF
+    str     x9, [sp, #104]
+    movz    x9, #0x0006
+    str     x9, [sp, #112]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #104]
+    ldr     x11, [sp, #112]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #1112]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #88]
+    ldr     x11, [sp, #96]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #1144]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x02c0
+    movk    x10, #0x0001, lsl #32
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1168]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1192]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x02c0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1216]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1240]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1264]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1288]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0400
+    movk    x10, #0x8000, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1312]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1336]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1360]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1384]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1408]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0098
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1432]
+    adrp    x9, L_str150@PAGE
+    add     x9, x9, L_str150@PAGEOFF
+    str     x9, [sp, #120]
+    movz    x9, #0x0006
+    str     x9, [sp, #128]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #120]
+    ldr     x11, [sp, #128]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #1480]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1504]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1528]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1552]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1576]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1600]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1624]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1648]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1672]
+    adrp    x9, L_str151@PAGE
+    add     x9, x9, L_str151@PAGEOFF
+    str     x9, [sp, #136]
+    movz    x9, #0x0005
+    str     x9, [sp, #144]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #136]
+    ldr     x11, [sp, #144]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #1720]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #120]
+    ldr     x11, [sp, #128]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #1752]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1776]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #1800]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1824]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1848]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1872]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1896]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1920]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1944]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1968]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #1992]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0019
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2016]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2040]
+    adrp    x9, L_str152@PAGE
+    add     x9, x9, L_str152@PAGEOFF
+    str     x9, [sp, #152]
+    movz    x9, #0x000a
+    str     x9, [sp, #160]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #152]
+    ldr     x11, [sp, #160]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ename16
+    str     x0, [sp, #2088]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #2112]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #2136]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #2160]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #64]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #2184]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2208]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2232]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2256]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2280]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000e
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2304]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0020
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2328]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000c
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2352]
+    adrp    x9, L_str153@PAGE
+    add     x9, x9, L_str153@PAGEOFF
+    str     x9, [sp, #168]
+    movz    x9, #0x000d
+    str     x9, [sp, #176]
+    mov     x9, #0
+    str     x9, [sp, #184]
+.L653:
+    ldr     x9, [sp, #184]
+    ldr     x10, [sp, #176]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L654
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #168]
+    ldr     x11, [sp, #184]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #2448]
+    ldr     x9, [sp, #184]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #184]
+    b       .L653
+.L654:
+.L655:
+    ldr     x9, [sp, #184]
+    movz    x10, #0x0014
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L656
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #2520]
+    ldr     x9, [sp, #184]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #184]
+    b       .L655
+.L656:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2568]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2592]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2616]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2640]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2664]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2688]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2712]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0050
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2736]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ezeros
+    str     x0, [sp, #2760]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001b
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2784]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2808]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _mo_emit_uuid
+    str     x0, [sp, #2824]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0032
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2848]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2872]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2896]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2920]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000b, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2944]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2968]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0028
+    movk    x10, #0x8000, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #2992]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #3016]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x02c0
+    ldr     x11, [sp, #24]
+    add     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _e64
+    str     x0, [sp, #3056]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e64
+    str     x0, [sp, #3080]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001d
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #3104]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #3128]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #3152]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #64]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e32
+    str     x0, [sp, #3176]
+.L1119:
+    add     sp, sp, #3184
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cb_pos
+_cb_pos:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    adrp    x9, _CB_POS@PAGE
+    add     x9, x9, _CB_POS@PAGEOFF
+    str     x9, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    b       .L1120
+.L1120:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cb_set
+_cb_set:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    adrp    x9, _CB_POS@PAGE
+    add     x9, x9, _CB_POS@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    str     x9, [x10]
+.L1121:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cb_word
+_cb_word:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #384
+    str     x0, [sp, #0]
+    adrp    x9, _CB@PAGE
+    add     x9, x9, _CB@PAGEOFF
+    str     x9, [sp, #8]
+    bl      _cb_pos
+    mov     x9, x0
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    movz    x11, #0x00ff
+    and     x12, x9, x11
+    strb    w12, [x10]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0001
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    movz    x11, #0x0008
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0002
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    movz    x11, #0x0010
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0003
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    movz    x11, #0x0018
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0004
+    add     x11, x9, x10
+    mov     x0, x11
+    bl      _cb_set
+    str     x0, [sp, #368]
+.L1122:
+    add     sp, sp, #384
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _lbl_set
+_lbl_set:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _CG_LBL@PAGE
+    add     x9, x9, _CG_LBL@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #8]
+    str     x9, [x10]
+.L1123:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _lbl_get
+_lbl_get:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    adrp    x9, _CG_LBL@PAGE
+    add     x9, x9, _CG_LBL@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    b       .L1124
+.L1124:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _fnoff_set
+_fnoff_set:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _CG_FNOFF@PAGE
+    add     x9, x9, _CG_FNOFF@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #8]
+    str     x9, [x10]
+.L1125:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _fnoff_get
+_fnoff_get:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    adrp    x9, _CG_FNOFF@PAGE
+    add     x9, x9, _CG_FNOFF@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    b       .L1126
+.L1126:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _fix_add
+_fix_add:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #416
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    adrp    x9, _CG_FIXN@PAGE
+    add     x9, x9, _CG_FIXN@PAGEOFF
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    adrp    x9, _CG_FIX@PAGE
+    add     x9, x9, _CG_FIX@PAGEOFF
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    mov     x10, #0
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    str     x9, [x10]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0001
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [sp, #8]
+    str     x9, [x10]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0002
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [sp, #16]
+    str     x9, [x10]
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #32]
+    movz    x11, #0x0001
+    add     x12, x9, x11
+    str     x12, [x10]
+.L1127:
+    add     sp, sp, #416
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _w32
+_w32:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #32
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0xffff
+    movk    x10, #0x7fff, lsl #16
+    and     x11, x9, x10
+    mov     x0, x11
+    b       .L1128
+.L1128:
+    add     sp, sp, #32
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_movi
+_b_movi:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #752
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L657
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #112]
+    b       .L1129
+.L657:
+    ldr     x9, [sp, #8]
+    movz    x10, #0xffff
+    and     x11, x9, x10
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0010
+    lsr     x11, x9, x10
+    movz    x9, #0xffff
+    and     x10, x11, x9
+    str     x10, [sp, #24]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0020
+    lsr     x11, x9, x10
+    movz    x9, #0xffff
+    and     x10, x11, x9
+    str     x10, [sp, #32]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0030
+    lsr     x11, x9, x10
+    movz    x9, #0xffff
+    and     x10, x11, x9
+    str     x10, [sp, #40]
+    movz    x9, #0x0001
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L658
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #328]
+    mov     x9, #0
+    str     x9, [sp, #48]
+.L658:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L659
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L660
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #424]
+    mov     x9, #0
+    str     x9, [sp, #48]
+    b       .L661
+.L660:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movk
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #472]
+.L661:
+.L659:
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L662
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L663
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #560]
+    mov     x9, #0
+    str     x9, [sp, #48]
+    b       .L664
+.L663:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movk
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #608]
+.L664:
+.L662:
+    ldr     x9, [sp, #40]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L665
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L666
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #696]
+    mov     x9, #0
+    str     x9, [sp, #48]
+    b       .L667
+.L666:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movk
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #744]
+.L667:
+.L665:
+.L1129:
+    add     sp, sp, #752
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_mov_x
+_b_mov_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_mov_reg
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #40]
+.L1130:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_mov_w
+_b_mov_w:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_mov_reg
+    mov     x11, x0
+    mov     x0, x11
+    bl      _w32
+    mov     x9, x0
+    mov     x0, x9
+    bl      _cb_word
+    str     x0, [sp, #48]
+.L1131:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_ldr_x
+_b_ldr_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0008
+    udiv     x13, x11, x12
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x13
+    bl      _enc_ldr_x
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #64]
+.L1132:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_str_x
+_b_str_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0008
+    udiv     x13, x11, x12
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x13
+    bl      _enc_str_x
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #64]
+.L1133:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_ldr_w
+_b_ldr_w:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0004
+    udiv     x13, x11, x12
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x13
+    bl      _enc_ldr_w
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #64]
+.L1134:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_str_w
+_b_str_w:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0004
+    udiv     x13, x11, x12
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x13
+    bl      _enc_str_w
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #64]
+.L1135:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_ldrb
+_b_ldrb:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    ldr     x11, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_ldrb
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #48]
+.L1136:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _b_strb
+_b_strb:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x001f
+    ldr     x11, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_strb
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #48]
+.L1137:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_dst_x
+_cgb_dst_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #176
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L668
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    mov     x0, x11
+    b       .L1138
+.L668:
+    movz    x9, #0x0010
+    mov     x0, x9
+    b       .L1138
+.L1138:
+    add     sp, sp, #176
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_spill
+_cgb_spill:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #176
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L669
+    b       .L1139
+.L669:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_str_x
+    str     x0, [sp, #160]
+.L1139:
+    add     sp, sp, #176
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_src_x
+_cgb_src_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #224
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L670
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    mov     x0, x11
+    b       .L1140
+.L670:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_x
+    str     x0, [sp, #200]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    b       .L1140
+.L1140:
+    add     sp, sp, #224
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_src_w
+_cgb_src_w:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #224
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L671
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    mov     x0, x11
+    b       .L1141
+.L671:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_w
+    str     x0, [sp, #200]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    b       .L1141
+.L1141:
+    add     sp, sp, #224
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_load_slot_x
+_cgb_load_slot_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #224
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L672
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0009
+    add     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_mov_x
+    str     x0, [sp, #176]
+    b       .L1142
+.L672:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_x
+    str     x0, [sp, #216]
+.L1142:
+    add     sp, sp, #224
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_alu
+_cgb_alu:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #624
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    str     x4, [sp, #32]
+    mov     x9, #0
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L673
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_add_reg
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L673:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L674
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_sub_reg
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L674:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L675
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_mul
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L675:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L676
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_udiv
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L676:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L677
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_and
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L677:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L678
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_orr
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L678:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L679
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_eor
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L679:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L680
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_lslv
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L680:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L681
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_lsrv
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L681:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L682
+    ldr     x9, [sp, #40]
+    mov     x0, x9
+    bl      _cb_word
+    str     x0, [sp, #592]
+    b       .L683
+.L682:
+    ldr     x9, [sp, #40]
+    mov     x0, x9
+    bl      _w32
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #616]
+.L683:
+.L1143:
+    add     sp, sp, #624
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_invcond
+_cgb_invcond:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #176
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L684
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1144
+.L684:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L685
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1144
+.L685:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L686
+    movz    x9, #0x0002
+    mov     x0, x9
+    b       .L1144
+.L686:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L687
+    movz    x9, #0x0008
+    mov     x0, x9
+    b       .L1144
+.L687:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L688
+    movz    x9, #0x0009
+    mov     x0, x9
+    b       .L1144
+.L688:
+    movz    x9, #0x0003
+    mov     x0, x9
+    b       .L1144
+.L1144:
+    add     sp, sp, #176
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_movi
+_cgb_i_movi:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #176
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0030
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _b_movi
+    str     x0, [sp, #112]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #168]
+.L1145:
+    add     sp, sp, #176
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_addr_local
+_cgb_i_addr_local:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #208
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x001f
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0020
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x13
+    bl      _enc_add_imm
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #144]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #200]
+.L1146:
+    add     sp, sp, #208
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_load_local
+_cgb_i_load_local:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #416
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L689
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldrb
+    str     x0, [sp, #176]
+    b       .L690
+.L689:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L691
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_w
+    str     x0, [sp, #288]
+    b       .L692
+.L691:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_x
+    str     x0, [sp, #352]
+.L692:
+.L690:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #408]
+.L1147:
+    add     sp, sp, #416
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_store_local
+_cgb_i_store_local:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #560
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #24]
+    movz    x9, #0x0010
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L693
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    b       .L694
+.L693:
+    movz    x9, #0x0010
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_x
+    str     x0, [sp, #256]
+.L694:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L695
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_strb
+    str     x0, [sp, #368]
+    b       .L696
+.L695:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L697
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_str_w
+    str     x0, [sp, #480]
+    b       .L698
+.L697:
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0020
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_str_x
+    str     x0, [sp, #544]
+.L698:
+.L696:
+.L1148:
+    add     sp, sp, #560
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_load_mem
+_cgb_i_load_mem:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #416
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0011
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L699
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_ldrb
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #216]
+    b       .L700
+.L699:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L701
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_ldr_w
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #304]
+    b       .L702
+.L701:
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_ldr_x
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #344]
+.L702:
+.L700:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #400]
+.L1149:
+    add     sp, sp, #416
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_store_mem
+_cgb_i_store_mem:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #544
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0011
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    movz    x9, #0x0010
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L703
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    str     x11, [sp, #40]
+    b       .L704
+.L703:
+    movz    x9, #0x0010
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_x
+    str     x0, [sp, #320]
+.L704:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L705
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_strb
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #408]
+    b       .L706
+.L705:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L707
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_str_w
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #496]
+    b       .L708
+.L707:
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_str_x
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #536]
+.L708:
+.L706:
+.L1150:
+    add     sp, sp, #544
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_binop
+_cgb_i_binop:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #560
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    mov     x9, #0
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L709
+    movz    x9, #0x0001
+    str     x9, [sp, #16]
+.L709:
+    mov     x9, #0
+    str     x9, [sp, #24]
+    mov     x9, #0
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L710
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #24]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0011
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #32]
+    b       .L711
+.L710:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_w
+    mov     x12, x0
+    str     x12, [sp, #24]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0011
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_w
+    mov     x12, x0
+    str     x12, [sp, #32]
+.L711:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #40]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #24]
+    ldr     x12, [sp, #32]
+    ldr     x13, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    mov     x4, x13
+    bl      _cgb_alu
+    str     x0, [sp, #488]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #544]
+.L1151:
+    add     sp, sp, #560
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_cmp
+_cgb_i_cmp:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #624
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    mov     x9, #0
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L712
+    movz    x9, #0x0001
+    str     x9, [sp, #24]
+.L712:
+    mov     x9, #0
+    str     x9, [sp, #32]
+    mov     x9, #0
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L713
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #32]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0011
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #40]
+    b       .L714
+.L713:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_w
+    mov     x12, x0
+    str     x12, [sp, #32]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0018
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0011
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_w
+    mov     x12, x0
+    str     x12, [sp, #40]
+.L714:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #48]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L715
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_cmp_reg
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #480]
+    b       .L716
+.L715:
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_cmp_reg
+    mov     x11, x0
+    mov     x0, x11
+    bl      _w32
+    mov     x9, x0
+    mov     x0, x9
+    bl      _cb_word
+    str     x0, [sp, #520]
+.L716:
+    ldr     x16, [sp, #48]
+    str     x16, [sp, #528]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _cgb_invcond
+    mov     x10, x0
+    ldr     x0, [sp, #528]
+    mov     x1, x10
+    bl      _enc_cset
+    mov     x9, x0
+    mov     x0, x9
+    bl      _cb_word
+    str     x0, [sp, #560]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #616]
+.L1152:
+    add     sp, sp, #624
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_syscall
+_cgb_i_syscall:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #720
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0060
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L717
+    movz    x9, #0x0010
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0009
+    add     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_mov_x
+    str     x0, [sp, #280]
+    b       .L718
+.L717:
+    movz    x9, #0x0010
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_x
+    str     x0, [sp, #320]
+.L718:
+    movz    x9, #0x0001
+    str     x9, [sp, #48]
+.L719:
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0068
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L720
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #48]
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x10, x13
+    ldr     x10, [x11]
+    ldr     x11, [sp, #48]
+    movz    x12, #0x0001
+    sub     x13, x11, x12
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x13
+    bl      _cgb_load_slot_x
+    str     x0, [sp, #464]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #48]
+    b       .L719
+.L720:
+    movz    x9, #0x0080
+    mov     x0, x9
+    bl      _enc_svc
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #512]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #56]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L721
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    mov     x9, #0
+    mov     x0, x11
+    mov     x1, x9
+    bl      _b_mov_x
+    str     x0, [sp, #648]
+    b       .L1153
+.L721:
+    mov     x9, #0
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_str_x
+    str     x0, [sp, #712]
+.L1153:
+    add     sp, sp, #720
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_call
+_cgb_i_call:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #784
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    adrp    x9, L_str154@PAGE
+    add     x9, x9, L_str154@PAGEOFF
+    str     x9, [sp, #24]
+    movz    x9, #0x0007
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0050
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0058
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #24]
+    movz    x12, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _bytes_eq_at
+    mov     x13, x0
+    movz    x9, #0x0001
+    cmp     w13, w9
+    cset    w10, eq
+    cbz     w10, .L722
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_syscall
+    str     x0, [sp, #216]
+    b       .L1154
+.L722:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0060
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #40]
+    mov     x9, #0
+    str     x9, [sp, #48]
+.L723:
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0068
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L724
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #48]
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x10, x13
+    ldr     x10, [x11]
+    ldr     x11, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_load_slot_x
+    str     x0, [sp, #376]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #48]
+    b       .L723
+.L724:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0050
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0058
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _find_fn_index
+    mov     x12, x0
+    str     x12, [sp, #56]
+    bl      _cb_pos
+    mov     x9, x0
+    movz    x10, #0x0002
+    ldr     x11, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #512]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _enc_bl
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #536]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #64]
+    ldr     x9, [sp, #64]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #72]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L725
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0009
+    add     x11, x9, x10
+    mov     x9, #0
+    mov     x0, x11
+    mov     x1, x9
+    bl      _b_mov_x
+    str     x0, [sp, #704]
+    b       .L1154
+.L725:
+    mov     x9, #0
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_str_x
+    str     x0, [sp, #768]
+.L1154:
+    add     sp, sp, #784
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_label_addr
+_cgb_i_label_addr:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #640
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0058
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, hi
+    cbz     w11, .L726
+    bl      _cgb_prog_get
+    mov     x9, x0
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0050
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0058
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_bss_index_by_name
+    mov     x12, x0
+    str     x12, [sp, #24]
+    bl      _cb_pos
+    mov     x9, x0
+    movz    x10, #0x0005
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #232]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_adrp
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #264]
+    bl      _cb_pos
+    mov     x9, x0
+    movz    x10, #0x0006
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #296]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_add_pageoff
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #336]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #392]
+    b       .L1155
+.L726:
+    bl      _cb_pos
+    mov     x9, x0
+    movz    x10, #0x0003
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0040
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #448]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_adrp
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #480]
+    bl      _cb_pos
+    mov     x9, x0
+    movz    x10, #0x0004
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0040
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #536]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #16]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_add_pageoff
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #576]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #632]
+.L1155:
+    add     sp, sp, #640
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_ret
+_cgb_i_ret:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #656
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L727
+    mov     x9, #0
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L728
+    ldr     x9, [sp, #32]
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    movz    x9, #0x0008
+    cmp     w10, w9
+    cset    w11, eq
+    cbz     w11, .L729
+    movz    x9, #0x0001
+    str     x9, [sp, #24]
+.L729:
+.L728:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L730
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L731
+    mov     x9, #0
+    ldr     x10, [sp, #48]
+    movz    x11, #0x0009
+    add     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_mov_x
+    str     x0, [sp, #392]
+    b       .L732
+.L731:
+    mov     x9, #0
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_x
+    str     x0, [sp, #456]
+.L732:
+    b       .L733
+.L730:
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L734
+    mov     x9, #0
+    ldr     x10, [sp, #48]
+    movz    x11, #0x0009
+    add     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_mov_w
+    str     x0, [sp, #520]
+    b       .L735
+.L734:
+    mov     x9, #0
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_ldr_w
+    str     x0, [sp, #584]
+.L735:
+.L733:
+.L727:
+    bl      _cb_pos
+    mov     x9, x0
+    mov     x10, #0
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #616]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _enc_b
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #640]
+.L1156:
+    add     sp, sp, #656
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_jmp
+_cgb_i_jmp:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #96
+    str     x0, [sp, #0]
+    bl      _cb_pos
+    mov     x9, x0
+    mov     x10, #0
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0038
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #56]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _enc_b
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #80]
+.L1157:
+    add     sp, sp, #96
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_jz
+_cgb_i_jz:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #176
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_w
+    mov     x12, x0
+    str     x12, [sp, #16]
+    bl      _cb_pos
+    mov     x9, x0
+    movz    x10, #0x0001
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0038
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #128]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_cbz_w
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #160]
+.L1158:
+    add     sp, sp, #176
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_instr
+_cgb_instr:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #1072
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L736
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_movi
+    str     x0, [sp, #112]
+    b       .L1159
+.L736:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L737
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_label_addr
+    str     x0, [sp, #160]
+    b       .L1159
+.L737:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L738
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_addr_local
+    str     x0, [sp, #208]
+    b       .L1159
+.L738:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L739
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_load_local
+    str     x0, [sp, #256]
+    b       .L1159
+.L739:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L740
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_store_local
+    str     x0, [sp, #304]
+    b       .L1159
+.L740:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L741
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_load_mem
+    str     x0, [sp, #352]
+    b       .L1159
+.L741:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L742
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_store_mem
+    str     x0, [sp, #400]
+    b       .L1159
+.L742:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L743
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_binop
+    str     x0, [sp, #448]
+    b       .L1159
+.L743:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L744
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_cmp
+    str     x0, [sp, #504]
+    b       .L1159
+.L744:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0009
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L745
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_cmp
+    str     x0, [sp, #560]
+    b       .L1159
+.L745:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x000a
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L746
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_cmp
+    str     x0, [sp, #616]
+    b       .L1159
+.L746:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x000b
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L747
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_cmp
+    str     x0, [sp, #672]
+    b       .L1159
+.L747:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x000c
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L748
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_cmp
+    str     x0, [sp, #728]
+    b       .L1159
+.L748:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x000d
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L749
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0005
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_cmp
+    str     x0, [sp, #784]
+    b       .L1159
+.L749:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x000e
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L750
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_call
+    str     x0, [sp, #840]
+    b       .L1159
+.L750:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x000f
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L751
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_i_ret
+    str     x0, [sp, #896]
+    b       .L1159
+.L751:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L752
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _cgb_i_jmp
+    str     x0, [sp, #936]
+    b       .L1159
+.L752:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0011
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L753
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_jz
+    str     x0, [sp, #984]
+    b       .L1159
+.L753:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0012
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L754
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x16, [x11]
+    str     x16, [sp, #1040]
+    bl      _cb_pos
+    mov     x9, x0
+    ldr     x0, [sp, #1040]
+    mov     x1, x9
+    bl      _lbl_set
+    str     x0, [sp, #1056]
+    b       .L1159
+.L754:
+.L1159:
+    add     sp, sp, #1072
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_prologue
+_cgb_prologue:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #336
+    str     x0, [sp, #0]
+    movz    x9, #0x001d
+    movz    x10, #0x001e
+    movz    x11, #0x001f
+    movz    x12, #0x007e
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _enc_stp_pre
+    mov     x13, x0
+    mov     x0, x13
+    bl      _cb_word
+    str     x0, [sp, #48]
+    movz    x9, #0x001d
+    movz    x10, #0x001f
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_add_imm
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #88]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, hi
+    cbz     w11, .L755
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0fff
+    cmp     x9, x10
+    cset    w11, ls
+    cbz     w11, .L756
+    movz    x9, #0x001f
+    movz    x10, #0x001f
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0038
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_sub_imm
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #248]
+    b       .L757
+.L756:
+    movz    x9, #0x0010
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0038
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _b_movi
+    str     x0, [sp, #296]
+    movz    x9, #0x0010
+    mov     x0, x9
+    bl      _enc_sub_ext_sp
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #320]
+.L757:
+.L755:
+.L1160:
+    add     sp, sp, #336
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_epilogue
+_cgb_epilogue:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #336
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x16, [sp, #8]
+    str     x16, [sp, #16]
+    bl      _cb_pos
+    mov     x9, x0
+    ldr     x0, [sp, #16]
+    mov     x1, x9
+    bl      _lbl_set
+    str     x0, [sp, #32]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, hi
+    cbz     w11, .L758
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0fff
+    cmp     x9, x10
+    cset    w11, ls
+    cbz     w11, .L759
+    movz    x9, #0x001f
+    movz    x10, #0x001f
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0038
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_add_imm
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #192]
+    b       .L760
+.L759:
+    movz    x9, #0x0010
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0038
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _b_movi
+    str     x0, [sp, #240]
+    movz    x9, #0x0010
+    mov     x0, x9
+    bl      _enc_add_ext_sp
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #264]
+.L760:
+.L758:
+    movz    x9, #0x001d
+    movz    x10, #0x001e
+    movz    x11, #0x001f
+    movz    x12, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _enc_ldp_post
+    mov     x13, x0
+    mov     x0, x13
+    bl      _cb_word
+    str     x0, [sp, #312]
+    bl      _enc_ret
+    mov     x9, x0
+    mov     x0, x9
+    bl      _cb_word
+    str     x0, [sp, #328]
+.L1161:
+    add     sp, sp, #336
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_param_spill
+_cgb_param_spill:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #432
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x9, #0x0008
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L761
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L762
+    ldr     x9, [sp, #32]
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    str     x10, [sp, #40]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L763
+    movz    x9, #0x0001
+    str     x9, [sp, #16]
+.L763:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L764
+    movz    x9, #0x0004
+    str     x9, [sp, #16]
+.L764:
+.L762:
+.L761:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L765
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_strb
+    str     x0, [sp, #320]
+    b       .L1162
+.L765:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L766
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_str_w
+    str     x0, [sp, #384]
+    b       .L1162
+.L766:
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _b_str_x
+    str     x0, [sp, #424]
+.L1162:
+    add     sp, sp, #432
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_fn
+_cgb_fn:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #320
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _cgb_prologue
+    str     x0, [sp, #48]
+    mov     x9, #0
+    str     x9, [sp, #24]
+.L767:
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L768
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_param_spill
+    str     x0, [sp, #128]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #24]
+    b       .L767
+.L768:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0058
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+.L769:
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L770
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #8]
+    ldr     x12, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _cgb_instr
+    str     x0, [sp, #248]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0070
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    b       .L769
+.L770:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_epilogue
+    str     x0, [sp, #304]
+.L1163:
+    add     sp, sp, #320
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _find_fn_index
+_find_fn_index:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #384
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    adrp    x9, _LX_STATE@PAGE
+    add     x9, x9, _LX_STATE@PAGEOFF
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #8]
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    mov     x9, #0
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #0]
+    str     x9, [sp, #48]
+.L771:
+    ldr     x9, [sp, #48]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L772
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L773
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #48]
+    mov     x11, #0
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    add     x11, x9, x10
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #16]
+    mov     x0, x11
+    mov     x1, x9
+    mov     x2, x10
+    bl      _bytes_eq
+    mov     x12, x0
+    movz    x9, #0x0001
+    cmp     w12, w9
+    cset    w10, eq
+    cbz     w10, .L774
+    ldr     x9, [sp, #40]
+    mov     x0, x9
+    b       .L1164
+.L774:
+.L773:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #40]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0068
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #48]
+    b       .L771
+.L772:
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1164
+.L1164:
+    add     sp, sp, #384
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cb_patch_or
+_cb_patch_or:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #624
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _CB@PAGE
+    add     x9, x9, _CB@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    add     x11, x9, x10
+    ldrb    w9, [x11]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0001
+    add     x13, x11, x12
+    add     x11, x10, x13
+    ldrb    w10, [x11]
+    movz    x11, #0x0008
+    lsl     w12, w10, w11
+    orr     w10, w9, w12
+    ldr     x9, [sp, #16]
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0002
+    add     x13, x11, x12
+    add     x11, x9, x13
+    ldrb    w9, [x11]
+    movz    x11, #0x0010
+    lsl     w12, w9, w11
+    orr     w9, w10, w12
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0003
+    add     x13, x11, x12
+    add     x11, x10, x13
+    ldrb    w10, [x11]
+    movz    x11, #0x0018
+    lsl     w12, w10, w11
+    orr     w10, w9, w12
+    str     x10, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    orr     x11, x9, x10
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    mov     x11, #0
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x00ff
+    and     x12, x9, x11
+    strb    w12, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0001
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0008
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0002
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0010
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0003
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0018
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+.L1165:
+    add     sp, sp, #624
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_resolve_branches
+_cgb_resolve_branches:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #800
+    adrp    x9, _CG_FIXN@PAGE
+    add     x9, x9, _CG_FIXN@PAGEOFF
+    str     x9, [sp, #0]
+    adrp    x9, _CG_FIX@PAGE
+    add     x9, x9, _CG_FIX@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #16]
+    mov     x9, #0
+    str     x9, [sp, #24]
+.L775:
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L776
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    mov     x10, #0
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0001
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0002
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #40]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L777
+    ldr     x9, [sp, #48]
+    mov     x0, x9
+    bl      _lbl_get
+    mov     x10, x0
+    ldr     x9, [sp, #32]
+    sub     w11, w10, w9
+    movz    x9, #0x0004
+    udiv     w10, w11, w9
+    str     x10, [sp, #56]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #56]
+    movz    x11, #0xffff
+    movk    x11, #0x03ff, lsl #16
+    and     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _cb_patch_or
+    str     x0, [sp, #520]
+.L777:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L778
+    ldr     x9, [sp, #48]
+    mov     x0, x9
+    bl      _lbl_get
+    mov     x10, x0
+    ldr     x9, [sp, #32]
+    sub     w11, w10, w9
+    movz    x9, #0x0004
+    udiv     w10, w11, w9
+    str     x10, [sp, #64]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #64]
+    movz    x11, #0xffff
+    movk    x11, #0x0007, lsl #16
+    and     x12, x10, x11
+    movz    x10, #0x0005
+    lsl     x11, x12, x10
+    mov     x0, x9
+    mov     x1, x11
+    bl      _cb_patch_or
+    str     x0, [sp, #648]
+.L778:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L779
+    ldr     x9, [sp, #48]
+    mov     x0, x9
+    bl      _fnoff_get
+    mov     x10, x0
+    ldr     x9, [sp, #32]
+    sub     w11, w10, w9
+    movz    x9, #0x0004
+    udiv     w10, w11, w9
+    str     x10, [sp, #72]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #72]
+    movz    x11, #0xffff
+    movk    x11, #0x03ff, lsl #16
+    and     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _cb_patch_or
+    str     x0, [sp, #760]
+.L779:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #24]
+    b       .L775
+.L776:
+.L1166:
+    add     sp, sp, #800
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_max_label
+_cgb_max_label:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #640
+    str     x0, [sp, #0]
+    mov     x9, #0
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #0]
+    str     x9, [sp, #16]
+.L780:
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L781
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0058
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+.L782:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L783
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0012
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L784
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #8]
+    cmp     x9, x10
+    cset    w11, hs
+    cbz     w11, .L785
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #8]
+.L785:
+.L784:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L786
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #8]
+    cmp     x9, x10
+    cset    w11, hs
+    cbz     w11, .L787
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #8]
+.L787:
+.L786:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0011
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L788
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #8]
+    cmp     x9, x10
+    cset    w11, hs
+    cbz     w11, .L789
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #8]
+.L789:
+.L788:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0070
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    b       .L782
+.L783:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0068
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    b       .L780
+.L781:
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    b       .L1167
+.L1167:
+    add     sp, sp, #640
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_stroff_set
+_cgb_stroff_set:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _CG_STROFF@PAGE
+    add     x9, x9, _CG_STROFF@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #8]
+    str     x9, [x10]
+.L1168:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_stroff_get
+_cgb_stroff_get:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    adrp    x9, _CG_STROFF@PAGE
+    add     x9, x9, _CG_STROFF@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    b       .L1169
+.L1169:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _codegen_bytes
+_codegen_bytes:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #624
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _cgb_prog_set
+    str     x0, [sp, #96]
+    movz    x9, #0x0001
+    mov     x0, x9
+    bl      _set_target
+    str     x0, [sp, #112]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _cb_set
+    str     x0, [sp, #128]
+    adrp    x9, _CG_FIXN@PAGE
+    add     x9, x9, _CG_FIXN@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    mov     x9, #0
+    str     x9, [x10]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _cgb_max_label
+    mov     x10, x0
+    str     x10, [sp, #24]
+    adrp    x9, _CG_ENTRY@PAGE
+    add     x9, x9, _CG_ENTRY@PAGEOFF
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x16, x9, x12
+    str     x16, [sp, #248]
+    bl      _cb_pos
+    mov     x9, x0
+    ldr     x17, [sp, #248]
+    str     x9, [x17]
+    adrp    x9, L_str155@PAGE
+    add     x9, x9, L_str155@PAGEOFF
+    str     x9, [sp, #40]
+    movz    x9, #0x0004
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fn_index_by_name
+    mov     x12, x0
+    str     x12, [sp, #56]
+    bl      _cb_pos
+    mov     x9, x0
+    movz    x10, #0x0002
+    ldr     x11, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _fix_add
+    str     x0, [sp, #336]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _enc_bl
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #360]
+    movz    x9, #0x0010
+    movz    x10, #0x0001
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_movz
+    mov     x12, x0
+    mov     x0, x12
+    bl      _cb_word
+    str     x0, [sp, #400]
+    movz    x9, #0x0080
+    mov     x0, x9
+    bl      _enc_svc
+    mov     x10, x0
+    mov     x0, x10
+    bl      _cb_word
+    str     x0, [sp, #424]
+    ldr     x9, [sp, #24]
+    str     x9, [sp, #64]
+    mov     x9, #0
+    str     x9, [sp, #72]
+    ldr     x9, [sp, #8]
+    str     x9, [sp, #80]
+.L790:
+    ldr     x9, [sp, #80]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L791
+    ldr     x16, [sp, #72]
+    str     x16, [sp, #480]
+    bl      _cb_pos
+    mov     x9, x0
+    ldr     x0, [sp, #480]
+    mov     x1, x9
+    bl      _fnoff_set
+    str     x0, [sp, #496]
+    ldr     x9, [sp, #80]
+    ldr     x10, [sp, #64]
+    ldr     x11, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_fn
+    str     x0, [sp, #528]
+    ldr     x9, [sp, #64]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #64]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #72]
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0068
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #80]
+    b       .L790
+.L791:
+    bl      _cgb_resolve_branches
+    str     x0, [sp, #616]
+.L1170:
+    add     sp, sp, #624
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_align8
+_mo_align8:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    add     x11, x9, x10
+    movz    x9, #0x0008
+    udiv     x10, x11, x9
+    movz    x9, #0x0008
+    mul     x11, x10, x9
+    mov     x0, x11
+    b       .L1171
+.L1171:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _img_or
+_img_or:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #624
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _MO_IMG@PAGE
+    add     x9, x9, _MO_IMG@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    add     x11, x9, x10
+    ldrb    w9, [x11]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0001
+    add     x13, x11, x12
+    add     x11, x10, x13
+    ldrb    w10, [x11]
+    movz    x11, #0x0008
+    lsl     w12, w10, w11
+    orr     w10, w9, w12
+    ldr     x9, [sp, #16]
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0002
+    add     x13, x11, x12
+    add     x11, x9, x13
+    ldrb    w9, [x11]
+    movz    x11, #0x0010
+    lsl     w12, w9, w11
+    orr     w9, w10, w12
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #0]
+    movz    x12, #0x0003
+    add     x13, x11, x12
+    add     x11, x10, x13
+    ldrb    w10, [x11]
+    movz    x11, #0x0018
+    lsl     w12, w10, w11
+    orr     w10, w9, w12
+    str     x10, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    orr     x11, x9, x10
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    mov     x11, #0
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x00ff
+    and     x12, x9, x11
+    strb    w12, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0001
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0008
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0002
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0010
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0003
+    add     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #24]
+    movz    x11, #0x0018
+    lsr     x12, x9, x11
+    movz    x9, #0x00ff
+    and     x11, x12, x9
+    strb    w11, [x10]
+.L1172:
+    add     sp, sp, #624
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_string_layout
+_mo_string_layout:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #304
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x9, #0x0228
+    ldr     x10, [sp, #8]
+    add     x11, x9, x10
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+.L792:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L793
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _mo_align8
+    mov     x10, x0
+    str     x10, [sp, #16]
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_stroff_set
+    str     x0, [sp, #168]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    add     x11, x9, x10
+    movz    x9, #0x0001
+    add     x10, x11, x9
+    str     x10, [sp, #16]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    b       .L792
+.L793:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0228
+    sub     x11, x9, x10
+    mov     x0, x11
+    b       .L1173
+.L1173:
+    add     sp, sp, #304
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_resolve_strings
+_mo_resolve_strings:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #864
+    adrp    x9, _CG_FIXN@PAGE
+    add     x9, x9, _CG_FIXN@PAGEOFF
+    str     x9, [sp, #0]
+    adrp    x9, _CG_FIX@PAGE
+    add     x9, x9, _CG_FIX@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #16]
+    mov     x9, #0
+    str     x9, [sp, #24]
+.L794:
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L795
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    mov     x10, #0
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0001
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0002
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L796
+    movz    x9, #0x0228
+    ldr     x10, [sp, #32]
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    ldr     x9, [sp, #48]
+    mov     x0, x9
+    bl      _cgb_stroff_get
+    mov     x10, x0
+    str     x10, [sp, #64]
+    ldr     x9, [sp, #64]
+    movz    x10, #0x1000
+    udiv     x11, x9, x10
+    ldr     x9, [sp, #56]
+    movz    x10, #0x1000
+    udiv     x12, x9, x10
+    sub     x9, x11, x12
+    movz    x10, #0xffff
+    movk    x10, #0x001f, lsl #16
+    and     x11, x9, x10
+    str     x11, [sp, #72]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0003
+    and     x11, x9, x10
+    str     x11, [sp, #80]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0002
+    lsr     x11, x9, x10
+    movz    x9, #0xffff
+    movk    x9, #0x0007, lsl #16
+    and     x10, x11, x9
+    str     x10, [sp, #88]
+    ldr     x9, [sp, #56]
+    ldr     x10, [sp, #80]
+    movz    x11, #0x001d
+    lsl     x12, x10, x11
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0005
+    lsl     x13, x10, x11
+    orr     x10, x12, x13
+    mov     x0, x9
+    mov     x1, x10
+    bl      _img_or
+    str     x0, [sp, #712]
+.L796:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L797
+    movz    x9, #0x0228
+    ldr     x10, [sp, #32]
+    add     x11, x9, x10
+    str     x11, [sp, #96]
+    ldr     x9, [sp, #48]
+    mov     x0, x9
+    bl      _cgb_stroff_get
+    mov     x10, x0
+    str     x10, [sp, #104]
+    ldr     x9, [sp, #96]
+    ldr     x10, [sp, #104]
+    movz    x11, #0x0fff
+    and     x12, x10, x11
+    movz    x10, #0x000a
+    lsl     x11, x12, x10
+    mov     x0, x9
+    mov     x1, x11
+    bl      _img_or
+    str     x0, [sp, #832]
+.L797:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #24]
+    b       .L794
+.L795:
+.L1174:
+    add     sp, sp, #864
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _emit_macho_code
+_emit_macho_code:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #800
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    adrp    x9, _MO_IMG@PAGE
+    add     x9, x9, _MO_IMG@PAGEOFF
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mo_string_layout
+    mov     x11, x0
+    str     x11, [sp, #40]
+    movz    x9, #0x0228
+    ldr     x10, [sp, #40]
+    add     x11, x9, x10
+    movz    x9, #0x4000
+    cmp     x11, x9
+    cset    w10, hi
+    cbz     w10, .L798
+    movz    x9, #0x0048
+    mov     x0, x9
+    bl      _io_exit
+    str     x0, [sp, #176]
+.L798:
+    adrp    x9, _CB@PAGE
+    add     x9, x9, _CB@PAGEOFF
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mo_uuid_from_code
+    str     x0, [sp, #200]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _mc_set
+    str     x0, [sp, #216]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _mo_emit_headers
+    str     x0, [sp, #248]
+    adrp    x9, _CB@PAGE
+    add     x9, x9, _CB@PAGEOFF
+    str     x9, [sp, #48]
+    mov     x9, #0
+    str     x9, [sp, #56]
+.L799:
+    ldr     x9, [sp, #56]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L800
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #48]
+    ldr     x11, [sp, #56]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #336]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    b       .L799
+.L800:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #64]
+.L801:
+    ldr     x9, [sp, #64]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L802
+    ldr     x9, [sp, #64]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _cgb_stroff_get
+    mov     x10, x0
+    str     x10, [sp, #72]
+.L803:
+    bl      _mc_get
+    mov     x9, x0
+    ldr     x10, [sp, #72]
+    cmp     w9, w10
+    cset    w11, lo
+    cbz     w11, .L804
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #504]
+    b       .L803
+.L804:
+    mov     x9, #0
+    str     x9, [sp, #80]
+.L805:
+    ldr     x9, [sp, #80]
+    ldr     x10, [sp, #64]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L806
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #64]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #80]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #632]
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #80]
+    b       .L805
+.L806:
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #680]
+    ldr     x9, [sp, #64]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #64]
+    b       .L801
+.L802:
+    bl      _mo_resolve_strings
+    str     x0, [sp, #720]
+    bl      _mc_get
+    mov     x9, x0
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x4000
+    ldr     x11, [sp, #88]
+    sub     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _ezeros
+    str     x0, [sp, #768]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mo_sign_and_write
+    str     x0, [sp, #792]
+.L1175:
+    add     sp, sp, #800
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _fn_index_by_name
+_fn_index_by_name:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #336
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    adrp    x9, _LX_STATE@PAGE
+    add     x9, x9, _LX_STATE@PAGEOFF
+    str     x9, [sp, #24]
+    mov     x9, #0
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #0]
+    str     x9, [sp, #40]
+.L807:
+    ldr     x9, [sp, #40]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L808
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L809
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #40]
+    mov     x11, #0
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    add     x11, x9, x10
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    mov     x0, x11
+    mov     x1, x9
+    mov     x2, x10
+    bl      _bytes_eq
+    mov     x12, x0
+    movz    x9, #0x0001
+    cmp     w12, w9
+    cset    w10, eq
+    cbz     w10, .L810
+    ldr     x9, [sp, #32]
+    mov     x0, x9
+    b       .L1176
+.L810:
+.L809:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #32]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0068
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #40]
+    b       .L807
+.L808:
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1176
+.L1176:
+    add     sp, sp, #336
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_prog_set
+_cgb_prog_set:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    adrp    x9, _CG_PROG@PAGE
+    add     x9, x9, _CG_PROG@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #0]
+    str     x9, [x10]
+.L1177:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_prog_get
+_cgb_prog_get:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    adrp    x9, _CG_PROG@PAGE
+    add     x9, x9, _CG_PROG@PAGEOFF
+    str     x9, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    b       .L1178
+.L1178:
+    add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_bss_off_set
+_cgb_bss_off_set:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    adrp    x9, _CG_BSSOFF@PAGE
+    add     x9, x9, _CG_BSSOFF@PAGEOFF
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #8]
+    str     x9, [x10]
+.L1179:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_bss_off_get
+_cgb_bss_off_get:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #80
+    str     x0, [sp, #0]
+    adrp    x9, _CG_BSSOFF@PAGE
+    add     x9, x9, _CG_BSSOFF@PAGEOFF
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    b       .L1180
+.L1180:
+    add     sp, sp, #80
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_bss_layout
+_cgb_bss_layout:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #368
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #8]
+    mov     x9, #0
+    str     x9, [sp, #16]
+    mov     x9, #0
+    str     x9, [sp, #24]
+.L811:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L812
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_bss_off_set
+    str     x0, [sp, #120]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0007
+    add     x12, x10, x11
+    movz    x10, #0x0008
+    udiv     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    str     x10, [sp, #24]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #8]
+    b       .L811
+.L812:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L813
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1181
+.L813:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x3fff
+    add     x11, x9, x10
+    movz    x9, #0x4000
+    udiv     x10, x11, x9
+    movz    x9, #0x4000
+    mul     x11, x10, x9
+    mov     x0, x11
+    b       .L1181
+.L1181:
+    add     sp, sp, #368
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_bss_index_by_name
+_cgb_bss_index_by_name:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #400
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    adrp    x9, _LX_STATE@PAGE
+    add     x9, x9, _LX_STATE@PAGEOFF
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    mov     x9, #0
+    str     x9, [sp, #40]
+.L814:
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L815
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L816
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #32]
+    mov     x11, #0
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    ldr     x10, [sp, #8]
+    add     x12, x9, x10
+    ldr     x9, [sp, #16]
+    mov     x0, x11
+    mov     x1, x12
+    mov     x2, x9
+    bl      _bytes_eq
+    mov     x10, x0
+    movz    x9, #0x0001
+    cmp     w10, w9
+    cset    w11, eq
+    cbz     w11, .L817
+    ldr     x9, [sp, #40]
+    mov     x0, x9
+    b       .L1182
+.L817:
+.L816:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #40]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    b       .L814
+.L815:
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1182
+.L1182:
+    add     sp, sp, #400
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_string_layout_bss
+_mo_string_layout_bss:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #304
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x9, #0x02c0
+    ldr     x10, [sp, #8]
+    add     x11, x9, x10
+    str     x11, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+.L818:
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L819
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _mo_align8
+    mov     x10, x0
+    str     x10, [sp, #16]
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_stroff_set
+    str     x0, [sp, #168]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #24]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    add     x11, x9, x10
+    movz    x9, #0x0001
+    add     x10, x11, x9
+    str     x10, [sp, #16]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    b       .L818
+.L819:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x02c0
+    sub     x11, x9, x10
+    mov     x0, x11
+    b       .L1183
+.L1183:
+    add     sp, sp, #304
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mo_resolve_strings_bss
+_mo_resolve_strings_bss:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #1408
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x4000
+    mul     x11, x9, x10
+    str     x11, [sp, #8]
+    adrp    x9, _CG_FIXN@PAGE
+    add     x9, x9, _CG_FIXN@PAGEOFF
+    str     x9, [sp, #16]
+    adrp    x9, _CG_FIX@PAGE
+    add     x9, x9, _CG_FIX@PAGEOFF
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #32]
+    mov     x9, #0
+    str     x9, [sp, #40]
+.L820:
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #32]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L821
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    mov     x10, #0
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0001
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #56]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0003
+    mul     x12, x10, x11
+    movz    x10, #0x0002
+    add     x11, x12, x10
+    movz    x10, #0x0008
+    mul     x12, x11, x10
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #64]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L822
+    movz    x9, #0x02c0
+    ldr     x10, [sp, #48]
+    add     x11, x9, x10
+    str     x11, [sp, #72]
+    ldr     x9, [sp, #64]
+    mov     x0, x9
+    bl      _cgb_stroff_get
+    mov     x10, x0
+    str     x10, [sp, #80]
+    ldr     x9, [sp, #80]
+    movz    x10, #0x1000
+    udiv     x11, x9, x10
+    ldr     x9, [sp, #72]
+    movz    x10, #0x1000
+    udiv     x12, x9, x10
+    sub     x9, x11, x12
+    movz    x10, #0xffff
+    movk    x10, #0x001f, lsl #16
+    and     x11, x9, x10
+    str     x11, [sp, #88]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0003
+    and     x11, x9, x10
+    str     x11, [sp, #96]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0002
+    lsr     x11, x9, x10
+    movz    x9, #0xffff
+    movk    x9, #0x0007, lsl #16
+    and     x10, x11, x9
+    str     x10, [sp, #104]
+    ldr     x9, [sp, #72]
+    ldr     x10, [sp, #96]
+    movz    x11, #0x001d
+    lsl     x12, x10, x11
+    ldr     x10, [sp, #104]
+    movz    x11, #0x0005
+    lsl     x13, x10, x11
+    orr     x10, x12, x13
+    mov     x0, x9
+    mov     x1, x10
+    bl      _img_or
+    str     x0, [sp, #816]
+.L822:
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L823
+    movz    x9, #0x02c0
+    ldr     x10, [sp, #48]
+    add     x11, x9, x10
+    str     x11, [sp, #112]
+    ldr     x9, [sp, #64]
+    mov     x0, x9
+    bl      _cgb_stroff_get
+    mov     x10, x0
+    str     x10, [sp, #120]
+    ldr     x9, [sp, #112]
+    ldr     x10, [sp, #120]
+    movz    x11, #0x0fff
+    and     x12, x10, x11
+    movz    x10, #0x000a
+    lsl     x11, x12, x10
+    mov     x0, x9
+    mov     x1, x11
+    bl      _img_or
+    str     x0, [sp, #936]
+.L823:
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L824
+    movz    x9, #0x02c0
+    ldr     x10, [sp, #48]
+    add     x11, x9, x10
+    str     x11, [sp, #128]
+    ldr     x16, [sp, #8]
+    str     x16, [sp, #992]
+    ldr     x9, [sp, #64]
+    mov     x0, x9
+    bl      _cgb_bss_off_get
+    mov     x10, x0
+    ldr     x16, [sp, #992]
+    add     x9, x16, x10
+    movz    x10, #0x1000
+    udiv     x11, x9, x10
+    str     x11, [sp, #136]
+    ldr     x9, [sp, #128]
+    movz    x10, #0x1000
+    udiv     x11, x9, x10
+    str     x11, [sp, #144]
+    ldr     x9, [sp, #136]
+    ldr     x10, [sp, #144]
+    sub     x11, x9, x10
+    movz    x9, #0xffff
+    movk    x9, #0x001f, lsl #16
+    and     x10, x11, x9
+    str     x10, [sp, #152]
+    ldr     x9, [sp, #152]
+    movz    x10, #0x0003
+    and     x11, x9, x10
+    str     x11, [sp, #160]
+    ldr     x9, [sp, #152]
+    movz    x10, #0x0002
+    lsr     x11, x9, x10
+    movz    x9, #0xffff
+    movk    x9, #0x0007, lsl #16
+    and     x10, x11, x9
+    str     x10, [sp, #168]
+    ldr     x9, [sp, #128]
+    ldr     x10, [sp, #160]
+    movz    x11, #0x001d
+    lsl     x12, x10, x11
+    ldr     x10, [sp, #168]
+    movz    x11, #0x0005
+    lsl     x13, x10, x11
+    orr     x10, x12, x13
+    mov     x0, x9
+    mov     x1, x10
+    bl      _img_or
+    str     x0, [sp, #1232]
+.L824:
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L825
+    movz    x9, #0x02c0
+    ldr     x10, [sp, #48]
+    add     x11, x9, x10
+    str     x11, [sp, #176]
+    ldr     x16, [sp, #8]
+    str     x16, [sp, #1288]
+    ldr     x9, [sp, #64]
+    mov     x0, x9
+    bl      _cgb_bss_off_get
+    mov     x10, x0
+    ldr     x16, [sp, #1288]
+    add     x9, x16, x10
+    str     x9, [sp, #184]
+    ldr     x9, [sp, #176]
+    ldr     x10, [sp, #184]
+    movz    x11, #0x0fff
+    and     x12, x10, x11
+    movz    x10, #0x000a
+    lsl     x11, x12, x10
+    mov     x0, x9
+    mov     x1, x11
+    bl      _img_or
+    str     x0, [sp, #1368]
+.L825:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #40]
+    b       .L820
+.L821:
+.L1184:
+    add     sp, sp, #1408
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _emit_macho_code_bss
+_emit_macho_code_bss:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #928
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    str     x4, [sp, #32]
+    adrp    x9, _MO_IMG@PAGE
+    add     x9, x9, _MO_IMG@PAGEOFF
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mo_string_layout_bss
+    mov     x11, x0
+    str     x11, [sp, #48]
+    movz    x9, #0x02c0
+    ldr     x10, [sp, #48]
+    add     x11, x9, x10
+    movz    x9, #0x3fff
+    add     x10, x11, x9
+    movz    x9, #0x4000
+    udiv     x11, x10, x9
+    str     x11, [sp, #56]
+    ldr     x9, [sp, #32]
+    str     x9, [sp, #64]
+    ldr     x9, [sp, #64]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L826
+    movz    x9, #0x4000
+    str     x9, [sp, #64]
+.L826:
+    adrp    x9, _CB@PAGE
+    add     x9, x9, _CB@PAGEOFF
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mo_uuid_from_code
+    str     x0, [sp, #272]
+    mov     x9, #0
+    mov     x0, x9
+    bl      _mc_set
+    str     x0, [sp, #288]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #48]
+    ldr     x11, [sp, #56]
+    ldr     x12, [sp, #24]
+    ldr     x13, [sp, #64]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    mov     x4, x13
+    bl      _mo_emit_headers_bss
+    str     x0, [sp, #336]
+    adrp    x9, _CB@PAGE
+    add     x9, x9, _CB@PAGEOFF
+    str     x9, [sp, #72]
+    mov     x9, #0
+    str     x9, [sp, #80]
+.L827:
+    ldr     x9, [sp, #80]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L828
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #72]
+    ldr     x11, [sp, #80]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #424]
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #80]
+    b       .L827
+.L828:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #88]
+.L829:
+    ldr     x9, [sp, #88]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L830
+    ldr     x9, [sp, #88]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _cgb_stroff_get
+    mov     x10, x0
+    str     x10, [sp, #96]
+.L831:
+    bl      _mc_get
+    mov     x9, x0
+    ldr     x10, [sp, #96]
+    cmp     w9, w10
+    cset    w11, lo
+    cbz     w11, .L832
+    ldr     x9, [sp, #40]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #592]
+    b       .L831
+.L832:
+    mov     x9, #0
+    str     x9, [sp, #104]
+.L833:
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L834
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #104]
+    add     x12, x10, x11
+    ldrb    w10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #720]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #104]
+    b       .L833
+.L834:
+    ldr     x9, [sp, #40]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _e8
+    str     x0, [sp, #768]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #88]
+    b       .L829
 .L830:
+    ldr     x9, [sp, #56]
+    mov     x0, x9
+    bl      _mo_resolve_strings_bss
+    str     x0, [sp, #816]
+    bl      _mc_get
+    mov     x9, x0
+    str     x9, [sp, #112]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x4000
+    mul     x11, x9, x10
+    str     x11, [sp, #120]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #120]
+    ldr     x11, [sp, #112]
+    sub     x12, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    bl      _ezeros
+    str     x0, [sp, #888]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _mo_sign_and_write_n
+    str     x0, [sp, #920]
+.L1185:
     add     sp, sp, #928
     ldp     x29, x30, [sp], #16
     ret
@@ -17686,7 +27901,7 @@ _pp_arena_init:
     ldr     x9, [sp, #0]
     adrp    x10, _PP_ARENA_BUF@PAGE
     add     x10, x10, _PP_ARENA_BUF@PAGEOFF
-    movz    x11, #0x0040, lsl #16
+    movz    x11, #0x0100, lsl #16
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
@@ -17694,9 +27909,35 @@ _pp_arena_init:
     str     x0, [sp, #40]
     ldr     x9, [sp, #0]
     mov     x0, x9
-    b       .L831
-.L831:
+    b       .L1186
+.L1186:
     add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _pp_file_cap
+_pp_file_cap:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #16
+    movz    x9, #0x0010, lsl #16
+    mov     x0, x9
+    b       .L1187
+.L1187:
+    add     sp, sp, #16
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _pp_out_cap
+_pp_out_cap:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #16
+    movz    x9, #0x0008, lsl #16
+    mov     x0, x9
+    b       .L1188
+.L1188:
+    add     sp, sp, #16
     ldp     x29, x30, [sp], #16
     ret
 
@@ -17725,12 +27966,12 @@ _pp_seen:
     str     x9, [sp, #40]
     mov     x9, #0
     str     x9, [sp, #48]
-.L616:
+.L835:
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L617
+    cbz     w11, .L836
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #48]
     movz    x11, #0x0008
@@ -17740,7 +27981,7 @@ _pp_seen:
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L618
+    cbz     w11, .L837
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #48]
     movz    x11, #0x0008
@@ -17757,22 +27998,22 @@ _pp_seen:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L619
+    cbz     w10, .L838
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L832
-.L619:
-.L618:
+    b       .L1189
+.L838:
+.L837:
     ldr     x9, [sp, #48]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #48]
-    b       .L616
-.L617:
+    b       .L835
+.L836:
     mov     x9, #0
     mov     x0, x9
-    b       .L832
-.L832:
+    b       .L1189
+.L1189:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -17781,7 +28022,7 @@ _pp_seen:
 _pp_mark:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #288
+    sub     sp, sp, #368
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     adrp    x9, _PP_SEEN_COUNT@PAGE
@@ -17794,20 +28035,39 @@ _pp_mark:
     add     x10, x9, x12
     ldr     x9, [x10]
     str     x9, [sp, #24]
-    adrp    x9, _PP_SEEN_PTRS@PAGE
-    add     x9, x9, _PP_SEEN_PTRS@PAGEOFF
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0020
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L839
+    adrp    x9, L_str156@PAGE
+    add     x9, x9, L_str156@PAGEOFF
     str     x9, [sp, #32]
-    adrp    x9, _PP_SEEN_LENS@PAGE
-    add     x9, x9, _PP_SEEN_LENS@PAGEOFF
+    movz    x9, #0x001a
     str     x9, [sp, #40]
     ldr     x9, [sp, #32]
+    ldr     x10, [sp, #40]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _die_line
+    str     x0, [sp, #184]
+.L839:
+    adrp    x9, _PP_SEEN_PTRS@PAGE
+    add     x9, x9, _PP_SEEN_PTRS@PAGEOFF
+    str     x9, [sp, #48]
+    adrp    x9, _PP_SEEN_LENS@PAGE
+    add     x9, x9, _PP_SEEN_LENS@PAGEOFF
+    str     x9, [sp, #56]
+    ldr     x9, [sp, #48]
     ldr     x10, [sp, #24]
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-    ldr     x9, [sp, #40]
+    ldr     x9, [sp, #56]
     ldr     x10, [sp, #24]
     movz    x11, #0x0008
     mul     x12, x10, x11
@@ -17823,8 +28083,8 @@ _pp_mark:
     movz    x11, #0x0001
     add     x12, x9, x11
     str     x12, [x10]
-.L833:
-    add     sp, sp, #288
+.L1190:
+    add     sp, sp, #368
     ldp     x29, x30, [sp], #16
     ret
 
@@ -17832,7 +28092,7 @@ _pp_mark:
 _pp_out_append:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #304
+    sub     sp, sp, #416
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     adrp    x9, _PP_OUT_LEN@PAGE
@@ -17845,33 +28105,57 @@ _pp_out_append:
     add     x10, x9, x12
     ldr     x9, [x10]
     str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    add     x16, x9, x10
+    str     x16, [sp, #136]
+    bl      _pp_out_cap
+    mov     x9, x0
+    ldr     x16, [sp, #136]
+    cmp     x16, x9
+    cset    w10, hi
+    cbz     w10, .L840
+    adrp    x9, L_str157@PAGE
+    add     x9, x9, L_str157@PAGEOFF
+    str     x9, [sp, #32]
+    movz    x9, #0x002a
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #40]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _die_line
+    str     x0, [sp, #200]
+.L840:
     adrp    x9, _PP_OUT@PAGE
     add     x9, x9, _PP_OUT@PAGEOFF
-    str     x9, [sp, #32]
+    str     x9, [sp, #48]
     mov     x9, #0
-    str     x9, [sp, #40]
-.L620:
-    ldr     x9, [sp, #40]
+    str     x9, [sp, #56]
+.L841:
+    ldr     x9, [sp, #56]
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L621
-    ldr     x9, [sp, #32]
+    cbz     w11, .L842
+    ldr     x9, [sp, #48]
     ldr     x10, [sp, #24]
-    ldr     x11, [sp, #40]
+    ldr     x11, [sp, #56]
     add     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [sp, #0]
-    ldr     x11, [sp, #40]
+    ldr     x11, [sp, #56]
     add     x12, x9, x11
     ldrb    w9, [x12]
     strb    w9, [x10]
-    ldr     x9, [sp, #40]
+    ldr     x9, [sp, #56]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #40]
-    b       .L620
-.L621:
+    str     x11, [sp, #56]
+    b       .L841
+.L842:
     ldr     x9, [sp, #16]
     mov     x10, #0
     movz    x11, #0x0008
@@ -17881,8 +28165,8 @@ _pp_out_append:
     ldr     x11, [sp, #8]
     add     x12, x9, x11
     str     x12, [x10]
-.L834:
-    add     sp, sp, #304
+.L1191:
+    add     sp, sp, #416
     ldp     x29, x30, [sp], #16
     ret
 
@@ -17894,8 +28178,8 @@ _is_import_line:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str142@PAGE
-    add     x9, x9, L_str142@PAGEOFF
+    adrp    x9, L_str158@PAGE
+    add     x9, x9, L_str158@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x0007
     str     x9, [sp, #32]
@@ -17905,19 +28189,19 @@ _is_import_line:
     ldr     x9, [sp, #16]
     cmp     x11, x9
     cset    w10, hi
-    cbz     w10, .L622
+    cbz     w10, .L843
     mov     x9, #0
     mov     x0, x9
-    b       .L835
-.L622:
+    b       .L1192
+.L843:
     mov     x9, #0
     str     x9, [sp, #40]
-.L623:
+.L844:
     ldr     x9, [sp, #40]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L624
+    cbz     w11, .L845
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #40]
@@ -17930,21 +28214,21 @@ _is_import_line:
     ldrb    w10, [x12]
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L625
+    cbz     w11, .L846
     mov     x9, #0
     mov     x0, x9
-    b       .L835
-.L625:
+    b       .L1192
+.L846:
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #40]
-    b       .L623
-.L624:
+    b       .L844
+.L845:
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L835
-.L835:
+    b       .L1192
+.L1192:
     add     sp, sp, #272
     ldp     x29, x30, [sp], #16
     ret
@@ -17953,7 +28237,7 @@ _is_import_line:
 _pp_expand:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1552
+    sub     sp, sp, #1792
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -17966,9 +28250,9 @@ _pp_expand:
     movz    x9, #0x0001
     cmp     w11, w9
     cset    w10, eq
-    cbz     w10, .L626
-    b       .L836
-.L626:
+    cbz     w10, .L847
+    b       .L1193
+.L847:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     movz    x11, #0x0001
@@ -17980,12 +28264,12 @@ _pp_expand:
     str     x10, [sp, #24]
     mov     x9, #0
     str     x9, [sp, #32]
-.L627:
+.L848:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L628
+    cbz     w11, .L849
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #32]
     add     x11, x9, x10
@@ -17998,8 +28282,8 @@ _pp_expand:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L627
-.L628:
+    b       .L848
+.L849:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     add     x11, x9, x10
@@ -18010,98 +28294,138 @@ _pp_expand:
     mov     x0, x9
     mov     x1, x10
     bl      _pp_mark
-    str     x0, [sp, #392]
+    str     x0, [sp, #424]
+    bl      _pp_file_cap
+    mov     x9, x0
+    str     x9, [sp, #40]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0002, lsl #16
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
     mov     x0, x9
     mov     x1, x10
     bl      _arena_take
     mov     x11, x0
-    str     x11, [sp, #40]
+    str     x11, [sp, #56]
     ldr     x9, [sp, #24]
     mov     x0, x9
     bl      _io_open_read
-    mov     x10, x0
-    str     x10, [sp, #48]
-    ldr     x9, [sp, #48]
-    mov     x10, #0
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L629
-    b       .L836
-.L629:
-    mov     x9, #0
-    str     x9, [sp, #56]
-.L630:
-    ldr     x9, [sp, #48]
-    ldr     x10, [sp, #40]
-    ldr     x11, [sp, #56]
-    add     x12, x10, x11
-    movz    x10, #0x0002, lsl #16
-    ldr     x11, [sp, #56]
-    sub     x13, x10, x11
-    mov     x0, x9
-    mov     x1, x12
-    mov     x2, x13
-    bl      _io_read
     mov     x10, x0
     str     x10, [sp, #64]
     ldr     x9, [sp, #64]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L632
-    b       .L631
-.L632:
-    ldr     x9, [sp, #56]
-    ldr     x10, [sp, #64]
-    add     x11, x9, x10
-    str     x11, [sp, #56]
-    b       .L630
-.L631:
-    ldr     x9, [sp, #48]
-    mov     x0, x9
-    bl      _io_close
-    str     x0, [sp, #592]
-    ldr     x9, [sp, #40]
-    str     x9, [sp, #72]
+    cbz     w11, .L850
+    b       .L1193
+.L850:
     mov     x9, #0
-    str     x9, [sp, #80]
-.L633:
-    ldr     x9, [sp, #80]
+    str     x9, [sp, #72]
+.L851:
+    ldr     x9, [sp, #64]
     ldr     x10, [sp, #56]
-    cmp     x9, x10
-    cset    w11, lo
-    cbz     w11, .L634
+    ldr     x11, [sp, #72]
+    add     x12, x10, x11
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #72]
+    sub     x13, x10, x11
+    mov     x0, x9
+    mov     x1, x12
+    mov     x2, x13
+    bl      _io_read
+    mov     x10, x0
+    str     x10, [sp, #80]
     ldr     x9, [sp, #80]
-    str     x9, [sp, #88]
-.L635:
-    ldr     x9, [sp, #80]
-    ldr     x10, [sp, #56]
+    mov     x10, #0
     cmp     x9, x10
-    cset    w11, lo
-    cbz     w11, .L636
+    cset    w11, eq
+    cbz     w11, .L853
+    b       .L852
+.L853:
     ldr     x9, [sp, #72]
     ldr     x10, [sp, #80]
+    add     x11, x9, x10
+    str     x11, [sp, #72]
+    b       .L851
+.L852:
+    ldr     x9, [sp, #64]
+    mov     x0, x9
+    bl      _io_close
+    str     x0, [sp, #664]
+    ldr     x9, [sp, #72]
+    ldr     x10, [sp, #40]
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L854
+    adrp    x9, L_str159@PAGE
+    add     x9, x9, L_str159@PAGEOFF
+    str     x9, [sp, #88]
+    movz    x9, #0x002e
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #88]
+    ldr     x10, [sp, #96]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _die_line
+    str     x0, [sp, #736]
+.L854:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #72]
+    movz    x12, #0x0007
+    add     x13, x10, x12
+    movz    x10, #0x0008
+    udiv     x12, x13, x10
+    movz    x10, #0x0008
+    mul     x13, x12, x10
+    add     x10, x9, x13
+    str     x10, [x11]
+    ldr     x9, [sp, #56]
+    str     x9, [sp, #104]
+    mov     x9, #0
+    str     x9, [sp, #112]
+.L855:
+    ldr     x9, [sp, #112]
+    ldr     x10, [sp, #72]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L856
+    ldr     x9, [sp, #112]
+    str     x9, [sp, #120]
+.L857:
+    ldr     x9, [sp, #112]
+    ldr     x10, [sp, #72]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L858
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #112]
     add     x11, x9, x10
     ldrb    w9, [x11]
     movz    x10, #0x000a
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L637
-    b       .L636
-.L637:
-    ldr     x9, [sp, #80]
+    cbz     w11, .L859
+    b       .L858
+.L859:
+    ldr     x9, [sp, #112]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #80]
-    b       .L635
-.L636:
-    ldr     x9, [sp, #80]
-    str     x9, [sp, #96]
-    ldr     x9, [sp, #72]
-    ldr     x10, [sp, #88]
-    ldr     x11, [sp, #56]
+    str     x11, [sp, #112]
+    b       .L857
+.L858:
+    ldr     x9, [sp, #112]
+    str     x9, [sp, #128]
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #120]
+    ldr     x11, [sp, #72]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
@@ -18110,168 +28434,168 @@ _pp_expand:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L638
-    ldr     x9, [sp, #88]
+    cbz     w10, .L860
+    ldr     x9, [sp, #120]
     movz    x10, #0x0007
     add     x11, x9, x10
-    str     x11, [sp, #104]
-.L639:
-    ldr     x9, [sp, #104]
-    ldr     x10, [sp, #96]
+    str     x11, [sp, #136]
+.L861:
+    ldr     x9, [sp, #136]
+    ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L640
-    ldr     x9, [sp, #72]
-    ldr     x10, [sp, #104]
+    cbz     w11, .L862
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #136]
     add     x11, x9, x10
     ldrb    w9, [x11]
     movz    x10, #0x0027
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L641
-    b       .L640
-.L641:
-    ldr     x9, [sp, #104]
+    cbz     w11, .L863
+    b       .L862
+.L863:
+    ldr     x9, [sp, #136]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #104]
-    b       .L639
-.L640:
-    ldr     x9, [sp, #104]
-    ldr     x10, [sp, #96]
+    str     x11, [sp, #136]
+    b       .L861
+.L862:
+    ldr     x9, [sp, #136]
+    ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L642
-    ldr     x9, [sp, #104]
+    cbz     w11, .L864
+    ldr     x9, [sp, #136]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #112]
-.L643:
-    ldr     x9, [sp, #112]
-    ldr     x10, [sp, #96]
+    str     x11, [sp, #144]
+.L865:
+    ldr     x9, [sp, #144]
+    ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L644
-    ldr     x9, [sp, #72]
-    ldr     x10, [sp, #112]
+    cbz     w11, .L866
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #144]
     add     x11, x9, x10
     ldrb    w9, [x11]
     movz    x10, #0x0027
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L645
-    b       .L644
-.L645:
-    ldr     x9, [sp, #112]
+    cbz     w11, .L867
+    b       .L866
+.L867:
+    ldr     x9, [sp, #144]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #112]
-    b       .L643
-.L644:
-    ldr     x9, [sp, #112]
-    ldr     x10, [sp, #96]
+    str     x11, [sp, #144]
+    b       .L865
+.L866:
+    ldr     x9, [sp, #144]
+    ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L646
-    ldr     x9, [sp, #112]
-    ldr     x10, [sp, #104]
+    cbz     w11, .L868
+    ldr     x9, [sp, #144]
+    ldr     x10, [sp, #136]
     sub     x11, x9, x10
     movz    x9, #0x0001
     sub     x10, x11, x9
-    str     x10, [sp, #120]
+    str     x10, [sp, #152]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #120]
+    ldr     x10, [sp, #152]
     movz    x11, #0x0001
     add     x12, x10, x11
     mov     x0, x9
     mov     x1, x12
     bl      _arena_take
     mov     x10, x0
-    str     x10, [sp, #128]
+    str     x10, [sp, #160]
     mov     x9, #0
-    str     x9, [sp, #136]
-.L647:
-    ldr     x9, [sp, #136]
-    ldr     x10, [sp, #120]
+    str     x9, [sp, #168]
+.L869:
+    ldr     x9, [sp, #168]
+    ldr     x10, [sp, #152]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L648
-    ldr     x9, [sp, #128]
-    ldr     x10, [sp, #136]
+    cbz     w11, .L870
+    ldr     x9, [sp, #160]
+    ldr     x10, [sp, #168]
     add     x11, x9, x10
-    ldr     x9, [sp, #72]
-    ldr     x10, [sp, #104]
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #136]
     movz    x12, #0x0001
     add     x13, x10, x12
-    ldr     x10, [sp, #136]
+    ldr     x10, [sp, #168]
     add     x12, x13, x10
     add     x10, x9, x12
     ldrb    w9, [x10]
     strb    w9, [x11]
-    ldr     x9, [sp, #136]
+    ldr     x9, [sp, #168]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #136]
-    b       .L647
-.L648:
-    ldr     x9, [sp, #128]
-    ldr     x10, [sp, #120]
+    str     x11, [sp, #168]
+    b       .L869
+.L870:
+    ldr     x9, [sp, #160]
+    ldr     x10, [sp, #152]
     add     x11, x9, x10
     mov     x9, #0
     strb    w9, [x11]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #128]
-    ldr     x11, [sp, #120]
+    ldr     x10, [sp, #160]
+    ldr     x11, [sp, #152]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _pp_expand
-    str     x0, [sp, #1368]
-.L646:
-.L642:
-    b       .L649
-.L638:
-    ldr     x9, [sp, #72]
-    ldr     x10, [sp, #88]
+    str     x0, [sp, #1608]
+.L868:
+.L864:
+    b       .L871
+.L860:
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #120]
     add     x11, x9, x10
-    ldr     x9, [sp, #96]
-    ldr     x10, [sp, #88]
+    ldr     x9, [sp, #128]
+    ldr     x10, [sp, #120]
     sub     x12, x9, x10
     mov     x0, x11
     mov     x1, x12
     bl      _pp_out_append
-    str     x0, [sp, #1424]
-    ldr     x9, [sp, #72]
-    ldr     x10, [sp, #96]
+    str     x0, [sp, #1664]
+    ldr     x9, [sp, #104]
+    ldr     x10, [sp, #128]
     add     x11, x9, x10
-    str     x11, [sp, #144]
-    ldr     x9, [sp, #96]
-    ldr     x10, [sp, #56]
+    str     x11, [sp, #176]
+    ldr     x9, [sp, #128]
+    ldr     x10, [sp, #72]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L650
-    ldr     x9, [sp, #144]
+    cbz     w11, .L872
+    ldr     x9, [sp, #176]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _pp_out_append
-    str     x0, [sp, #1496]
-.L650:
-.L649:
-    ldr     x9, [sp, #80]
-    ldr     x10, [sp, #56]
+    str     x0, [sp, #1736]
+.L872:
+.L871:
+    ldr     x9, [sp, #112]
+    ldr     x10, [sp, #72]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L651
-    ldr     x9, [sp, #80]
+    cbz     w11, .L873
+    ldr     x9, [sp, #112]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #80]
-.L651:
-    b       .L633
-.L634:
-.L836:
-    add     sp, sp, #1552
+    str     x11, [sp, #112]
+.L873:
+    b       .L855
+.L856:
+.L1193:
+    add     sp, sp, #1792
     ldp     x29, x30, [sp], #16
     ret
 
@@ -18297,15 +28621,15 @@ _dump_tokens:
     adrp    x9, _DUMP_TOK_STORE@PAGE
     add     x9, x9, _DUMP_TOK_STORE@PAGEOFF
     str     x9, [sp, #32]
-.L652:
+.L874:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #32]
     mov     x0, x9
     mov     x1, x10
     bl      _lex_next
     str     x0, [sp, #168]
-    adrp    x9, L_str143@PAGE
-    add     x9, x9, L_str143@PAGEOFF
+    adrp    x9, L_str160@PAGE
+    add     x9, x9, L_str160@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0005
     str     x9, [sp, #48]
@@ -18326,8 +28650,8 @@ _dump_tokens:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #264]
-    adrp    x9, L_str144@PAGE
-    add     x9, x9, L_str144@PAGEOFF
+    adrp    x9, L_str161@PAGE
+    add     x9, x9, L_str161@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0007
     str     x9, [sp, #64]
@@ -18348,8 +28672,8 @@ _dump_tokens:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #360]
-    adrp    x9, L_str145@PAGE
-    add     x9, x9, L_str145@PAGEOFF
+    adrp    x9, L_str162@PAGE
+    add     x9, x9, L_str162@PAGEOFF
     str     x9, [sp, #72]
     movz    x9, #0x0005
     str     x9, [sp, #80]
@@ -18370,8 +28694,8 @@ _dump_tokens:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #456]
-    adrp    x9, L_str146@PAGE
-    add     x9, x9, L_str146@PAGEOFF
+    adrp    x9, L_str163@PAGE
+    add     x9, x9, L_str163@PAGEOFF
     str     x9, [sp, #88]
     movz    x9, #0x0006
     str     x9, [sp, #96]
@@ -18405,12 +28729,12 @@ _dump_tokens:
     mov     x10, #0
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L654
-    b       .L653
-.L654:
-    b       .L652
-.L653:
-.L837:
+    cbz     w11, .L876
+    b       .L875
+.L876:
+    b       .L874
+.L875:
+.L1194:
     add     sp, sp, #640
     ldp     x29, x30, [sp], #16
     ret
@@ -18432,14 +28756,14 @@ _read_all:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L655
+    cbz     w11, .L877
     mov     x9, #0
     mov     x0, x9
-    b       .L838
-.L655:
+    b       .L1195
+.L877:
     mov     x9, #0
     str     x9, [sp, #32]
-.L656:
+.L878:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #32]
@@ -18457,23 +28781,23 @@ _read_all:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L658
-    b       .L657
-.L658:
+    cbz     w11, .L880
+    b       .L879
+.L880:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #40]
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L656
-.L657:
+    b       .L878
+.L879:
     ldr     x9, [sp, #24]
     mov     x0, x9
     bl      _io_close
     str     x0, [sp, #224]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L838
-.L838:
+    b       .L1195
+.L1195:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -18488,12 +28812,12 @@ _bytes_eq_lit:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L659:
+.L881:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L660
+    cbz     w11, .L882
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     add     x11, x9, x10
@@ -18504,21 +28828,21 @@ _bytes_eq_lit:
     ldrb    w10, [x12]
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L661
+    cbz     w11, .L883
     mov     x9, #0
     mov     x0, x9
-    b       .L839
-.L661:
+    b       .L1196
+.L883:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L659
-.L660:
+    b       .L881
+.L882:
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L839
-.L839:
+    b       .L1196
+.L1196:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -18533,12 +28857,12 @@ _cstr_eq:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L662:
+.L884:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L663
+    cbz     w11, .L885
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     add     x11, x9, x10
@@ -18549,17 +28873,17 @@ _cstr_eq:
     ldrb    w10, [x12]
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L664
+    cbz     w11, .L886
     mov     x9, #0
     mov     x0, x9
-    b       .L840
-.L664:
+    b       .L1197
+.L886:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L662
-.L663:
+    b       .L884
+.L885:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     add     x11, x9, x10
@@ -18567,15 +28891,15 @@ _cstr_eq:
     mov     x10, #0
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L665
+    cbz     w11, .L887
     mov     x9, #0
     mov     x0, x9
-    b       .L840
-.L665:
+    b       .L1197
+.L887:
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L840
-.L840:
+    b       .L1197
+.L1197:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -18584,18 +28908,18 @@ _cstr_eq:
 _main:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1584
+    sub     sp, sp, #1856
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L666
+    cbz     w11, .L888
     movz    x9, #0x0002
     mov     w0, w9
-    b       .L841
-.L666:
+    b       .L1198
+.L888:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
     movz    x11, #0x0008
@@ -18603,16 +28927,21 @@ _main:
     add     x10, x9, x12
     ldr     x9, [x10]
     str     x9, [sp, #16]
-    adrp    x9, L_str147@PAGE
-    add     x9, x9, L_str147@PAGEOFF
+    adrp    x9, L_str164@PAGE
+    add     x9, x9, L_str164@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x000d
     str     x9, [sp, #32]
-    adrp    x9, L_str148@PAGE
-    add     x9, x9, L_str148@PAGEOFF
+    adrp    x9, L_str165@PAGE
+    add     x9, x9, L_str165@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0009
     str     x9, [sp, #48]
+    adrp    x9, L_str166@PAGE
+    add     x9, x9, L_str166@PAGEOFF
+    str     x9, [sp, #56]
+    movz    x9, #0x000c
+    str     x9, [sp, #64]
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #32]
@@ -18621,7 +28950,7 @@ _main:
     mov     x2, x11
     bl      _cstr_eq
     mov     x12, x0
-    str     x12, [sp, #56]
+    str     x12, [sp, #72]
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #40]
     ldr     x11, [sp, #48]
@@ -18630,74 +28959,21 @@ _main:
     mov     x2, x11
     bl      _cstr_eq
     mov     x12, x0
-    str     x12, [sp, #64]
-    ldr     x9, [sp, #56]
-    movz    x10, #0x0001
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L667
-    ldr     x9, [sp, #8]
-    movz    x10, #0x0002
-    movz    x11, #0x0008
-    mul     x12, x10, x11
-    add     x10, x9, x12
-    ldr     x9, [x10]
-    str     x9, [sp, #72]
-    ldr     x9, [sp, #72]
-    adrp    x10, _SRC_BUF@PAGE
-    add     x10, x10, _SRC_BUF@PAGEOFF
-    movz    x11, #0x0004, lsl #16
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _read_all
-    mov     x12, x0
     str     x12, [sp, #80]
-    ldr     x9, [sp, #80]
-    mov     x10, #0
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L668
-    movz    x9, #0x0003
-    mov     w0, w9
-    b       .L841
-.L668:
-    adrp    x9, _OUT_STORAGE@PAGE
-    add     x9, x9, _OUT_STORAGE@PAGEOFF
-    str     x9, [sp, #88]
-    ldr     x9, [sp, #88]
-    movz    x10, #0x0001
-    adrp    x11, _OUT_BUF@PAGE
-    add     x11, x11, _OUT_BUF@PAGEOFF
-    movz    x12, #0x0001, lsl #16
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #56]
+    ldr     x11, [sp, #64]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
-    mov     x3, x12
-    bl      _out_init
-    str     x0, [sp, #608]
-    ldr     x9, [sp, #88]
-    adrp    x10, _SRC_BUF@PAGE
-    add     x10, x10, _SRC_BUF@PAGEOFF
-    ldr     x11, [sp, #80]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _dump_tokens
-    str     x0, [sp, #640]
-    ldr     x9, [sp, #88]
-    mov     x0, x9
-    bl      _out_flush
-    str     x0, [sp, #656]
-    mov     x9, #0
-    mov     w0, w9
-    b       .L841
-.L667:
-    ldr     x9, [sp, #64]
+    bl      _cstr_eq
+    mov     x12, x0
+    str     x12, [sp, #88]
+    ldr     x9, [sp, #72]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L669
+    cbz     w11, .L889
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
     movz    x11, #0x0008
@@ -18719,38 +28995,15 @@ _main:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L670
+    cbz     w11, .L890
     movz    x9, #0x0003
     mov     w0, w9
-    b       .L841
-.L670:
-    bl      _ast_init
-    mov     x9, x0
-    str     x9, [sp, #112]
-    bl      _ir_init
-    mov     x9, x0
-    str     x9, [sp, #120]
-    ldr     x9, [sp, #112]
-    adrp    x10, _SRC_BUF@PAGE
-    add     x10, x10, _SRC_BUF@PAGEOFF
-    ldr     x11, [sp, #104]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _parse
-    mov     x12, x0
-    str     x12, [sp, #128]
-    ldr     x9, [sp, #120]
-    ldr     x10, [sp, #128]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _lower
-    mov     x11, x0
-    str     x11, [sp, #136]
+    b       .L1198
+.L890:
     adrp    x9, _OUT_STORAGE@PAGE
     add     x9, x9, _OUT_STORAGE@PAGEOFF
-    str     x9, [sp, #144]
-    ldr     x9, [sp, #144]
+    str     x9, [sp, #112]
+    ldr     x9, [sp, #112]
     movz    x10, #0x0001
     adrp    x11, _OUT_BUF@PAGE
     add     x11, x11, _OUT_BUF@PAGEOFF
@@ -18760,30 +29013,115 @@ _main:
     mov     x2, x11
     mov     x3, x12
     bl      _out_init
-    str     x0, [sp, #920]
+    str     x0, [sp, #704]
+    ldr     x9, [sp, #112]
+    adrp    x10, _SRC_BUF@PAGE
+    add     x10, x10, _SRC_BUF@PAGEOFF
+    ldr     x11, [sp, #104]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _dump_tokens
+    str     x0, [sp, #736]
+    ldr     x9, [sp, #112]
+    mov     x0, x9
+    bl      _out_flush
+    str     x0, [sp, #752]
+    mov     x9, #0
+    mov     w0, w9
+    b       .L1198
+.L889:
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L891
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0002
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #120]
+    ldr     x9, [sp, #120]
+    adrp    x10, _SRC_BUF@PAGE
+    add     x10, x10, _SRC_BUF@PAGEOFF
+    movz    x11, #0x0004, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _read_all
+    mov     x12, x0
+    str     x12, [sp, #128]
+    ldr     x9, [sp, #128]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L892
+    movz    x9, #0x0003
+    mov     w0, w9
+    b       .L1198
+.L892:
+    bl      _ast_init
+    mov     x9, x0
+    str     x9, [sp, #136]
+    bl      _ir_init
+    mov     x9, x0
+    str     x9, [sp, #144]
+    ldr     x9, [sp, #136]
+    adrp    x10, _SRC_BUF@PAGE
+    add     x10, x10, _SRC_BUF@PAGEOFF
+    ldr     x11, [sp, #128]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _parse
+    mov     x12, x0
+    str     x12, [sp, #152]
     ldr     x9, [sp, #144]
-    ldr     x10, [sp, #136]
+    ldr     x10, [sp, #152]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _lower
+    mov     x11, x0
+    str     x11, [sp, #160]
+    adrp    x9, _OUT_STORAGE@PAGE
+    add     x9, x9, _OUT_STORAGE@PAGEOFF
+    str     x9, [sp, #168]
+    ldr     x9, [sp, #168]
+    movz    x10, #0x0001
+    adrp    x11, _OUT_BUF@PAGE
+    add     x11, x11, _OUT_BUF@PAGEOFF
+    movz    x12, #0x0001, lsl #16
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _out_init
+    str     x0, [sp, #1016]
+    ldr     x9, [sp, #168]
+    ldr     x10, [sp, #160]
     mov     x0, x9
     mov     x1, x10
     bl      _dump_ir
-    str     x0, [sp, #944]
-    ldr     x9, [sp, #144]
+    str     x0, [sp, #1040]
+    ldr     x9, [sp, #168]
     mov     x0, x9
     bl      _out_flush
-    str     x0, [sp, #960]
+    str     x0, [sp, #1056]
     mov     x9, #0
     mov     w0, w9
-    b       .L841
-.L669:
+    b       .L1198
+.L891:
     ldr     x9, [sp, #0]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L671
+    cbz     w11, .L893
     movz    x9, #0x0002
     mov     w0, w9
-    b       .L841
-.L671:
+    b       .L1198
+.L893:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #0]
     movz    x11, #0x0003
@@ -18792,7 +29130,7 @@ _main:
     mul     x11, x12, x10
     add     x10, x9, x11
     ldr     x9, [x10]
-    str     x9, [sp, #152]
+    str     x9, [sp, #176]
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #0]
     movz    x11, #0x0001
@@ -18801,100 +29139,141 @@ _main:
     mul     x11, x12, x10
     add     x10, x9, x11
     ldr     x9, [x10]
-    str     x9, [sp, #160]
+    str     x9, [sp, #184]
     bl      _pp_arena_init
     mov     x9, x0
-    str     x9, [sp, #168]
+    str     x9, [sp, #192]
     mov     x9, #0
-    str     x9, [sp, #176]
-.L672:
-    ldr     x9, [sp, #152]
-    ldr     x10, [sp, #176]
+    str     x9, [sp, #200]
+.L894:
+    ldr     x9, [sp, #176]
+    ldr     x10, [sp, #200]
     add     x11, x9, x10
     ldrb    w9, [x11]
     mov     x10, #0
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L674
-    b       .L673
-.L674:
-    ldr     x9, [sp, #176]
+    cbz     w11, .L896
+    b       .L895
+.L896:
+    ldr     x9, [sp, #200]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #176]
-    b       .L672
-.L673:
-    ldr     x9, [sp, #168]
-    ldr     x10, [sp, #152]
-    ldr     x11, [sp, #176]
+    str     x11, [sp, #200]
+    b       .L894
+.L895:
+    ldr     x9, [sp, #192]
+    ldr     x10, [sp, #176]
+    ldr     x11, [sp, #200]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _pp_expand
-    str     x0, [sp, #1248]
+    str     x0, [sp, #1344]
     adrp    x9, _PP_OUT_LEN@PAGE
     add     x9, x9, _PP_OUT_LEN@PAGEOFF
-    str     x9, [sp, #184]
-    ldr     x9, [sp, #184]
+    str     x9, [sp, #208]
+    ldr     x9, [sp, #208]
     mov     x10, #0
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [x10]
-    str     x9, [sp, #192]
-    ldr     x9, [sp, #192]
+    str     x9, [sp, #216]
+    ldr     x9, [sp, #216]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L675
+    cbz     w11, .L897
     movz    x9, #0x0003
     mov     w0, w9
-    b       .L841
-.L675:
+    b       .L1198
+.L897:
     adrp    x9, _PP_OUT@PAGE
     add     x9, x9, _PP_OUT@PAGEOFF
-    str     x9, [sp, #200]
+    str     x9, [sp, #224]
     bl      _ast_init
     mov     x9, x0
-    str     x9, [sp, #208]
+    str     x9, [sp, #232]
     bl      _ir_init
     mov     x9, x0
-    str     x9, [sp, #216]
-    ldr     x9, [sp, #208]
-    ldr     x10, [sp, #200]
-    ldr     x11, [sp, #192]
+    str     x9, [sp, #240]
+    ldr     x9, [sp, #232]
+    ldr     x10, [sp, #224]
+    ldr     x11, [sp, #216]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _parse
     mov     x12, x0
-    str     x12, [sp, #224]
-    ldr     x9, [sp, #216]
-    ldr     x10, [sp, #224]
+    str     x12, [sp, #248]
+    ldr     x9, [sp, #240]
+    ldr     x10, [sp, #248]
     mov     x0, x9
     mov     x1, x10
     bl      _lower
     mov     x11, x0
-    str     x11, [sp, #232]
-    ldr     x9, [sp, #160]
+    str     x11, [sp, #256]
+    ldr     x9, [sp, #184]
     mov     x0, x9
     bl      _io_open_write
     mov     x10, x0
-    str     x10, [sp, #240]
-    ldr     x9, [sp, #240]
+    str     x10, [sp, #264]
+    ldr     x9, [sp, #264]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L676
+    cbz     w11, .L898
     movz    x9, #0x0004
     mov     w0, w9
-    b       .L841
-.L676:
+    b       .L1198
+.L898:
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L899
+    ldr     x9, [sp, #248]
+    mov     x0, x9
+    bl      _cgb_bss_layout
+    mov     x10, x0
+    str     x10, [sp, #272]
+    ldr     x9, [sp, #248]
+    ldr     x10, [sp, #256]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _codegen_bytes
+    str     x0, [sp, #1624]
+    bl      _cb_pos
+    mov     x9, x0
+    str     x9, [sp, #280]
+    adrp    x9, _CG_ENTRY@PAGE
+    add     x9, x9, _CG_ENTRY@PAGEOFF
+    str     x9, [sp, #288]
+    ldr     x9, [sp, #264]
+    ldr     x10, [sp, #248]
+    ldr     x11, [sp, #280]
+    ldr     x12, [sp, #288]
+    mov     x13, #0
+    movz    x14, #0x0008
+    mul     x15, x13, x14
+    add     x13, x12, x15
+    ldr     x12, [x13]
+    ldr     x13, [sp, #272]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    mov     x4, x13
+    bl      _emit_macho_code_bss
+    str     x0, [sp, #1728]
+    b       .L900
+.L899:
     adrp    x9, _OUT_STORAGE@PAGE
     add     x9, x9, _OUT_STORAGE@PAGEOFF
-    str     x9, [sp, #248]
-    ldr     x9, [sp, #248]
-    ldr     x10, [sp, #240]
+    str     x9, [sp, #296]
+    ldr     x9, [sp, #296]
+    ldr     x10, [sp, #264]
     adrp    x11, _OUT_BUF@PAGE
     add     x11, x11, _OUT_BUF@PAGEOFF
     movz    x12, #0x0001, lsl #16
@@ -18903,26 +29282,27 @@ _main:
     mov     x2, x11
     mov     x3, x12
     bl      _out_init
-    str     x0, [sp, #1512]
-    ldr     x9, [sp, #248]
+    str     x0, [sp, #1776]
+    ldr     x9, [sp, #296]
     movz    x10, #0x0001
-    ldr     x11, [sp, #224]
-    ldr     x12, [sp, #232]
+    ldr     x11, [sp, #248]
+    ldr     x12, [sp, #256]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     mov     x3, x12
     bl      _codegen
-    str     x0, [sp, #1552]
-    ldr     x9, [sp, #240]
+    str     x0, [sp, #1816]
+.L900:
+    ldr     x9, [sp, #264]
     mov     x0, x9
     bl      _io_close
-    str     x0, [sp, #1568]
+    str     x0, [sp, #1832]
     mov     x9, #0
     mov     w0, w9
-    b       .L841
-.L841:
-    add     sp, sp, #1584
+    b       .L1198
+.L1198:
+    add     sp, sp, #1856
     ldp     x29, x30, [sp], #16
     ret
 
@@ -20962,6 +31342,234 @@ L_str141:
     .byte   0x00
     .balign  8
 L_str142:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x50
+    .byte   0x41
+    .byte   0x47
+    .byte   0x45
+    .byte   0x5a
+    .byte   0x45
+    .byte   0x52
+    .byte   0x4f
+    .byte   0x00
+    .balign  8
+L_str143:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x54
+    .byte   0x45
+    .byte   0x58
+    .byte   0x54
+    .byte   0x00
+    .balign  8
+L_str144:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x74
+    .byte   0x65
+    .byte   0x78
+    .byte   0x74
+    .byte   0x00
+    .balign  8
+L_str145:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x4c
+    .byte   0x49
+    .byte   0x4e
+    .byte   0x4b
+    .byte   0x45
+    .byte   0x44
+    .byte   0x49
+    .byte   0x54
+    .byte   0x00
+    .balign  8
+L_str146:
+    .byte   0x2f
+    .byte   0x75
+    .byte   0x73
+    .byte   0x72
+    .byte   0x2f
+    .byte   0x6c
+    .byte   0x69
+    .byte   0x62
+    .byte   0x2f
+    .byte   0x64
+    .byte   0x79
+    .byte   0x6c
+    .byte   0x64
+    .byte   0x00
+    .balign  8
+L_str147:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x50
+    .byte   0x41
+    .byte   0x47
+    .byte   0x45
+    .byte   0x5a
+    .byte   0x45
+    .byte   0x52
+    .byte   0x4f
+    .byte   0x00
+    .balign  8
+L_str148:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x54
+    .byte   0x45
+    .byte   0x58
+    .byte   0x54
+    .byte   0x00
+    .balign  8
+L_str149:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x74
+    .byte   0x65
+    .byte   0x78
+    .byte   0x74
+    .byte   0x00
+    .balign  8
+L_str150:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x44
+    .byte   0x41
+    .byte   0x54
+    .byte   0x41
+    .byte   0x00
+    .balign  8
+L_str151:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x62
+    .byte   0x73
+    .byte   0x73
+    .byte   0x00
+    .balign  8
+L_str152:
+    .byte   0x5f
+    .byte   0x5f
+    .byte   0x4c
+    .byte   0x49
+    .byte   0x4e
+    .byte   0x4b
+    .byte   0x45
+    .byte   0x44
+    .byte   0x49
+    .byte   0x54
+    .byte   0x00
+    .balign  8
+L_str153:
+    .byte   0x2f
+    .byte   0x75
+    .byte   0x73
+    .byte   0x72
+    .byte   0x2f
+    .byte   0x6c
+    .byte   0x69
+    .byte   0x62
+    .byte   0x2f
+    .byte   0x64
+    .byte   0x79
+    .byte   0x6c
+    .byte   0x64
+    .byte   0x00
+    .balign  8
+L_str154:
+    .byte   0x73
+    .byte   0x79
+    .byte   0x73
+    .byte   0x63
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x6c
+    .byte   0x00
+    .balign  8
+L_str155:
+    .byte   0x6d
+    .byte   0x61
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x00
+    .balign  8
+L_str156:
+    .byte   0x64
+    .byte   0x65
+    .byte   0x6d
+    .byte   0x61
+    .byte   0x73
+    .byte   0x69
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x73
+    .byte   0x20
+    .byte   0x69
+    .byte   0x6d
+    .byte   0x70
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x74
+    .byte   0x20
+    .byte   0x28
+    .byte   0x6d
+    .byte   0x61
+    .byte   0x78
+    .byte   0x20
+    .byte   0x33
+    .byte   0x32
+    .byte   0x29
+    .byte   0x00
+    .balign  8
+L_str157:
+    .byte   0x66
+    .byte   0x75
+    .byte   0x65
+    .byte   0x6e
+    .byte   0x74
+    .byte   0x65
+    .byte   0x20
+    .byte   0x65
+    .byte   0x78
+    .byte   0x70
+    .byte   0x61
+    .byte   0x6e
+    .byte   0x64
+    .byte   0x69
+    .byte   0x64
+    .byte   0x61
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x6d
+    .byte   0x61
+    .byte   0x73
+    .byte   0x69
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x67
+    .byte   0x72
+    .byte   0x61
+    .byte   0x6e
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x28
+    .byte   0x50
+    .byte   0x50
+    .byte   0x5f
+    .byte   0x4f
+    .byte   0x55
+    .byte   0x54
+    .byte   0x29
+    .byte   0x00
+    .balign  8
+L_str158:
     .byte   0x69
     .byte   0x6d
     .byte   0x70
@@ -20971,7 +31579,56 @@ L_str142:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str143:
+L_str159:
+    .byte   0x66
+    .byte   0x69
+    .byte   0x63
+    .byte   0x68
+    .byte   0x65
+    .byte   0x72
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x6d
+    .byte   0x61
+    .byte   0x73
+    .byte   0x69
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x67
+    .byte   0x72
+    .byte   0x61
+    .byte   0x6e
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x70
+    .byte   0x61
+    .byte   0x72
+    .byte   0x61
+    .byte   0x20
+    .byte   0x65
+    .byte   0x6c
+    .byte   0x20
+    .byte   0x70
+    .byte   0x72
+    .byte   0x65
+    .byte   0x70
+    .byte   0x72
+    .byte   0x6f
+    .byte   0x63
+    .byte   0x65
+    .byte   0x73
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str160:
     .byte   0x6b
     .byte   0x69
     .byte   0x6e
@@ -20979,7 +31636,7 @@ L_str143:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str144:
+L_str161:
     .byte   0x20
     .byte   0x73
     .byte   0x74
@@ -20989,7 +31646,7 @@ L_str144:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str145:
+L_str162:
     .byte   0x20
     .byte   0x6c
     .byte   0x65
@@ -20997,7 +31654,7 @@ L_str145:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str146:
+L_str163:
     .byte   0x20
     .byte   0x6c
     .byte   0x69
@@ -21006,7 +31663,7 @@ L_str146:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str147:
+L_str164:
     .byte   0x2d
     .byte   0x2d
     .byte   0x64
@@ -21022,7 +31679,7 @@ L_str147:
     .byte   0x73
     .byte   0x00
     .balign  8
-L_str148:
+L_str165:
     .byte   0x2d
     .byte   0x2d
     .byte   0x64
@@ -21032,6 +31689,21 @@ L_str148:
     .byte   0x2d
     .byte   0x69
     .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str166:
+    .byte   0x2d
+    .byte   0x2d
+    .byte   0x65
+    .byte   0x6d
+    .byte   0x69
+    .byte   0x74
+    .byte   0x3d
+    .byte   0x6d
+    .byte   0x61
+    .byte   0x63
+    .byte   0x68
+    .byte   0x6f
     .byte   0x00
 
     .zerofill __DATA,__bss,_IO_BUF,16777216,3
@@ -21052,6 +31724,25 @@ L_str148:
     .zerofill __DATA,__bss,_IR_NEXT_LABEL,8,3
     .zerofill __DATA,__bss,_G_TARGET,8,3
     .zerofill __DATA,__bss,_G_SRC,8,3
+    .zerofill __DATA,__bss,_SHA_K,512,3
+    .zerofill __DATA,__bss,_SHA_W,512,3
+    .zerofill __DATA,__bss,_SHA_H,64,3
+    .zerofill __DATA,__bss,_SHA_BLK,64,3
+    .zerofill __DATA,__bss,_MO_IMG,1048576,3
+    .zerofill __DATA,__bss,_MO_CUR,8,3
+    .zerofill __DATA,__bss,_MO_UUID,16,3
+    .zerofill __DATA,__bss,_MO_DIGEST,32,3
+    .zerofill __DATA,__bss,_MO_CODE,64,3
+    .zerofill __DATA,__bss,_CB,262144,3
+    .zerofill __DATA,__bss,_CB_POS,8,3
+    .zerofill __DATA,__bss,_CG_LBL,262144,3
+    .zerofill __DATA,__bss,_CG_FNOFF,8192,3
+    .zerofill __DATA,__bss,_CG_FIX,393216,3
+    .zerofill __DATA,__bss,_CG_FIXN,8,3
+    .zerofill __DATA,__bss,_CG_STROFF,65536,3
+    .zerofill __DATA,__bss,_CG_ENTRY,8,3
+    .zerofill __DATA,__bss,_CG_PROG,8,3
+    .zerofill __DATA,__bss,_CG_BSSOFF,8192,3
     .zerofill __DATA,__bss,_SRC_BUF,262144,3
     .zerofill __DATA,__bss,_OUT_BUF,65536,3
     .zerofill __DATA,__bss,_OUT_STORAGE,64,3
@@ -21059,7 +31750,7 @@ L_str148:
     .zerofill __DATA,__bss,_PP_OUT,524288,3
     .zerofill __DATA,__bss,_PP_OUT_LEN,8,3
     .zerofill __DATA,__bss,_PP_ARENA_STORE,24,3
-    .zerofill __DATA,__bss,_PP_ARENA_BUF,4194304,3
+    .zerofill __DATA,__bss,_PP_ARENA_BUF,16777216,3
     .zerofill __DATA,__bss,_PP_SEEN_COUNT,8,3
     .zerofill __DATA,__bss,_PP_SEEN_PTRS,256,3
     .zerofill __DATA,__bss,_PP_SEEN_LENS,256,3

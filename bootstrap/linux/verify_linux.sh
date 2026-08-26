@@ -24,21 +24,22 @@ mk_elf() { # $1=input.s $2=output_bin
     aarch64-linux-gnu-ld -e _linux_start -o "$2" "$2.o" "$BUILD/linux/shim.o"
 }
 
-COMBINED=$BUILD/fixpoint_combined.tt
-cat src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt src/lexer.tt \
-    src/parser.tt src/ir.tt src/codegen.tt src/main.tt > "$COMBINED"
+# El fixpoint se comprueba igual que en tests/fixpoint_build.sh: la seed
+# committeada es la generacion anterior del compilador, asi que NO tiene por que
+# reproducirse a si misma byte a byte. La invariante real es que a partir de la
+# segunda generacion la salida se estabiliza: s1 == s2 sobre el entry completo.
+ENTRY=tests/fixpoint_entry.tt
 
 # s0 = seed committeada
 cp "$SEED" "$BUILD/fixpoint_s0.s"
 mk_elf "$BUILD/fixpoint_s0.s" "$BUILD/linux/stage1"
 
-qemu-aarch64 "$BUILD/linux/stage1" "$COMBINED" -o "$BUILD/fixpoint_s1.s" \
-    || fail "stage1 no compilo el combined"
-cmp "$BUILD/fixpoint_s0.s" "$BUILD/fixpoint_s1.s" || fail "s0 != s1"
+qemu-aarch64 "$BUILD/linux/stage1" "$ENTRY" -o "$BUILD/fixpoint_s1.s" \
+    || fail "stage1 no compilo $ENTRY"
 
 mk_elf "$BUILD/fixpoint_s1.s" "$BUILD/linux/stage2"
-qemu-aarch64 "$BUILD/linux/stage2" "$COMBINED" -o "$BUILD/fixpoint_s2.s" \
-    || fail "stage2 no compilo el combined"
+qemu-aarch64 "$BUILD/linux/stage2" "$ENTRY" -o "$BUILD/fixpoint_s2.s" \
+    || fail "stage2 no compilo $ENTRY"
 cmp "$BUILD/fixpoint_s1.s" "$BUILD/fixpoint_s2.s" || fail "s1 != s2"
 
 qemu-aarch64 "$BUILD/linux/stage1" tests/macos_hello.tt -o "$BUILD/hello_s1.s" \
@@ -94,4 +95,4 @@ if [[ -f src/codegen_bytes.tt && -f tests/codegen_bytes_test.tt && -f "$HARNESS/
     [[ $rc -eq 42 ]] || fail "codegen_bytes: el binario emitido devolvio $rc, esperado 42"
 fi
 
-echo "VERIFY-LINUX OK (fixpoint bit a bit + smokes disponibles)"
+echo "VERIFY-LINUX OK (fixpoint s1==s2 + smokes disponibles)"
