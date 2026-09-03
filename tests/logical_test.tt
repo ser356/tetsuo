@@ -1,0 +1,29 @@
+bss LOGICAL_COUNT: 8
+
+fun touched(v: u64) -> u64 {
+    let count: *u64 = LOGICAL_COUNT
+    count[0] = count[0] + 1
+    return v
+}
+
+fun main() -> u64 {
+    let count: *u64 = LOGICAL_COUNT
+    if 0 && touched(1) { return 1 }
+    if count[0] != 0 { return 2 }
+    if 1 || touched(0) {} else { return 3 }
+    if count[0] != 0 { return 4 }
+    let and_value: u64 = 2 && touched(9)
+    if and_value != 1 { return 5 }
+    if count[0] != 1 { return 6 }
+    let or_value: u64 = 0 || touched(7)
+    if or_value != 1 { return 7 }
+    if count[0] != 2 { return 8 }
+    if 1 == 1 && 2 == 2 || 0 {} else { return 9 }
+    let pressure: u64 = (1 + 2) * ((3 + 4) * ((5 + 6) * (7 + 8)))
+    if pressure && 1 != 1 { return 10 }
+    let wide: u64 = 1 << 32
+    if wide && 1 {} else { return 11 }
+    if wide || touched(0) {} else { return 12 }
+    if count[0] != 2 { return 13 }
+    return 0
+}

@@ -53,5 +53,6 @@ rm -f "$BUILD/main_macho_s2.macho"
 
 # Fixpoint bytes: s1 == s2 bit-a-bit.
 cmp "$BUILD/main_macho_s1.macho" "$BUILD/main_macho_s2.macho"
+cmp bootstrap/tetsuoc.macho "$BUILD/main_macho_s1.macho"
 
 echo "FIXPOINT MACHO OK"

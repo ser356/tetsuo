@@ -132,6 +132,10 @@ decidido aún, el desbordamiento de arena es silencioso.
 
 ## Buffers dinámicos
 
+Código destinado a `--emit=obj` no declara `bss`. Recibe el bloque del llamante,
+construye `Arena` como local y pasa `&ar`. Un scratch por llamada permite uso
+concurrente sin estado compartido; `lib/freestanding.tt` reúne este subconjunto.
+
 Con arena, los buffers de tamaño runtime salen gratis y sustituyen al
 truco del struct-de-u64:
 

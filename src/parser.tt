@@ -189,6 +189,8 @@ const EX_STRLIT: u64 = 11
 const EX_ADDR:   u64 = 12
 const EX_EXTERN: u64 = 13
 const EX_CAST:   u64 = 14
+const EX_LOGAND: u64 = 15
+const EX_LOGOR:  u64 = 16
 
 fun type_is_scalar(t: *Type) -> u64 {
     if t == nil { return 0 }
@@ -214,6 +216,7 @@ const OP_OR:  u64 = 5
 const OP_XOR: u64 = 6
 const OP_SHL: u64 = 7
 const OP_SHR: u64 = 8
+const OP_MOD: u64 = 9
 
 // Un nodo de expresion. Como en el IR, un solo struct con todos los campos
 // posibles y sin uniones; que campos valen depende de `kind`.
@@ -944,6 +947,18 @@ fun parse_postfix(ar: *Arena) -> *Expr {
 // `@(p[0])`.
 fun parse_unary(ar: *Arena) -> *Expr {
     let k: u32 = ps_kind()
+    if k == TK_BANG {
+        ps_advance()
+        let innerb: *Expr = parse_unary(ar)
+        let zerob: *Expr = mk_expr(ar, EX_INT)
+        zerob.ival = 0
+        zerob.type = innerb.type
+        let notb: *Expr = mk_expr(ar, EX_EQ)
+        notb.lhs = innerb
+        notb.rhs = zerob
+        notb.type = mk_prim(ar, T_U32)
+        return notb
+    }
     if k == TK_MINUS {
         ps_advance()
         let inner0: *Expr = parse_unary(ar)
@@ -984,21 +999,24 @@ fun parse_unary(ar: *Arena) -> *Expr {
 //
 // Ver la tabla del encabezado. Nota: << y >> comparten nivel con + y -.
 fun bin_prec(k: u32) -> u64 {
-    if k == TK_STAR   { return 6 }
-    if k == TK_SLASH  { return 6 }
-    if k == TK_PLUS   { return 5 }
-    if k == TK_MINUS  { return 5 }
-    if k == TK_LSHIFT { return 5 }
-    if k == TK_RSHIFT { return 5 }
-    if k == TK_AMP    { return 4 }
-    if k == TK_CARET  { return 3 }
-    if k == TK_PIPE   { return 2 }
-    if k == TK_EQEQ   { return 1 }
-    if k == TK_BANGEQ { return 1 }
-    if k == TK_LT     { return 1 }
-    if k == TK_LE     { return 1 }
-    if k == TK_GT     { return 1 }
-    if k == TK_GE     { return 1 }
+    if k == TK_STAR   { return 8 }
+    if k == TK_SLASH  { return 8 }
+    if k == TK_PERCENT { return 8 }
+    if k == TK_PLUS   { return 7 }
+    if k == TK_MINUS  { return 7 }
+    if k == TK_LSHIFT { return 7 }
+    if k == TK_RSHIFT { return 7 }
+    if k == TK_AMP    { return 6 }
+    if k == TK_CARET  { return 5 }
+    if k == TK_PIPE   { return 4 }
+    if k == TK_EQEQ   { return 3 }
+    if k == TK_BANGEQ { return 3 }
+    if k == TK_LT     { return 3 }
+    if k == TK_LE     { return 3 }
+    if k == TK_GT     { return 3 }
+    if k == TK_GE     { return 3 }
+    if k == TK_ANDAND { return 2 }
+    if k == TK_PIPEPIPE { return 1 }
     return 0
 }
 
@@ -1021,6 +1039,7 @@ fun parse_expr(ar: *Arena, min_prec: u64) -> *Expr {
         let e: *Expr = mk_expr(ar, EX_BIN)
         if k == TK_STAR   { e.op = OP_MUL }
         if k == TK_SLASH  { e.op = OP_DIV }
+        if k == TK_PERCENT { e.op = OP_MOD }
         if k == TK_PLUS   { e.op = OP_ADD }
         if k == TK_MINUS  { e.op = OP_SUB }
         if k == TK_AMP    { e.op = OP_AND }
@@ -1028,6 +1047,8 @@ fun parse_expr(ar: *Arena, min_prec: u64) -> *Expr {
         if k == TK_PIPE   { e.op = OP_OR }
         if k == TK_LSHIFT { e.op = OP_SHL }
         if k == TK_RSHIFT { e.op = OP_SHR }
+        if k == TK_ANDAND { e.kind = EX_LOGAND }
+        if k == TK_PIPEPIPE { e.kind = EX_LOGOR }
         if k == TK_EQEQ   { e.kind = EX_EQ }
         if k == TK_BANGEQ { e.kind = EX_NE }
         if k == TK_LT     { e.kind = EX_LT }

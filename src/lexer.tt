@@ -95,6 +95,10 @@ const TK_LSHIFT: u32  = 43
 const TK_RSHIFT: u32  = 44
 const TK_CONTINUE: u32 = 45
 const TK_AS: u32 = 46
+const TK_PERCENT: u32 = 47
+const TK_BANG: u32 = 48
+const TK_ANDAND: u32 = 49
+const TK_PIPEPIPE: u32 = 50
 
 // Estado del lexer: cursor sobre el buffer de fuente mas el contador de linea
 // para los mensajes de error. No guarda nada mas; es totalmente reiniciable con
@@ -454,6 +458,24 @@ fun lex_next(lx: *Lexer, t: *Tok) {
             return
         }
     }
+    if c == 38 {
+        if peek1(lx) == 38 {
+            t.kind = TK_ANDAND
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
+    if c == 124 {
+        if peek1(lx) == 124 {
+            t.kind = TK_PIPEPIPE
+            t.start = lx.pos
+            t.tlen = 2
+            lx.pos = lx.pos + 2
+            return
+        }
+    }
 
     // Operadores de un solo caracter. El cursor ya ha avanzado, asi que a
     // partir de aqui solo queda etiquetar.
@@ -470,6 +492,8 @@ fun lex_next(lx: *Lexer, t: *Tok) {
     if c == 43 { t.kind = TK_PLUS; return }
     if c == 45 { t.kind = TK_MINUS; return }
     if c == 47 { t.kind = TK_SLASH; return }
+    if c == 37 { t.kind = TK_PERCENT; return }
+    if c == 33 { t.kind = TK_BANG; return }
     if c == 38 { t.kind = TK_AMP; return }
     if c == 124 { t.kind = TK_PIPE; return }
     if c == 94 { t.kind = TK_CARET; return }

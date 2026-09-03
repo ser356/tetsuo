@@ -1,5 +1,14 @@
 # Estado del autohospedaje tetsuo (verificado 2026-09-03)
 
+## Backend Videodrome — 2026-09-04
+
+Añadidos `--emit=obj`, arena freestanding sin `bss`, UTF-8 estricto, `%`, `!`,
+`&&` y `||`. `lib/release_name.tt` expone una ABI C reentrante de ocho `u64` y
+se integra en Videodrome para macOS arm64 con implementación Rust como fallback
+y oráculo diferencial. Smokes C concurrentes, 34 tests Rust, Clippy, suite
+tetsuo y ambos fixpoints verdes. Tablas constantes quedan aplazadas: el port
+no las necesita.
+
 ## Biblioteca base para CLI — 2026-09-03
 
 Añadidos `lib/std.tt`, `lib/string.tt`, `lib/parse.tt` y `lib/stdio.tt`.

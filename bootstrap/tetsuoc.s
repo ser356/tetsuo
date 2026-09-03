@@ -28,7 +28,7 @@ _arena_init:
     add     x11, x9, x10
     ldr     x9, [sp, #16]
     str     x9, [x11]
-.L901:
+.L1067:
     add     sp, sp, #128
     ldp     x29, x30, [sp], #16
     ret
@@ -37,9 +37,27 @@ _arena_init:
 _arena_take:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #352
+    sub     sp, sp, #496
     str     x0, [sp, #0]
     str     x1, [sp, #8]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0007
+    add     x11, x9, x10
+    ldr     x9, [sp, #8]
+    cmp     x11, x9
+    cset    w10, lo
+    cbz     w10, .L0
+    movz    x9, #0x0001
+    movz    x10, #0x0046
+    mov     x11, #0
+    mov     x12, #0
+    mov     x16, x9
+    mov     x0, x10
+    mov     x1, x11
+    mov     x2, x12
+    svc     #0x80
+    str     x0, [sp, #120]
+.L0:
     ldr     x9, [sp, #8]
     movz    x10, #0x0007
     add     x11, x9, x10
@@ -52,45 +70,65 @@ _arena_take:
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #16]
-    add     x11, x9, x10
+    str     x9, [sp, #24]
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
-    add     x12, x9, x10
-    ldr     x9, [x12]
-    cmp     x11, x9
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #32]
+    cmp     x9, x10
+    cset    w11, hi
+    cbz     w11, .L1
+    movz    x9, #0x0001
+    movz    x10, #0x0046
+    mov     x11, #0
+    mov     x12, #0
+    mov     x16, x9
+    mov     x0, x10
+    mov     x1, x11
+    mov     x2, x12
+    svc     #0x80
+    str     x0, [sp, #304]
+.L1:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #24]
+    sub     x12, x10, x11
+    cmp     x9, x12
     cset    w10, hi
-    cbz     w10, .L0
-    movz    x9, #0x0046
-    mov     x0, x9
-    bl      _io_exit
-    str     x0, [sp, #184]
-.L0:
+    cbz     w10, .L2
+    movz    x9, #0x0001
+    movz    x10, #0x0046
+    mov     x11, #0
+    mov     x12, #0
+    mov     x16, x9
+    mov     x0, x10
+    mov     x1, x11
+    mov     x2, x12
+    svc     #0x80
+    str     x0, [sp, #384]
+.L2:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #0]
-    movz    x11, #0x0008
-    add     x12, x10, x11
-    ldr     x10, [x12]
+    ldr     x10, [sp, #24]
     add     x11, x9, x10
-    str     x11, [sp, #24]
+    str     x11, [sp, #40]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0008
-    add     x12, x9, x10
-    ldr     x9, [x12]
+    ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     add     x12, x9, x10
     str     x12, [x11]
-    ldr     x9, [sp, #24]
+    ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L902
-.L902:
-    add     sp, sp, #352
+    b       .L1068
+.L1068:
+    add     sp, sp, #496
     ldp     x29, x30, [sp], #16
     ret
 
@@ -111,8 +149,8 @@ _io_open_read:
     svc     #0x80
     mov     x13, x0
     mov     x0, x13
-    b       .L903
-.L903:
+    b       .L1069
+.L1069:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -134,8 +172,8 @@ _io_open_write:
     svc     #0x80
     mov     x13, x0
     mov     x0, x13
-    b       .L904
-.L904:
+    b       .L1070
+.L1070:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -159,8 +197,8 @@ _io_read:
     svc     #0x80
     mov     x13, x0
     mov     x0, x13
-    b       .L905
-.L905:
+    b       .L1071
+.L1071:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -183,7 +221,7 @@ _io_write:
     mov     x2, x12
     svc     #0x80
     str     x0, [sp, #56]
-.L906:
+.L1072:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -204,8 +242,100 @@ _io_close:
     mov     x2, x12
     svc     #0x80
     str     x0, [sp, #40]
-.L907:
+.L1073:
     add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _io_getpid
+_io_getpid:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    movz    x9, #0x0014
+    mov     x10, #0
+    mov     x11, #0
+    mov     x12, #0
+    mov     x16, x9
+    mov     x0, x10
+    mov     x1, x11
+    mov     x2, x12
+    svc     #0x80
+    mov     x13, x0
+    mov     x0, x13
+    b       .L1074
+.L1074:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _io_unlink
+_io_unlink:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    str     x0, [sp, #0]
+    movz    x9, #0x000a
+    ldr     x10, [sp, #0]
+    mov     x11, #0
+    mov     x12, #0
+    mov     x16, x9
+    mov     x0, x10
+    mov     x1, x11
+    mov     x2, x12
+    svc     #0x80
+    mov     x13, x0
+    mov     x0, x13
+    b       .L1075
+.L1075:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _io_chdir
+_io_chdir:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #48
+    str     x0, [sp, #0]
+    movz    x9, #0x000c
+    ldr     x10, [sp, #0]
+    mov     x11, #0
+    mov     x12, #0
+    mov     x16, x9
+    mov     x0, x10
+    mov     x1, x11
+    mov     x2, x12
+    svc     #0x80
+    mov     x13, x0
+    mov     x0, x13
+    b       .L1076
+.L1076:
+    add     sp, sp, #48
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _io_mkdir
+_io_mkdir:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x9, #0x0088
+    ldr     x10, [sp, #0]
+    ldr     x11, [sp, #8]
+    mov     x12, #0
+    mov     x16, x9
+    mov     x0, x10
+    mov     x1, x11
+    mov     x2, x12
+    svc     #0x80
+    mov     x13, x0
+    mov     x0, x13
+    b       .L1077
+.L1077:
+    add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
 
@@ -225,7 +355,7 @@ _io_exit:
     mov     x2, x12
     svc     #0x80
     str     x0, [sp, #40]
-.L908:
+.L1078:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -240,37 +370,39 @@ _bytes_eq:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L1:
+.L3:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L2
+    cbz     w11, .L4
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L3
+    cbz     w11, .L5
     mov     x9, #0
     mov     w0, w9
-    b       .L909
-.L3:
+    b       .L1079
+.L5:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L1
-.L2:
+    b       .L3
+.L4:
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L909
-.L909:
+    b       .L1079
+.L1079:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -285,12 +417,12 @@ _mem_copy:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L4:
+.L6:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L5
+    cbz     w11, .L7
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     add     x11, x9, x10
@@ -298,14 +430,15 @@ _mem_copy:
     ldr     x10, [sp, #24]
     add     x12, x9, x10
     ldrb    w9, [x12]
+    uxtb    w9, w9
     strb    w9, [x11]
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L4
-.L5:
-.L910:
+    b       .L6
+.L7:
+.L1080:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -339,7 +472,7 @@ _out_init:
     add     x11, x9, x10
     ldr     x9, [sp, #24]
     str     x9, [x11]
-.L911:
+.L1081:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -357,7 +490,7 @@ _out_flush:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L6
+    cbz     w11, .L8
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -380,8 +513,8 @@ _out_flush:
     add     x11, x9, x10
     mov     x9, #0
     str     x9, [x11]
-.L6:
-.L912:
+.L8:
+.L1082:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -403,12 +536,12 @@ _out_byte:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L7
+    cbz     w11, .L9
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _out_flush
     str     x0, [sp, #96]
-.L7:
+.L9:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -419,6 +552,7 @@ _out_byte:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [sp, #8]
+    uxtb    w9, w9
     strb    w9, [x11]
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
@@ -430,7 +564,7 @@ _out_byte:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L913:
+.L1083:
     add     sp, sp, #256
     ldp     x29, x30, [sp], #16
     ret
@@ -445,17 +579,18 @@ _out_bytes:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L8:
+.L10:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L9
+    cbz     w11, .L11
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
@@ -464,9 +599,9 @@ _out_bytes:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L8
-.L9:
-.L914:
+    b       .L10
+.L11:
+.L1084:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -482,23 +617,23 @@ _out_u64:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L10
+    cbz     w11, .L12
     ldr     x9, [sp, #0]
     movz    x10, #0x0030
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #72]
-    b       .L915
-.L10:
+    b       .L1085
+.L12:
     mov     x9, #0
     str     x9, [sp, #16]
-.L11:
+.L13:
     ldr     x9, [sp, #8]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L12
+    cbz     w11, .L14
     ldr     x9, [sp, #8]
     movz    x10, #0x000a
     udiv     x11, x9, x10
@@ -521,14 +656,14 @@ _out_u64:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #16]
-    b       .L11
-.L12:
-.L13:
+    b       .L13
+.L14:
+.L15:
     ldr     x9, [sp, #16]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L14
+    cbz     w11, .L16
     ldr     x9, [sp, #16]
     movz    x10, #0x0001
     sub     x11, x9, x10
@@ -539,13 +674,14 @@ _out_u64:
     ldr     x11, [sp, #16]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #336]
-    b       .L13
-.L14:
-.L915:
+    b       .L15
+.L16:
+.L1085:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -561,7 +697,7 @@ _out_nibble:
     movz    x10, #0x000a
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L15
+    cbz     w11, .L17
     ldr     x9, [sp, #0]
     movz    x10, #0x0030
     ldr     x11, [sp, #8]
@@ -570,8 +706,8 @@ _out_nibble:
     mov     x1, x12
     bl      _out_byte
     str     x0, [sp, #72]
-    b       .L916
-.L15:
+    b       .L1086
+.L17:
     ldr     x9, [sp, #0]
     movz    x10, #0x0057
     ldr     x11, [sp, #8]
@@ -580,7 +716,7 @@ _out_nibble:
     mov     x1, x12
     bl      _out_byte
     str     x0, [sp, #112]
-.L916:
+.L1086:
     add     sp, sp, #128
     ldp     x29, x30, [sp], #16
     ret
@@ -646,7 +782,7 @@ _out_hex4:
     mov     x1, x10
     bl      _out_nibble
     str     x0, [sp, #344]
-.L917:
+.L1087:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -727,7 +863,7 @@ _die_line:
     mov     x0, x9
     bl      _io_exit
     str     x0, [sp, #312]
-.L918:
+.L1088:
     add     sp, sp, #320
     ldp     x29, x30, [sp], #16
     ret
@@ -761,7 +897,7 @@ _vec_init:
     add     x11, x9, x10
     ldr     x9, [sp, #8]
     str     x9, [x11]
-.L919:
+.L1089:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -784,7 +920,7 @@ _vec_push:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L16
+    cbz     w11, .L18
     ldr     x9, [sp, #8]
     movz    x10, #0x0010
     add     x11, x9, x10
@@ -833,7 +969,7 @@ _vec_push:
     add     x11, x9, x10
     ldr     x9, [sp, #24]
     str     x9, [x11]
-.L16:
+.L18:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -868,7 +1004,7 @@ _vec_push:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L920:
+.L1090:
     add     sp, sp, #640
     ldp     x29, x30, [sp], #16
     ret
@@ -892,8 +1028,8 @@ _vec_get:
     mul     x12, x10, x11
     add     x10, x9, x12
     mov     x0, x10
-    b       .L921
-.L921:
+    b       .L1091
+.L1091:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -917,8 +1053,8 @@ _ast_init:
     str     x0, [sp, #40]
     ldr     x9, [sp, #0]
     mov     x0, x9
-    b       .L922
-.L922:
+    b       .L1092
+.L1092:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -951,7 +1087,7 @@ _lex_init:
     add     x11, x9, x10
     movz    x9, #0x0001
     str     x9, [x11]
-.L923:
+.L1093:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -963,24 +1099,26 @@ _is_digit:
     sub     sp, sp, #80
     strb    w0, [sp, #0]
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     movz    x10, #0x0030
     cmp     w9, w10
     cset    w11, hs
-    cbz     w11, .L17
+    cbz     w11, .L19
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     movz    x10, #0x0039
     cmp     w9, w10
     cset    w11, ls
-    cbz     w11, .L18
+    cbz     w11, .L20
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L924
-.L18:
-.L17:
+    b       .L1094
+.L20:
+.L19:
     mov     x9, #0
     mov     w0, w9
-    b       .L924
-.L924:
+    b       .L1094
+.L1094:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -992,51 +1130,56 @@ _is_hex:
     sub     sp, sp, #176
     strb    w0, [sp, #0]
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_digit
     mov     x10, x0
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L19
-    movz    x9, #0x0001
-    mov     w0, w9
-    b       .L925
-.L19:
-    ldrb    w9, [sp, #0]
-    movz    x10, #0x0061
-    cmp     w9, w10
-    cset    w11, hs
-    cbz     w11, .L20
-    ldrb    w9, [sp, #0]
-    movz    x10, #0x0066
-    cmp     w9, w10
-    cset    w11, ls
     cbz     w11, .L21
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L925
+    b       .L1095
 .L21:
-.L20:
     ldrb    w9, [sp, #0]
-    movz    x10, #0x0041
+    uxtb    w9, w9
+    movz    x10, #0x0061
     cmp     w9, w10
     cset    w11, hs
     cbz     w11, .L22
     ldrb    w9, [sp, #0]
-    movz    x10, #0x0046
+    uxtb    w9, w9
+    movz    x10, #0x0066
     cmp     w9, w10
     cset    w11, ls
     cbz     w11, .L23
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L925
+    b       .L1095
 .L23:
 .L22:
+    ldrb    w9, [sp, #0]
+    uxtb    w9, w9
+    movz    x10, #0x0041
+    cmp     w9, w10
+    cset    w11, hs
+    cbz     w11, .L24
+    ldrb    w9, [sp, #0]
+    uxtb    w9, w9
+    movz    x10, #0x0046
+    cmp     w9, w10
+    cset    w11, ls
+    cbz     w11, .L25
+    movz    x9, #0x0001
+    mov     w0, w9
+    b       .L1095
+.L25:
+.L24:
     mov     x9, #0
     mov     w0, w9
-    b       .L925
-.L925:
+    b       .L1095
+.L1095:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1048,40 +1191,45 @@ _hex_val:
     sub     sp, sp, #176
     strb    w0, [sp, #0]
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_digit
     mov     x10, x0
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L24
+    cbz     w11, .L26
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     movz    x10, #0x0030
     sub     w11, w9, w10
     mov     w0, w11
-    b       .L926
-.L24:
+    b       .L1096
+.L26:
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     movz    x10, #0x0061
     cmp     w9, w10
     cset    w11, hs
-    cbz     w11, .L25
+    cbz     w11, .L27
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     movz    x10, #0x0061
     sub     w11, w9, w10
     movz    x9, #0x000a
     add     w10, w11, w9
     mov     w0, w10
-    b       .L926
-.L25:
+    b       .L1096
+.L27:
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     movz    x10, #0x0041
     sub     w11, w9, w10
     movz    x9, #0x000a
     add     w10, w11, w9
     mov     w0, w10
-    b       .L926
-.L926:
+    b       .L1096
+.L1096:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1093,48 +1241,53 @@ _is_alpha:
     sub     sp, sp, #160
     strb    w0, [sp, #0]
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     movz    x10, #0x005f
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L26
-    movz    x9, #0x0001
-    mov     w0, w9
-    b       .L927
-.L26:
-    ldrb    w9, [sp, #0]
-    movz    x10, #0x0061
-    cmp     w9, w10
-    cset    w11, hs
-    cbz     w11, .L27
-    ldrb    w9, [sp, #0]
-    movz    x10, #0x007a
-    cmp     w9, w10
-    cset    w11, ls
     cbz     w11, .L28
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L927
+    b       .L1097
 .L28:
-.L27:
     ldrb    w9, [sp, #0]
-    movz    x10, #0x0041
+    uxtb    w9, w9
+    movz    x10, #0x0061
     cmp     w9, w10
     cset    w11, hs
     cbz     w11, .L29
     ldrb    w9, [sp, #0]
-    movz    x10, #0x005a
+    uxtb    w9, w9
+    movz    x10, #0x007a
     cmp     w9, w10
     cset    w11, ls
     cbz     w11, .L30
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L927
+    b       .L1097
 .L30:
 .L29:
+    ldrb    w9, [sp, #0]
+    uxtb    w9, w9
+    movz    x10, #0x0041
+    cmp     w9, w10
+    cset    w11, hs
+    cbz     w11, .L31
+    ldrb    w9, [sp, #0]
+    uxtb    w9, w9
+    movz    x10, #0x005a
+    cmp     w9, w10
+    cset    w11, ls
+    cbz     w11, .L32
+    movz    x9, #0x0001
+    mov     w0, w9
+    b       .L1097
+.L32:
+.L31:
     mov     x9, #0
     mov     w0, w9
-    b       .L927
-.L927:
+    b       .L1097
+.L1097:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -1146,33 +1299,35 @@ _is_alnum:
     sub     sp, sp, #96
     strb    w0, [sp, #0]
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_alpha
     mov     x10, x0
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L31
+    cbz     w11, .L33
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L928
-.L31:
+    b       .L1098
+.L33:
     ldrb    w9, [sp, #0]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_digit
     mov     x10, x0
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L32
+    cbz     w11, .L34
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L928
-.L32:
+    b       .L1098
+.L34:
     mov     x9, #0
     mov     w0, w9
-    b       .L928
-.L928:
+    b       .L1098
+.L1098:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -1193,11 +1348,11 @@ _peek:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L33
+    cbz     w11, .L35
     mov     x9, #0
     mov     w0, w9
-    b       .L929
-.L33:
+    b       .L1099
+.L35:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -1208,9 +1363,10 @@ _peek:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     mov     w0, w9
-    b       .L929
-.L929:
+    b       .L1099
+.L1099:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1235,11 +1391,11 @@ _peek1:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L34
+    cbz     w11, .L36
     mov     x9, #0
     mov     w0, w9
-    b       .L930
-.L34:
+    b       .L1100
+.L36:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -1247,9 +1403,10 @@ _peek1:
     ldr     x10, [sp, #8]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     mov     w0, w9
-    b       .L930
-.L930:
+    b       .L1100
+.L1100:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -1260,7 +1417,7 @@ _skip_ws:
     mov     x29, sp
     sub     sp, sp, #944
     str     x0, [sp, #0]
-.L35:
+.L37:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -1271,7 +1428,7 @@ _skip_ws:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L36
+    cbz     w11, .L38
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -1282,26 +1439,11 @@ _skip_ws:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #8]
     ldrb    w9, [sp, #8]
+    uxtb    w9, w9
     movz    x10, #0x0020
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L37
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0008
-    add     x12, x9, x10
-    ldr     x9, [x12]
-    movz    x10, #0x0001
-    add     x12, x9, x10
-    str     x12, [x11]
-    b       .L38
-.L37:
-    ldrb    w9, [sp, #8]
-    movz    x10, #0x0009
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L39
@@ -1318,7 +1460,8 @@ _skip_ws:
     b       .L40
 .L39:
     ldrb    w9, [sp, #8]
-    movz    x10, #0x000d
+    uxtb    w9, w9
+    movz    x10, #0x0009
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L41
@@ -1335,7 +1478,8 @@ _skip_ws:
     b       .L42
 .L41:
     ldrb    w9, [sp, #8]
-    movz    x10, #0x000a
+    uxtb    w9, w9
+    movz    x10, #0x000d
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L43
@@ -1349,6 +1493,24 @@ _skip_ws:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
+    b       .L44
+.L43:
+    ldrb    w9, [sp, #8]
+    uxtb    w9, w9
+    movz    x10, #0x000a
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L45
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    movz    x10, #0x0001
+    add     x12, x9, x10
+    str     x12, [x11]
     ldr     x9, [sp, #0]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -1359,13 +1521,14 @@ _skip_ws:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L44
-.L43:
+    b       .L46
+.L45:
     ldrb    w9, [sp, #8]
+    uxtb    w9, w9
     movz    x10, #0x002f
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L45
+    cbz     w11, .L47
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -1373,8 +1536,8 @@ _skip_ws:
     movz    x9, #0x002f
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L46
-.L47:
+    cbz     w11, .L48
+.L49:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -1385,7 +1548,7 @@ _skip_ws:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L48
+    cbz     w11, .L50
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -1396,14 +1559,16 @@ _skip_ws:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #16]
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x000a
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L49
-    b       .L48
-.L49:
+    cbz     w11, .L51
+    b       .L50
+.L51:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -1414,23 +1579,23 @@ _skip_ws:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L47
-.L48:
-    b       .L50
-.L46:
-    b       .L36
+    b       .L49
 .L50:
-    b       .L51
-.L45:
-    b       .L36
-.L51:
+    b       .L52
+.L48:
+    b       .L38
+.L52:
+    b       .L53
+.L47:
+    b       .L38
+.L53:
+.L46:
 .L44:
 .L42:
 .L40:
+    b       .L37
 .L38:
-    b       .L35
-.L36:
-.L931:
+.L1101:
     add     sp, sp, #944
     ldp     x29, x30, [sp], #16
     ret
@@ -1439,7 +1604,7 @@ _skip_ws:
 _kw_kind:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1296
+    sub     sp, sp, #1488
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     adrp    x9, L_str2@PAGE
@@ -1490,12 +1655,12 @@ _kw_kind:
     adrp    x9, L_str11@PAGE
     add     x9, x9, L_str11@PAGEOFF
     str     x9, [sp, #160]
-    movz    x9, #0x0006
+    movz    x9, #0x0008
     str     x9, [sp, #168]
     adrp    x9, L_str12@PAGE
     add     x9, x9, L_str12@PAGEOFF
     str     x9, [sp, #176]
-    movz    x9, #0x0003
+    movz    x9, #0x0006
     str     x9, [sp, #184]
     adrp    x9, L_str13@PAGE
     add     x9, x9, L_str13@PAGEOFF
@@ -1505,13 +1670,23 @@ _kw_kind:
     adrp    x9, L_str14@PAGE
     add     x9, x9, L_str14@PAGEOFF
     str     x9, [sp, #208]
-    movz    x9, #0x0006
+    movz    x9, #0x0003
     str     x9, [sp, #216]
+    adrp    x9, L_str15@PAGE
+    add     x9, x9, L_str15@PAGEOFF
+    str     x9, [sp, #224]
+    movz    x9, #0x0006
+    str     x9, [sp, #232]
+    adrp    x9, L_str16@PAGE
+    add     x9, x9, L_str16@PAGEOFF
+    str     x9, [sp, #240]
+    movz    x9, #0x0002
+    str     x9, [sp, #248]
     ldr     x9, [sp, #8]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L52
+    cbz     w11, .L54
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     movz    x11, #0x0003
@@ -1523,11 +1698,11 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L53
+    cbz     w10, .L55
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L932
-.L53:
+    b       .L1102
+.L55:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     movz    x11, #0x0003
@@ -1539,27 +1714,11 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L54
+    cbz     w10, .L56
     movz    x9, #0x0002
     mov     w0, w9
-    b       .L932
-.L54:
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #176]
-    movz    x11, #0x0003
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _bytes_eq
-    mov     x12, x0
-    movz    x9, #0x0001
-    cmp     w12, w9
-    cset    w10, eq
-    cbz     w10, .L55
-    movz    x9, #0x000b
-    mov     w0, w9
-    b       .L932
-.L55:
+    b       .L1102
+.L56:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #192]
     movz    x11, #0x0003
@@ -1571,17 +1730,33 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L56
+    cbz     w10, .L57
+    movz    x9, #0x000b
+    mov     w0, w9
+    b       .L1102
+.L57:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #208]
+    movz    x11, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _bytes_eq
+    mov     x12, x0
+    movz    x9, #0x0001
+    cmp     w12, w9
+    cset    w10, eq
+    cbz     w10, .L58
     movz    x9, #0x000c
     mov     w0, w9
-    b       .L932
-.L56:
-.L52:
+    b       .L1102
+.L58:
+.L54:
     ldr     x9, [sp, #8]
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L57
+    cbz     w11, .L59
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #48]
     movz    x11, #0x0005
@@ -1593,11 +1768,11 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L58
+    cbz     w10, .L60
     movz    x9, #0x0003
     mov     w0, w9
-    b       .L932
-.L58:
+    b       .L1102
+.L60:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #128]
     movz    x11, #0x0005
@@ -1609,11 +1784,11 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L59
+    cbz     w10, .L61
     movz    x9, #0x0008
     mov     w0, w9
-    b       .L932
-.L59:
+    b       .L1102
+.L61:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #144]
     movz    x11, #0x0005
@@ -1625,17 +1800,17 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L60
+    cbz     w10, .L62
     movz    x9, #0x0009
     mov     w0, w9
-    b       .L932
-.L60:
-.L57:
+    b       .L1102
+.L62:
+.L59:
     ldr     x9, [sp, #8]
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L61
+    cbz     w11, .L63
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #64]
     movz    x11, #0x0006
@@ -1647,13 +1822,13 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L62
+    cbz     w10, .L64
     movz    x9, #0x0004
     mov     w0, w9
-    b       .L932
-.L62:
+    b       .L1102
+.L64:
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #160]
+    ldr     x10, [sp, #176]
     movz    x11, #0x0006
     mov     x0, x9
     mov     x1, x10
@@ -1663,13 +1838,13 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L63
+    cbz     w10, .L65
     movz    x9, #0x000a
     mov     w0, w9
-    b       .L932
-.L63:
+    b       .L1102
+.L65:
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #208]
+    ldr     x10, [sp, #224]
     movz    x11, #0x0006
     mov     x0, x9
     mov     x1, x10
@@ -1679,17 +1854,39 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L64
+    cbz     w10, .L66
     movz    x9, #0x000d
     mov     w0, w9
-    b       .L932
-.L64:
-.L61:
+    b       .L1102
+.L66:
+.L63:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L67
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #160]
+    movz    x11, #0x0008
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _bytes_eq
+    mov     x12, x0
+    movz    x9, #0x0001
+    cmp     w12, w9
+    cset    w10, eq
+    cbz     w10, .L68
+    movz    x9, #0x002d
+    mov     w0, w9
+    b       .L1102
+.L68:
+.L67:
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L65
+    cbz     w11, .L69
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #80]
     movz    x11, #0x0002
@@ -1701,17 +1898,33 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L66
+    cbz     w10, .L70
     movz    x9, #0x0005
     mov     w0, w9
-    b       .L932
-.L66:
-.L65:
+    b       .L1102
+.L70:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #240]
+    movz    x11, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _bytes_eq
+    mov     x12, x0
+    movz    x9, #0x0001
+    cmp     w12, w9
+    cset    w10, eq
+    cbz     w10, .L71
+    movz    x9, #0x002e
+    mov     w0, w9
+    b       .L1102
+.L71:
+.L69:
     ldr     x9, [sp, #8]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L67
+    cbz     w11, .L72
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #96]
     movz    x11, #0x0004
@@ -1723,11 +1936,11 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L68
+    cbz     w10, .L73
     movz    x9, #0x0006
     mov     w0, w9
-    b       .L932
-.L68:
+    b       .L1102
+.L73:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #112]
     movz    x11, #0x0004
@@ -1739,17 +1952,17 @@ _kw_kind:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L69
+    cbz     w10, .L74
     movz    x9, #0x0007
     mov     w0, w9
-    b       .L932
-.L69:
-.L67:
+    b       .L1102
+.L74:
+.L72:
     movz    x9, #0x000e
     mov     w0, w9
-    b       .L932
-.L932:
-    add     sp, sp, #1296
+    b       .L1102
+.L1102:
+    add     sp, sp, #1488
     ldp     x29, x30, [sp], #16
     ret
 
@@ -1785,12 +1998,14 @@ _lex_number:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #24]
     ldrb    w9, [sp, #24]
+    uxtb    w9, w9
     movz    x10, #0x0030
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L70
+    cbz     w11, .L75
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -1798,7 +2013,7 @@ _lex_number:
     movz    x9, #0x0078
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L71
+    cbz     w11, .L76
     movz    x9, #0x0010
     str     x9, [sp, #16]
     ldr     x9, [sp, #0]
@@ -1811,11 +2026,11 @@ _lex_number:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-.L71:
-.L70:
+.L76:
+.L75:
     mov     x9, #0
     str     x9, [sp, #32]
-.L72:
+.L77:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -1826,7 +2041,7 @@ _lex_number:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L73
+    cbz     w11, .L78
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -1837,54 +2052,59 @@ _lex_number:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #40]
     ldr     x9, [sp, #16]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L74
+    cbz     w11, .L79
     ldrb    w9, [sp, #40]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_hex
     mov     x10, x0
     mov     x9, #0
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L75
-    b       .L73
-.L75:
+    cbz     w11, .L80
+    b       .L78
+.L80:
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
     mul     x16, x9, x10
     str     x16, [sp, #592]
     ldrb    w9, [sp, #40]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _hex_val
     mov     x10, x0
     ldr     x16, [sp, #592]
     add     x9, x16, x10
     str     x9, [sp, #32]
-    b       .L76
-.L74:
+    b       .L81
+.L79:
     ldrb    w9, [sp, #40]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_digit
     mov     x10, x0
     mov     x9, #0
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L77
-    b       .L73
-.L77:
+    cbz     w11, .L82
+    b       .L78
+.L82:
     ldr     x9, [sp, #32]
     movz    x10, #0x000a
     mul     x11, x9, x10
     ldrb    w9, [sp, #40]
+    uxtb    w9, w9
     movz    x10, #0x0030
     sub     w12, w9, w10
     add     x9, x11, x12
     str     x9, [sp, #32]
-.L76:
+.L81:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -1895,8 +2115,8 @@ _lex_number:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L72
-.L73:
+    b       .L77
+.L78:
     ldr     x9, [sp, #8]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -1915,7 +2135,7 @@ _lex_number:
     ldr     x10, [x13]
     sub     x12, x9, x10
     str     x12, [x11]
-.L933:
+.L1103:
     add     sp, sp, #912
     ldp     x29, x30, [sp], #16
     ret
@@ -1935,7 +2155,7 @@ _lex_ident:
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
-.L78:
+.L83:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -1946,7 +2166,7 @@ _lex_ident:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L79
+    cbz     w11, .L84
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -1957,15 +2177,16 @@ _lex_ident:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_alnum
     mov     x10, x0
     mov     x9, #0
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L80
-    b       .L79
-.L80:
+    cbz     w11, .L85
+    b       .L84
+.L85:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -1976,8 +2197,8 @@ _lex_ident:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L78
-.L79:
+    b       .L83
+.L84:
     ldr     x9, [sp, #8]
     movz    x10, #0x0010
     add     x11, x9, x10
@@ -2014,7 +2235,7 @@ _lex_ident:
     mov     x10, x0
     ldr     x17, [sp, #432]
     str     w10, [x17]
-.L934:
+.L1104:
     add     sp, sp, #560
     ldp     x29, x30, [sp], #16
     ret
@@ -2049,7 +2270,7 @@ _lex_string:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L81:
+.L86:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -2060,7 +2281,7 @@ _lex_string:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L82
+    cbz     w11, .L87
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -2071,12 +2292,14 @@ _lex_string:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #16]
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x0027
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L83
+    cbz     w11, .L88
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -2087,13 +2310,14 @@ _lex_string:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L82
-.L83:
+    b       .L87
+.L88:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x005c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L84
+    cbz     w11, .L89
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -2104,8 +2328,8 @@ _lex_string:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L85
-.L84:
+    b       .L90
+.L89:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -2116,9 +2340,9 @@ _lex_string:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L85:
-    b       .L81
-.L82:
+.L90:
+    b       .L86
+.L87:
     ldr     x9, [sp, #8]
     movz    x10, #0x0010
     add     x11, x9, x10
@@ -2132,7 +2356,7 @@ _lex_string:
     ldr     x10, [x13]
     sub     x12, x9, x10
     str     x12, [x11]
-.L935:
+.L1105:
     add     sp, sp, #704
     ldp     x29, x30, [sp], #16
     ret
@@ -2141,7 +2365,8 @@ _lex_string:
 _lex_next:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #3632
+    movz    x16, #0x1090
+    sub     sp, sp, x16
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
@@ -2166,7 +2391,7 @@ _lex_next:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L86
+    cbz     w11, .L91
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2185,8 +2410,8 @@ _lex_next:
     add     x11, x9, x10
     mov     x9, #0
     str     x9, [x11]
-    b       .L936
-.L86:
+    b       .L1106
+.L91:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -2197,57 +2422,62 @@ _lex_next:
     ldr     x10, [x12]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #16]
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_digit
     mov     x10, x0
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L87
+    cbz     w11, .L92
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _lex_number
     str     x0, [sp, #416]
-    b       .L936
-.L87:
+    b       .L1106
+.L92:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _is_alpha
     mov     x10, x0
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L88
+    cbz     w11, .L93
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _lex_ident
     str     x0, [sp, #472]
-    b       .L936
-.L88:
+    b       .L1106
+.L93:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x0027
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L89
+    cbz     w11, .L94
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _lex_string
     str     x0, [sp, #520]
-    b       .L936
-.L89:
+    b       .L1106
+.L94:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x002d
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L90
+    cbz     w11, .L95
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -2255,7 +2485,7 @@ _lex_next:
     movz    x9, #0x003e
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L91
+    cbz     w11, .L96
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2284,14 +2514,15 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L936
-.L91:
-.L90:
+    b       .L1106
+.L96:
+.L95:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x003d
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L92
+    cbz     w11, .L97
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -2299,7 +2530,7 @@ _lex_next:
     movz    x9, #0x003d
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L93
+    cbz     w11, .L98
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2328,14 +2559,15 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L936
-.L93:
-.L92:
+    b       .L1106
+.L98:
+.L97:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x0021
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L94
+    cbz     w11, .L99
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -2343,7 +2575,7 @@ _lex_next:
     movz    x9, #0x003d
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L95
+    cbz     w11, .L100
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2372,14 +2604,15 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L936
-.L95:
-.L94:
+    b       .L1106
+.L100:
+.L99:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x003c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L96
+    cbz     w11, .L101
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -2387,7 +2620,7 @@ _lex_next:
     movz    x9, #0x003d
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L97
+    cbz     w11, .L102
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2416,14 +2649,15 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L936
-.L97:
-.L96:
+    b       .L1106
+.L102:
+.L101:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x003e
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L98
+    cbz     w11, .L103
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -2431,7 +2665,7 @@ _lex_next:
     movz    x9, #0x003d
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L99
+    cbz     w11, .L104
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2460,14 +2694,15 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L936
-.L99:
-.L98:
+    b       .L1106
+.L104:
+.L103:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x003c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L100
+    cbz     w11, .L105
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -2475,7 +2710,7 @@ _lex_next:
     movz    x9, #0x003c
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L101
+    cbz     w11, .L106
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2504,14 +2739,15 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L936
-.L101:
-.L100:
+    b       .L1106
+.L106:
+.L105:
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x003e
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L102
+    cbz     w11, .L107
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _peek1
@@ -2519,7 +2755,7 @@ _lex_next:
     movz    x9, #0x003e
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L103
+    cbz     w11, .L108
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -2548,9 +2784,99 @@ _lex_next:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L936
-.L103:
-.L102:
+    b       .L1106
+.L108:
+.L107:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x0026
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L109
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _peek1
+    mov     x10, x0
+    movz    x9, #0x0026
+    cmp     w10, w9
+    cset    w11, eq
+    cbz     w11, .L110
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0031
+    str     w9, [x11]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    movz    x9, #0x0002
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    movz    x10, #0x0002
+    add     x12, x9, x10
+    str     x12, [x11]
+    b       .L1106
+.L110:
+.L109:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x007c
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L111
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _peek1
+    mov     x10, x0
+    movz    x9, #0x007c
+    cmp     w10, w9
+    cset    w11, eq
+    cbz     w11, .L112
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0032
+    str     w9, [x11]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    movz    x9, #0x0002
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    movz    x10, #0x0002
+    add     x12, x9, x10
+    str     x12, [x11]
+    b       .L1106
+.L112:
+.L111:
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -2575,264 +2901,312 @@ _lex_next:
     add     x12, x9, x10
     str     x12, [x11]
     ldrb    w9, [sp, #16]
+    uxtb    w9, w9
     movz    x10, #0x0028
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L104
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0011
-    str     w9, [x11]
-    b       .L936
-.L104:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x0029
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L105
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0012
-    str     w9, [x11]
-    b       .L936
-.L105:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x007b
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L106
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0013
-    str     w9, [x11]
-    b       .L936
-.L106:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x007d
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L107
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0014
-    str     w9, [x11]
-    b       .L936
-.L107:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x005b
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L108
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0015
-    str     w9, [x11]
-    b       .L936
-.L108:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x005d
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L109
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0016
-    str     w9, [x11]
-    b       .L936
-.L109:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x002a
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L110
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0017
-    str     w9, [x11]
-    b       .L936
-.L110:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x002b
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L111
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0018
-    str     w9, [x11]
-    b       .L936
-.L111:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x002d
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L112
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    movz    x9, #0x0019
-    str     w9, [x11]
-    b       .L936
-.L112:
-    ldrb    w9, [sp, #16]
-    movz    x10, #0x002f
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L113
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x001a
+    movz    x9, #0x0011
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L113:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x0026
+    uxtb    w9, w9
+    movz    x10, #0x0029
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L114
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x001b
+    movz    x9, #0x0012
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L114:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x007c
+    uxtb    w9, w9
+    movz    x10, #0x007b
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L115
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x001c
+    movz    x9, #0x0013
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L115:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x005e
+    uxtb    w9, w9
+    movz    x10, #0x007d
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L116
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x001d
+    movz    x9, #0x0014
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L116:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x003d
+    uxtb    w9, w9
+    movz    x10, #0x005b
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L117
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x001e
+    movz    x9, #0x0015
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L117:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x003b
+    uxtb    w9, w9
+    movz    x10, #0x005d
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L118
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x0025
+    movz    x9, #0x0016
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L118:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x002c
+    uxtb    w9, w9
+    movz    x10, #0x002a
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L119
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x0026
+    movz    x9, #0x0017
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L119:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x003a
+    uxtb    w9, w9
+    movz    x10, #0x002b
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L120
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x0027
+    movz    x9, #0x0018
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L120:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x002e
+    uxtb    w9, w9
+    movz    x10, #0x002d
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L121
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x0028
+    movz    x9, #0x0019
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L121:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x0040
+    uxtb    w9, w9
+    movz    x10, #0x002f
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L122
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x002a
+    movz    x9, #0x001a
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L122:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x003c
+    uxtb    w9, w9
+    movz    x10, #0x0025
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L123
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
-    movz    x9, #0x0021
+    movz    x9, #0x002f
     str     w9, [x11]
-    b       .L936
+    b       .L1106
 .L123:
     ldrb    w9, [sp, #16]
-    movz    x10, #0x003e
+    uxtb    w9, w9
+    movz    x10, #0x0021
     cmp     w9, w10
     cset    w11, eq
     cbz     w11, .L124
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
+    movz    x9, #0x0030
+    str     w9, [x11]
+    b       .L1106
+.L124:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x0026
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L125
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x001b
+    str     w9, [x11]
+    b       .L1106
+.L125:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x007c
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L126
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x001c
+    str     w9, [x11]
+    b       .L1106
+.L126:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x005e
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L127
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x001d
+    str     w9, [x11]
+    b       .L1106
+.L127:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x003d
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L128
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x001e
+    str     w9, [x11]
+    b       .L1106
+.L128:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x003b
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L129
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0025
+    str     w9, [x11]
+    b       .L1106
+.L129:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x002c
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L130
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0026
+    str     w9, [x11]
+    b       .L1106
+.L130:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x003a
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L131
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0027
+    str     w9, [x11]
+    b       .L1106
+.L131:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x002e
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L132
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0028
+    str     w9, [x11]
+    b       .L1106
+.L132:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x0040
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L133
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x002a
+    str     w9, [x11]
+    b       .L1106
+.L133:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x003c
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L134
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0021
+    str     w9, [x11]
+    b       .L1106
+.L134:
+    ldrb    w9, [sp, #16]
+    uxtb    w9, w9
+    movz    x10, #0x003e
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L135
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
     movz    x9, #0x0023
     str     w9, [x11]
-    b       .L936
-.L124:
+    b       .L1106
+.L135:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
     mov     x9, #0
     str     w9, [x11]
-.L936:
-    add     sp, sp, #3632
+.L1106:
+    movz    x16, #0x1090
+    add     sp, sp, x16
     ldp     x29, x30, [sp], #16
     ret
 
@@ -2840,11 +3214,11 @@ _lex_next:
 _mk_prim:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #160
+    sub     sp, sp, #192
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0018
+    movz    x10, #0x0020
     mov     x0, x9
     mov     x1, x10
     bl      _arena_take
@@ -2866,10 +3240,15 @@ _mk_prim:
     mov     x9, #0
     str     x9, [x11]
     ldr     x9, [sp, #16]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L937
-.L937:
-    add     sp, sp, #160
+    b       .L1107
+.L1107:
+    add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
 
@@ -2877,11 +3256,11 @@ _mk_prim:
 _mk_ptr:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #160
+    sub     sp, sp, #192
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0018
+    movz    x10, #0x0020
     mov     x0, x9
     mov     x1, x10
     bl      _arena_take
@@ -2903,10 +3282,58 @@ _mk_ptr:
     mov     x9, #0
     str     x9, [x11]
     ldr     x9, [sp, #16]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L938
-.L938:
-    add     sp, sp, #160
+    b       .L1108
+.L1108:
+    add     sp, sp, #192
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mk_array
+_mk_array:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #192
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0020
+    mov     x0, x9
+    mov     x1, x10
+    bl      _arena_take
+    mov     x11, x0
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x000a
+    str     x9, [x11]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #8]
+    str     x9, [x11]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [sp, #16]
+    str     x9, [x11]
+    ldr     x9, [sp, #24]
+    mov     x0, x9
+    b       .L1109
+.L1109:
+    add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
 
@@ -2914,7 +3341,7 @@ _mk_ptr:
 _type_width:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #464
+    sub     sp, sp, #816
     str     x0, [sp, #0]
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -2923,11 +3350,11 @@ _type_width:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L125
+    cbz     w11, .L136
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L939
-.L125:
+    b       .L1110
+.L136:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -2935,11 +3362,11 @@ _type_width:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L126
+    cbz     w11, .L137
     movz    x9, #0x0004
     mov     x0, x9
-    b       .L939
-.L126:
+    b       .L1110
+.L137:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -2947,11 +3374,59 @@ _type_width:
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L127
+    cbz     w11, .L138
     movz    x9, #0x0008
     mov     x0, x9
-    b       .L939
-.L127:
+    b       .L1110
+.L138:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L139
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1110
+.L139:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L140
+    movz    x9, #0x0004
+    mov     x0, x9
+    b       .L1110
+.L140:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L141
+    movz    x9, #0x0008
+    mov     x0, x9
+    b       .L1110
+.L141:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0009
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L142
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1110
+.L142:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -2959,11 +3434,11 @@ _type_width:
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L128
+    cbz     w11, .L143
     movz    x9, #0x0008
     mov     x0, x9
-    b       .L939
-.L128:
+    b       .L1110
+.L143:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -2971,11 +3446,36 @@ _type_width:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L129
+    cbz     w11, .L144
     movz    x9, #0x0010
     mov     x0, x9
-    b       .L939
-.L129:
+    b       .L1110
+.L144:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000a
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L145
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x16, [x11]
+    str     x16, [sp, #592]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    ldr     x16, [sp, #592]
+    mul     x9, x16, x10
+    mov     x0, x9
+    b       .L1110
+.L145:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -2983,7 +3483,7 @@ _type_width:
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L130
+    cbz     w11, .L146
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
     add     x11, x9, x10
@@ -2993,7 +3493,7 @@ _type_width:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L131
+    cbz     w11, .L147
     ldr     x9, [sp, #8]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -3001,14 +3501,192 @@ _type_width:
     movz    x10, #0x0008
     mul     x11, x9, x10
     mov     x0, x11
-    b       .L939
-.L131:
-.L130:
+    b       .L1110
+.L147:
+.L146:
     movz    x9, #0x0008
     mov     x0, x9
-    b       .L939
-.L939:
-    add     sp, sp, #464
+    b       .L1110
+.L1110:
+    add     sp, sp, #816
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _type_is_signed
+_type_is_signed:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #224
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L148
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1111
+.L148:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L149
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1111
+.L149:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L150
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1111
+.L150:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L151
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1111
+.L151:
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1111
+.L1111:
+    add     sp, sp, #224
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _type_is_scalar
+_type_is_scalar:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #496
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L152
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1112
+.L152:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L153
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L153:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L154
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L154:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L155
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L155:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L156
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L156:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L157
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L157:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L158
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L158:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0009
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L159
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L159:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L160
+    movz    x9, #0x0001
+    mov     x0, x9
+    b       .L1112
+.L160:
+    mov     x9, #0
+    mov     x0, x9
+    b       .L1112
+.L1112:
+    add     sp, sp, #496
     ldp     x29, x30, [sp], #16
     ret
 
@@ -3033,7 +3711,7 @@ _die_here:
     mov     x2, x11
     bl      _die_line
     str     x0, [sp, #80]
-.L940:
+.L1113:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -3054,7 +3732,7 @@ _cur_func_set:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L941:
+.L1114:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -3074,8 +3752,8 @@ _cur_func:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L942
-.L942:
+    b       .L1115
+.L1115:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -3096,7 +3774,7 @@ _cur_prog_set:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L943:
+.L1116:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -3116,8 +3794,8 @@ _cur_prog:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L944
-.L944:
+    b       .L1117
+.L1117:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -3135,11 +3813,11 @@ _bytes_eq_off:
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L132
+    cbz     w11, .L161
     mov     x9, #0
     mov     w0, w9
-    b       .L945
-.L132:
+    b       .L1118
+.L161:
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
     str     x9, [sp, #32]
@@ -3162,8 +3840,8 @@ _bytes_eq_off:
     bl      _bytes_eq
     mov     x10, x0
     mov     w0, w10
-    b       .L945
-.L945:
+    b       .L1118
+.L1118:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -3172,7 +3850,7 @@ _bytes_eq_off:
 _add_local:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1184
+    sub     sp, sp, #1680
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -3184,7 +3862,7 @@ _add_local:
     ldr     x9, [x11]
     str     x9, [sp, #40]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0018
+    movz    x10, #0x0028
     mov     x0, x9
     mov     x1, x10
     bl      _arena_take
@@ -3204,6 +3882,16 @@ _add_local:
     movz    x10, #0x0010
     add     x11, x9, x10
     ldr     x9, [sp, #32]
+    str     x9, [x11]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    movz    x9, #0x0001
+    str     x9, [x11]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    mov     x9, #0
     str     x9, [x11]
     ldr     x9, [sp, #8]
     movz    x10, #0x0038
@@ -3230,7 +3918,7 @@ _add_local:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L133
+    cbz     w11, .L162
     ldr     x9, [sp, #32]
     mov     x10, #0
     add     x11, x9, x10
@@ -3238,84 +3926,60 @@ _add_local:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L134
+    cbz     w11, .L163
     movz    x9, #0x0001
     str     x9, [sp, #64]
-.L134:
+.L163:
     ldr     x9, [sp, #32]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0005
+    movz    x10, #0x000a
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L135
+    cbz     w11, .L164
     ldr     x9, [sp, #32]
-    movz    x10, #0x0010
+    movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #72]
-    ldr     x9, [sp, #72]
-    mov     x10, #0
-    cmp     x9, x10
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    movz    x9, #0x0008
+    cmp     x10, x9
     cset    w11, ne
-    cbz     w11, .L136
+    cbz     w11, .L165
+    adrp    x9, L_str17@PAGE
+    add     x9, x9, L_str17@PAGEOFF
+    str     x9, [sp, #72]
+    movz    x9, #0x0029
+    str     x9, [sp, #80]
     ldr     x9, [sp, #72]
+    ldr     x10, [sp, #80]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _die_line
+    str     x0, [sp, #696]
+.L165:
+    ldr     x9, [sp, #32]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L137
-    ldr     x9, [sp, #72]
+    cbz     w11, .L166
+    ldr     x9, [sp, #32]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0001
     sub     x11, x9, x10
     str     x11, [sp, #64]
-.L137:
-.L136:
-.L135:
-.L133:
-    mov     x9, #0
-    str     x9, [sp, #80]
-.L138:
-    ldr     x9, [sp, #80]
-    ldr     x10, [sp, #64]
-    cmp     x9, x10
-    cset    w11, lo
-    cbz     w11, .L139
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0018
-    mov     x0, x9
-    mov     x1, x10
-    bl      _arena_take
-    mov     x11, x0
-    str     x11, [sp, #88]
-    ldr     x9, [sp, #88]
-    mov     x10, #0
-    add     x11, x9, x10
-    mov     x9, #0
-    str     x9, [x11]
-    ldr     x9, [sp, #88]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    mov     x9, #0
-    str     x9, [x11]
-    ldr     x9, [sp, #88]
-    movz    x10, #0x0010
-    add     x16, x9, x10
-    str     x16, [sp, #808]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0002
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_prim
-    mov     x11, x0
-    ldr     x17, [sp, #808]
-    str     x11, [x17]
+.L166:
+.L164:
     ldr     x9, [sp, #32]
     mov     x10, #0
     add     x11, x9, x10
@@ -3323,31 +3987,132 @@ _add_local:
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L140
+    cbz     w11, .L167
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #80]
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #88]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L168
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, hi
+    cbz     w11, .L169
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    sub     x11, x9, x10
+    str     x11, [sp, #64]
+.L169:
+.L168:
+.L167:
+.L162:
+    mov     x9, #0
+    str     x9, [sp, #96]
+.L170:
+    ldr     x9, [sp, #96]
+    ldr     x10, [sp, #64]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L171
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0028
+    mov     x0, x9
+    mov     x1, x10
+    bl      _arena_take
+    mov     x11, x0
+    str     x11, [sp, #104]
+    ldr     x9, [sp, #104]
+    mov     x10, #0
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0010
+    add     x16, x9, x10
+    str     x16, [sp, #1136]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    ldr     x17, [sp, #1136]
+    str     x11, [x17]
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000a
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L172
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+.L172:
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L173
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #96]
     movz    x11, #0x0001
     add     x12, x10, x11
     mov     x0, x9
     mov     x1, x12
     bl      _struct_field_type
     mov     x10, x0
-    str     x10, [sp, #96]
-    ldr     x9, [sp, #96]
+    str     x10, [sp, #112]
+    ldr     x9, [sp, #112]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L141
-    ldr     x9, [sp, #88]
+    cbz     w11, .L174
+    ldr     x9, [sp, #104]
     movz    x10, #0x0010
     add     x11, x9, x10
-    ldr     x9, [sp, #96]
+    ldr     x9, [sp, #112]
     str     x9, [x11]
-.L141:
-.L140:
+.L174:
+.L173:
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    movz    x9, #0x0001
+    str     x9, [x11]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
     ldr     x9, [sp, #56]
     ldr     x10, [sp, #8]
     movz    x11, #0x0040
@@ -3356,7 +4121,7 @@ _add_local:
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x10, x9, x12
-    ldr     x9, [sp, #88]
+    ldr     x9, [sp, #104]
     str     x9, [x10]
     ldr     x9, [sp, #8]
     movz    x10, #0x0040
@@ -3368,17 +4133,17 @@ _add_local:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-    ldr     x9, [sp, #80]
+    ldr     x9, [sp, #96]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #80]
-    b       .L138
-.L139:
+    str     x11, [sp, #96]
+    b       .L170
+.L171:
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L946
-.L946:
-    add     sp, sp, #1184
+    b       .L1119
+.L1119:
+    add     sp, sp, #1680
     ldp     x29, x30, [sp], #16
     ret
 
@@ -3386,7 +4151,7 @@ _add_local:
 _lookup_local:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #352
+    sub     sp, sp, #400
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -3397,12 +4162,12 @@ _lookup_local:
     str     x9, [sp, #24]
     ldr     x9, [sp, #24]
     str     x9, [sp, #32]
-.L142:
+.L175:
     ldr     x9, [sp, #32]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L143
+    cbz     w11, .L176
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     sub     x11, x9, x10
@@ -3419,6 +4184,14 @@ _lookup_local:
     add     x10, x9, x12
     ldr     x9, [x10]
     str     x9, [sp, #48]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L177
     ldr     x9, [sp, #48]
     mov     x10, #0
     add     x11, x9, x10
@@ -3438,18 +4211,100 @@ _lookup_local:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L144
+    cbz     w10, .L178
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L947
-.L144:
-    b       .L142
-.L143:
+    b       .L1120
+.L178:
+.L177:
+    b       .L175
+.L176:
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L947
-.L947:
-    add     sp, sp, #352
+    b       .L1120
+.L1120:
+    add     sp, sp, #400
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _mark_local_initialized
+_mark_local_initialized:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #448
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #24]
+    movz    x9, #0x0001
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L179
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    str     x10, [sp, #40]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, hi
+    cbz     w11, .L180
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0008
+    udiv     x11, x9, x10
+    str     x11, [sp, #32]
+.L180:
+.L179:
+    mov     x9, #0
+    str     x9, [sp, #48]
+.L181:
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #32]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L182
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #48]
+    add     x12, x10, x11
+    movz    x10, #0x0008
+    mul     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [x10]
+    str     x9, [sp, #56]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    movz    x9, #0x0001
+    str     x9, [x11]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #48]
+    b       .L181
+.L182:
+.L1121:
+    add     sp, sp, #448
     ldp     x29, x30, [sp], #16
     ret
 
@@ -3466,12 +4321,12 @@ _lookup_const:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L145:
+.L183:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L146
+    cbz     w11, .L184
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -3491,22 +4346,22 @@ _lookup_const:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L147
+    cbz     w10, .L185
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L948
-.L147:
+    b       .L1122
+.L185:
     ldr     x9, [sp, #24]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L145
-.L146:
+    b       .L183
+.L184:
     mov     x9, #0
     mov     x0, x9
-    b       .L948
-.L948:
+    b       .L1122
+.L1122:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -3524,12 +4379,12 @@ _lookup_bss:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L148:
+.L186:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L149
+    cbz     w11, .L187
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -3549,22 +4404,22 @@ _lookup_bss:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L150
+    cbz     w10, .L188
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L949
-.L150:
+    b       .L1123
+.L188:
     ldr     x9, [sp, #24]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L148
-.L149:
+    b       .L186
+.L187:
     mov     x9, #0
     mov     x0, x9
-    b       .L949
-.L949:
+    b       .L1123
+.L1123:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -3582,12 +4437,12 @@ _lookup_struct:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L151:
+.L189:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L152
+    cbz     w11, .L190
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -3607,22 +4462,22 @@ _lookup_struct:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L153
+    cbz     w10, .L191
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L950
-.L153:
+    b       .L1124
+.L191:
     ldr     x9, [sp, #24]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L151
-.L152:
+    b       .L189
+.L190:
     mov     x9, #0
     mov     x0, x9
-    b       .L950
-.L950:
+    b       .L1124
+.L1124:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -3642,12 +4497,12 @@ _struct_field_index:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #32]
-.L154:
+.L192:
     ldr     x9, [sp, #32]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L155
+    cbz     w11, .L193
     ldr     x9, [sp, #32]
     mov     x10, #0
     add     x11, x9, x10
@@ -3667,11 +4522,11 @@ _struct_field_index:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L156
+    cbz     w10, .L194
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L951
-.L156:
+    b       .L1125
+.L194:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
@@ -3681,15 +4536,15 @@ _struct_field_index:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #32]
-    b       .L154
-.L155:
+    b       .L192
+.L193:
     ldr     x9, [sp, #0]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x0, x9
-    b       .L951
-.L951:
+    b       .L1125
+.L1125:
     add     sp, sp, #304
     ldp     x29, x30, [sp], #16
     ret
@@ -3708,24 +4563,24 @@ _struct_field_type:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L157:
+.L195:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L158
+    cbz     w11, .L196
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L159
+    cbz     w11, .L197
     ldr     x9, [sp, #24]
     movz    x10, #0x0010
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x0, x9
-    b       .L952
-.L159:
+    b       .L1126
+.L197:
     ldr     x9, [sp, #16]
     movz    x10, #0x0001
     add     x11, x9, x10
@@ -3735,12 +4590,12 @@ _struct_field_type:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L157
-.L158:
+    b       .L195
+.L196:
     mov     x9, #0
     mov     x0, x9
-    b       .L952
-.L952:
+    b       .L1126
+.L1126:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -3780,7 +4635,7 @@ _str_table_init:
     add     x10, x9, x12
     mov     x9, #0
     str     x9, [x10]
-.L953:
+.L1127:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -3845,7 +4700,7 @@ _str_table_add:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L160
+    cbz     w11, .L198
     ldr     x9, [sp, #48]
     mov     x10, #0
     movz    x11, #0x0008
@@ -3860,8 +4715,8 @@ _str_table_add:
     add     x10, x9, x12
     ldr     x9, [sp, #40]
     str     x9, [x10]
-    b       .L161
-.L160:
+    b       .L199
+.L198:
     ldr     x9, [sp, #56]
     mov     x10, #0
     movz    x11, #0x0008
@@ -3881,7 +4736,7 @@ _str_table_add:
     add     x10, x9, x12
     ldr     x9, [sp, #40]
     str     x9, [x10]
-.L161:
+.L199:
     ldr     x9, [sp, #24]
     mov     x10, #0
     movz    x11, #0x0008
@@ -3893,8 +4748,8 @@ _str_table_add:
     str     x12, [x10]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L954
-.L954:
+    b       .L1128
+.L1128:
     add     sp, sp, #656
     ldp     x29, x30, [sp], #16
     ret
@@ -3921,22 +4776,24 @@ _str_unescape:
     str     x9, [sp, #40]
     mov     x9, #0
     str     x9, [sp, #48]
-.L162:
+.L200:
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L163
+    cbz     w11, .L201
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #40]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #56]
     ldrb    w9, [sp, #56]
+    uxtb    w9, w9
     movz    x10, #0x005c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L164
+    cbz     w11, .L202
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
     add     x11, x9, x10
@@ -3945,52 +4802,59 @@ _str_unescape:
     ldr     x10, [sp, #40]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     strb    w9, [sp, #64]
     mov     x9, #0
     str     x9, [sp, #72]
     ldrb    w9, [sp, #64]
+    uxtb    w9, w9
     movz    x10, #0x006e
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L165
+    cbz     w11, .L203
     movz    x9, #0x000a
     str     x9, [sp, #72]
-.L165:
+.L203:
     ldrb    w9, [sp, #64]
+    uxtb    w9, w9
     movz    x10, #0x0074
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L166
+    cbz     w11, .L204
     movz    x9, #0x0009
     str     x9, [sp, #72]
-.L166:
+.L204:
     ldrb    w9, [sp, #64]
+    uxtb    w9, w9
     movz    x10, #0x005c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L167
+    cbz     w11, .L205
     movz    x9, #0x005c
     str     x9, [sp, #72]
-.L167:
+.L205:
     ldrb    w9, [sp, #64]
+    uxtb    w9, w9
     movz    x10, #0x0027
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L168
+    cbz     w11, .L206
     movz    x9, #0x0027
     str     x9, [sp, #72]
-.L168:
+.L206:
     ldrb    w9, [sp, #64]
+    uxtb    w9, w9
     movz    x10, #0x0078
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L169
+    cbz     w11, .L207
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #40]
     movz    x11, #0x0001
     add     x12, x10, x11
     add     x10, x9, x12
     ldrb    w9, [x10]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _hex_val
     mov     x10, x0
@@ -4001,6 +4865,7 @@ _str_unescape:
     add     x12, x10, x11
     add     x10, x9, x12
     ldrb    w9, [x10]
+    uxtb    w9, w9
     mov     x0, x9
     bl      _hex_val
     mov     x10, x0
@@ -4015,7 +4880,7 @@ _str_unescape:
     movz    x10, #0x0002
     add     x11, x9, x10
     str     x11, [sp, #40]
-.L169:
+.L207:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #48]
     add     x11, x9, x10
@@ -4029,12 +4894,13 @@ _str_unescape:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #48]
-    b       .L170
-.L164:
+    b       .L208
+.L202:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #48]
     add     x11, x9, x10
     ldrb    w9, [sp, #56]
+    uxtb    w9, w9
     strb    w9, [x11]
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
@@ -4044,9 +4910,9 @@ _str_unescape:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #48]
-.L170:
-    b       .L162
-.L163:
+.L208:
+    b       .L200
+.L201:
     ldr     x9, [sp, #8]
     movz    x10, #0x0068
     add     x11, x9, x10
@@ -4057,7 +4923,7 @@ _str_unescape:
     add     x11, x9, x10
     ldr     x9, [sp, #48]
     str     x9, [x11]
-.L955:
+.L1129:
     add     sp, sp, #848
     ldp     x29, x30, [sp], #16
     ret
@@ -4089,7 +4955,7 @@ _ps_init:
     mov     x1, x10
     bl      _lex_next
     str     x0, [sp, #96]
-.L956:
+.L1130:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -4111,7 +4977,7 @@ _ps_advance:
     mov     x1, x10
     bl      _lex_next
     str     x0, [sp, #48]
-.L957:
+.L1131:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -4128,9 +4994,10 @@ _ps_kind:
     mov     x10, #0
     add     x11, x9, x10
     ldr     w9, [x11]
+    mov     w9, w9
     mov     w0, w9
-    b       .L958
-.L958:
+    b       .L1132
+.L1132:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -4236,8 +5103,8 @@ _mk_expr:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L959
-.L959:
+    b       .L1133
+.L1133:
     add     sp, sp, #608
     ldp     x29, x30, [sp], #16
     ret
@@ -4246,7 +5113,7 @@ _mk_expr:
 _parse_primary:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #3024
+    sub     sp, sp, #2976
     str     x0, [sp, #0]
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
@@ -4255,12 +5122,14 @@ _parse_primary:
     mov     x10, #0
     add     x11, x9, x10
     ldr     w9, [x11]
+    mov     w9, w9
     str     w9, [sp, #16]
     ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x000f
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L171
+    cbz     w11, .L209
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -4279,26 +5148,27 @@ _parse_primary:
     ldr     x9, [sp, #24]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #432]
+    str     x16, [sp, #440]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #432]
+    ldr     x17, [sp, #440]
     str     x11, [x17]
     bl      _ps_advance
-    str     x0, [sp, #464]
+    str     x0, [sp, #472]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L960
-.L171:
+    b       .L1134
+.L209:
     ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x000c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L172
+    cbz     w11, .L210
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -4314,32 +5184,33 @@ _parse_primary:
     ldr     x9, [sp, #32]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #576]
+    str     x16, [sp, #584]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #576]
+    ldr     x17, [sp, #584]
     str     x11, [x17]
     bl      _ps_advance
-    str     x0, [sp, #608]
+    str     x0, [sp, #616]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L960
-.L172:
+    b       .L1134
+.L210:
     ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x000d
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L173
+    cbz     w11, .L211
     bl      _ps_advance
-    str     x0, [sp, #648]
+    str     x0, [sp, #656]
     movz    x9, #0x0011
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #664]
+    str     x0, [sp, #672]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_type
@@ -4348,7 +5219,7 @@ _parse_primary:
     movz    x9, #0x0012
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #696]
+    str     x0, [sp, #704]
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -4359,36 +5230,37 @@ _parse_primary:
     ldr     x9, [sp, #48]
     movz    x10, #0x0010
     add     x16, x9, x10
-    str     x16, [sp, #744]
+    str     x16, [sp, #752]
     ldr     x9, [sp, #40]
     mov     x0, x9
     bl      _type_width
     mov     x10, x0
-    ldr     x17, [sp, #744]
+    ldr     x17, [sp, #752]
     str     x10, [x17]
     ldr     x9, [sp, #48]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #784]
+    str     x16, [sp, #792]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #784]
+    ldr     x17, [sp, #792]
     str     x11, [x17]
     ldr     x9, [sp, #48]
     mov     x0, x9
-    b       .L960
-.L173:
+    b       .L1134
+.L211:
     ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x0011
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L174
+    cbz     w11, .L212
     bl      _ps_advance
-    str     x0, [sp, #848]
+    str     x0, [sp, #856]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -4399,16 +5271,17 @@ _parse_primary:
     movz    x9, #0x0012
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #888]
+    str     x0, [sp, #896]
     ldr     x9, [sp, #56]
     mov     x0, x9
-    b       .L960
-.L174:
+    b       .L1134
+.L212:
     ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L175
+    cbz     w11, .L213
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -4420,15 +5293,15 @@ _parse_primary:
     ldr     x9, [x11]
     str     x9, [sp, #72]
     bl      _ps_advance
-    str     x0, [sp, #992]
+    str     x0, [sp, #1000]
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0011
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L176
+    cbz     w11, .L214
     bl      _ps_advance
-    str     x0, [sp, #1024]
+    str     x0, [sp, #1032]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
@@ -4460,13 +5333,13 @@ _parse_primary:
     str     x9, [x11]
     mov     x9, #0
     str     x9, [sp, #96]
-.L177:
+.L215:
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0012
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L178
+    cbz     w11, .L216
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -4478,7 +5351,7 @@ _parse_primary:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L179
+    cbz     w11, .L217
     ldr     x9, [sp, #88]
     ldr     x10, [sp, #96]
     movz    x11, #0x0008
@@ -4486,7 +5359,7 @@ _parse_primary:
     add     x10, x9, x12
     ldr     x9, [sp, #104]
     str     x9, [x10]
-.L179:
+.L217:
     ldr     x9, [sp, #96]
     movz    x10, #0x0001
     add     x11, x9, x10
@@ -4496,25 +5369,25 @@ _parse_primary:
     movz    x10, #0x0012
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L180
+    cbz     w11, .L218
     movz    x9, #0x0026
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #1360]
-.L180:
-    b       .L177
-.L178:
+    str     x0, [sp, #1368]
+.L218:
+    b       .L215
+.L216:
     movz    x9, #0x0012
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #1376]
+    str     x0, [sp, #1384]
     ldr     x9, [sp, #96]
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L181
-    adrp    x9, L_str15@PAGE
-    add     x9, x9, L_str15@PAGEOFF
+    cbz     w11, .L219
+    adrp    x9, L_str18@PAGE
+    add     x9, x9, L_str18@PAGEOFF
     str     x9, [sp, #112]
     movz    x9, #0x0014
     str     x9, [sp, #120]
@@ -4523,15 +5396,15 @@ _parse_primary:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #1440]
-.L181:
+    str     x0, [sp, #1448]
+.L219:
     ldr     x9, [sp, #80]
     movz    x10, #0x0050
     add     x11, x9, x10
     ldr     x9, [sp, #96]
     str     x9, [x11]
-    adrp    x9, L_str16@PAGE
-    add     x9, x9, L_str16@PAGEOFF
+    adrp    x9, L_str19@PAGE
+    add     x9, x9, L_str19@PAGEOFF
     str     x9, [sp, #128]
     movz    x9, #0x0007
     str     x9, [sp, #136]
@@ -4548,38 +5421,38 @@ _parse_primary:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L182
+    cbz     w10, .L220
     ldr     x9, [sp, #80]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #1568]
+    str     x16, [sp, #1576]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #1568]
+    ldr     x17, [sp, #1576]
     str     x11, [x17]
-    b       .L183
-.L182:
+    b       .L221
+.L220:
     ldr     x9, [sp, #80]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #1616]
+    str     x16, [sp, #1624]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #1616]
+    ldr     x17, [sp, #1624]
     str     x11, [x17]
-.L183:
+.L221:
     ldr     x9, [sp, #80]
     mov     x0, x9
-    b       .L960
-.L176:
+    b       .L1134
+.L214:
     bl      _cur_func
     mov     x9, x0
     str     x9, [sp, #144]
@@ -4587,7 +5460,7 @@ _parse_primary:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L184
+    cbz     w11, .L222
     ldr     x9, [sp, #144]
     ldr     x10, [sp, #64]
     ldr     x11, [sp, #72]
@@ -4604,7 +5477,7 @@ _parse_primary:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L185
+    cbz     w11, .L223
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -4649,9 +5522,9 @@ _parse_primary:
     str     x9, [x11]
     ldr     x9, [sp, #160]
     mov     x0, x9
-    b       .L960
-.L185:
-.L184:
+    b       .L1134
+.L223:
+.L222:
     bl      _cur_prog
     mov     x9, x0
     str     x9, [sp, #184]
@@ -4659,7 +5532,7 @@ _parse_primary:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L186
+    cbz     w11, .L224
     ldr     x9, [sp, #184]
     ldr     x10, [sp, #64]
     ldr     x11, [sp, #72]
@@ -4673,7 +5546,7 @@ _parse_primary:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L187
+    cbz     w11, .L225
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -4699,8 +5572,8 @@ _parse_primary:
     str     x9, [x11]
     ldr     x9, [sp, #200]
     mov     x0, x9
-    b       .L960
-.L187:
+    b       .L1134
+.L225:
     ldr     x9, [sp, #184]
     ldr     x10, [sp, #64]
     ldr     x11, [sp, #72]
@@ -4714,7 +5587,7 @@ _parse_primary:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L188
+    cbz     w11, .L226
     ldr     x9, [sp, #0]
     movz    x10, #0x000d
     mov     x0, x9
@@ -4735,79 +5608,74 @@ _parse_primary:
     ldr     x9, [sp, #216]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #2424]
-    ldr     x16, [sp, #0]
     str     x16, [sp, #2432]
+    ldr     x16, [sp, #0]
+    str     x16, [sp, #2440]
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x0, [sp, #2432]
+    ldr     x0, [sp, #2440]
     mov     x1, x11
     bl      _mk_ptr
     mov     x9, x0
-    ldr     x17, [sp, #2424]
+    ldr     x17, [sp, #2432]
     str     x9, [x17]
     ldr     x9, [sp, #216]
     mov     x0, x9
-    b       .L960
-.L188:
-.L186:
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0001
+    b       .L1134
+.L226:
+.L224:
+    adrp    x9, L_str20@PAGE
+    add     x9, x9, L_str20@PAGEOFF
+    str     x9, [sp, #224]
+    movz    x9, #0x0019
+    str     x9, [sp, #232]
+    ldr     x9, [sp, #224]
+    ldr     x10, [sp, #232]
     mov     x0, x9
     mov     x1, x10
-    bl      _mk_expr
-    mov     x11, x0
-    str     x11, [sp, #224]
-    ldr     x9, [sp, #224]
-    movz    x10, #0x0018
-    add     x11, x9, x10
-    ldr     x9, [sp, #64]
-    str     x9, [x11]
-    ldr     x9, [sp, #224]
-    movz    x10, #0x0020
-    add     x11, x9, x10
-    ldr     x9, [sp, #72]
-    str     x9, [x11]
-    ldr     x9, [sp, #224]
+    bl      _die_here
+    str     x0, [sp, #2520]
+    mov     x9, #0
     mov     x0, x9
-    b       .L960
-.L175:
+    b       .L1134
+.L213:
     ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x0010
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L189
+    cbz     w11, .L227
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
-    str     x9, [sp, #232]
+    str     x9, [sp, #240]
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
-    str     x9, [sp, #240]
+    str     x9, [sp, #248]
     ldr     x9, [sp, #0]
     movz    x10, #0x000b
     mov     x0, x9
     mov     x1, x10
     bl      _mk_expr
     mov     x11, x0
-    str     x11, [sp, #248]
+    str     x11, [sp, #256]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #248]
-    ldr     x11, [sp, #240]
+    ldr     x10, [sp, #256]
+    ldr     x11, [sp, #248]
     mov     x12, #0
     add     x13, x11, x12
     ldr     x11, [x13]
-    ldr     x12, [sp, #232]
+    ldr     x12, [sp, #240]
     movz    x13, #0x0008
     add     x14, x12, x13
     ldr     x12, [x14]
     add     x13, x11, x12
     movz    x11, #0x0001
     add     x12, x13, x11
-    ldr     x11, [sp, #232]
+    ldr     x11, [sp, #240]
     movz    x13, #0x0010
     add     x14, x11, x13
     ldr     x11, [x14]
@@ -4818,17 +5686,17 @@ _parse_primary:
     mov     x2, x12
     mov     x3, x14
     bl      _str_unescape
-    str     x0, [sp, #2792]
-    ldr     x9, [sp, #248]
+    str     x0, [sp, #2752]
+    ldr     x9, [sp, #256]
     movz    x10, #0x0080
     add     x16, x9, x10
-    str     x16, [sp, #2816]
+    str     x16, [sp, #2776]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #248]
+    ldr     x10, [sp, #256]
     movz    x11, #0x0068
     add     x12, x10, x11
     ldr     x10, [x12]
-    ldr     x11, [sp, #248]
+    ldr     x11, [sp, #256]
     movz    x12, #0x0070
     add     x13, x11, x12
     ldr     x11, [x13]
@@ -4837,42 +5705,42 @@ _parse_primary:
     mov     x2, x11
     bl      _str_table_add
     mov     x12, x0
-    ldr     x17, [sp, #2816]
+    ldr     x17, [sp, #2776]
     str     x12, [x17]
-    ldr     x9, [sp, #248]
+    ldr     x9, [sp, #256]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #2920]
+    str     x16, [sp, #2880]
     ldr     x9, [sp, #0]
     movz    x10, #0x0004
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #2920]
+    ldr     x17, [sp, #2880]
     str     x11, [x17]
     bl      _ps_advance
-    str     x0, [sp, #2952]
-    ldr     x9, [sp, #248]
-    mov     x0, x9
-    b       .L960
-.L189:
-    adrp    x9, L_str17@PAGE
-    add     x9, x9, L_str17@PAGEOFF
-    str     x9, [sp, #256]
-    movz    x9, #0x001b
-    str     x9, [sp, #264]
+    str     x0, [sp, #2912]
     ldr     x9, [sp, #256]
-    ldr     x10, [sp, #264]
+    mov     x0, x9
+    b       .L1134
+.L227:
+    adrp    x9, L_str21@PAGE
+    add     x9, x9, L_str21@PAGEOFF
+    str     x9, [sp, #264]
+    movz    x9, #0x001b
+    str     x9, [sp, #272]
+    ldr     x9, [sp, #264]
+    ldr     x10, [sp, #272]
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #3000]
+    str     x0, [sp, #2960]
     mov     x9, #0
     mov     x0, x9
-    b       .L960
-.L960:
-    add     sp, sp, #3024
+    b       .L1134
+.L1134:
+    add     sp, sp, #2976
     ldp     x29, x30, [sp], #16
     ret
 
@@ -4880,37 +5748,39 @@ _parse_primary:
 _parse_postfix:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #3408
+    movz    x16, #0x1000
+    sub     sp, sp, x16
     str     x0, [sp, #0]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_primary
     mov     x10, x0
     str     x10, [sp, #8]
-.L190:
+.L228:
     movz    x9, #0x0001
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L191
+    cbz     w11, .L229
     bl      _ps_kind
     mov     x9, x0
     str     w9, [sp, #16]
     ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x0028
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L192
+    cbz     w11, .L230
     bl      _ps_advance
-    str     x0, [sp, #424]
+    str     x0, [sp, #496]
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L193
-    adrp    x9, L_str18@PAGE
-    add     x9, x9, L_str18@PAGEOFF
+    cbz     w11, .L231
+    adrp    x9, L_str22@PAGE
+    add     x9, x9, L_str22@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x0020
     str     x9, [sp, #32]
@@ -4919,8 +5789,8 @@ _parse_postfix:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #488]
-.L193:
+    str     x0, [sp, #560]
+.L231:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #40]
@@ -4935,7 +5805,7 @@ _parse_postfix:
     ldr     x9, [x11]
     str     x9, [sp, #56]
     bl      _ps_advance
-    str     x0, [sp, #568]
+    str     x0, [sp, #640]
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -4947,7 +5817,7 @@ _parse_postfix:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L194
+    cbz     w11, .L232
     ldr     x9, [sp, #64]
     mov     x10, #0
     add     x11, x9, x10
@@ -4955,7 +5825,7 @@ _parse_postfix:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L195
+    cbz     w11, .L233
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -4963,9 +5833,9 @@ _parse_postfix:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L196
-    adrp    x9, L_str19@PAGE
-    add     x9, x9, L_str19@PAGEOFF
+    cbz     w11, .L234
+    adrp    x9, L_str23@PAGE
+    add     x9, x9, L_str23@PAGEOFF
     str     x9, [sp, #80]
     movz    x9, #0x0003
     str     x9, [sp, #88]
@@ -4982,7 +5852,7 @@ _parse_postfix:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L197
+    cbz     w10, .L235
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -5001,33 +5871,33 @@ _parse_postfix:
     ldr     x9, [sp, #96]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #904]
+    str     x16, [sp, #976]
     ldr     x16, [sp, #0]
-    str     x16, [sp, #912]
+    str     x16, [sp, #984]
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x0, [sp, #912]
+    ldr     x0, [sp, #984]
     mov     x1, x11
     bl      _mk_ptr
     mov     x9, x0
-    ldr     x17, [sp, #904]
+    ldr     x17, [sp, #976]
     str     x9, [x17]
     ldr     x9, [sp, #96]
     str     x9, [sp, #8]
     movz    x9, #0x0001
     str     x9, [sp, #72]
-.L197:
+.L235:
     ldr     x9, [sp, #72]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L198
-    adrp    x9, L_str20@PAGE
-    add     x9, x9, L_str20@PAGEOFF
+    cbz     w11, .L236
+    adrp    x9, L_str24@PAGE
+    add     x9, x9, L_str24@PAGEOFF
     str     x9, [sp, #104]
     movz    x9, #0x0003
     str     x9, [sp, #112]
@@ -5044,7 +5914,7 @@ _parse_postfix:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L199
+    cbz     w10, .L237
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -5065,28 +5935,28 @@ _parse_postfix:
     ldr     x9, [sp, #120]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #1176]
+    str     x16, [sp, #1248]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #1176]
+    ldr     x17, [sp, #1248]
     str     x11, [x17]
     ldr     x9, [sp, #120]
     str     x9, [sp, #8]
     movz    x9, #0x0001
     str     x9, [sp, #72]
-.L199:
-.L198:
-.L196:
-.L195:
+.L237:
+.L236:
+.L234:
+.L233:
     ldr     x9, [sp, #72]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L200
+    cbz     w11, .L238
     ldr     x9, [sp, #64]
     mov     x10, #0
     add     x11, x9, x10
@@ -5094,7 +5964,7 @@ _parse_postfix:
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L201
+    cbz     w11, .L239
     ldr     x9, [sp, #64]
     movz    x10, #0x0010
     add     x11, x9, x10
@@ -5104,7 +5974,7 @@ _parse_postfix:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L202
+    cbz     w11, .L240
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -5112,7 +5982,7 @@ _parse_postfix:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L203
+    cbz     w11, .L241
     ldr     x9, [sp, #128]
     ldr     x10, [sp, #48]
     ldr     x11, [sp, #56]
@@ -5129,9 +5999,9 @@ _parse_postfix:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L204
-    adrp    x9, L_str21@PAGE
-    add     x9, x9, L_str21@PAGEOFF
+    cbz     w11, .L242
+    adrp    x9, L_str25@PAGE
+    add     x9, x9, L_str25@PAGEOFF
     str     x9, [sp, #144]
     movz    x9, #0x001b
     str     x9, [sp, #152]
@@ -5140,8 +6010,8 @@ _parse_postfix:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #1512]
-.L204:
+    str     x0, [sp, #1584]
+.L242:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -5162,28 +6032,28 @@ _parse_postfix:
     ldr     x9, [sp, #160]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #1632]
+    str     x16, [sp, #1704]
     ldr     x9, [sp, #128]
     ldr     x10, [sp, #136]
     mov     x0, x9
     mov     x1, x10
     bl      _struct_field_type
     mov     x11, x0
-    ldr     x17, [sp, #1632]
+    ldr     x17, [sp, #1704]
     str     x11, [x17]
     ldr     x9, [sp, #160]
     str     x9, [sp, #8]
     movz    x9, #0x0001
     str     x9, [sp, #72]
-.L203:
-.L202:
-.L201:
-.L200:
+.L241:
+.L240:
+.L239:
+.L238:
     ldr     x9, [sp, #72]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L205
+    cbz     w11, .L243
     ldr     x9, [sp, #64]
     mov     x10, #0
     add     x11, x9, x10
@@ -5191,7 +6061,7 @@ _parse_postfix:
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L206
+    cbz     w11, .L244
     ldr     x9, [sp, #64]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -5201,7 +6071,7 @@ _parse_postfix:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L207
+    cbz     w11, .L245
     ldr     x9, [sp, #168]
     mov     x10, #0
     add     x11, x9, x10
@@ -5209,7 +6079,7 @@ _parse_postfix:
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L208
+    cbz     w11, .L246
     ldr     x9, [sp, #168]
     movz    x10, #0x0010
     add     x11, x9, x10
@@ -5219,7 +6089,7 @@ _parse_postfix:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L209
+    cbz     w11, .L247
     ldr     x9, [sp, #176]
     ldr     x10, [sp, #48]
     ldr     x11, [sp, #56]
@@ -5236,9 +6106,9 @@ _parse_postfix:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L210
-    adrp    x9, L_str22@PAGE
-    add     x9, x9, L_str22@PAGEOFF
+    cbz     w11, .L248
+    adrp    x9, L_str26@PAGE
+    add     x9, x9, L_str26@PAGEOFF
     str     x9, [sp, #192]
     movz    x9, #0x001b
     str     x9, [sp, #200]
@@ -5247,8 +6117,8 @@ _parse_postfix:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #2024]
-.L210:
+    str     x0, [sp, #2096]
+.L248:
     ldr     x9, [sp, #176]
     ldr     x10, [sp, #184]
     mov     x0, x9
@@ -5273,14 +6143,14 @@ _parse_postfix:
     ldr     x9, [sp, #216]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #2144]
+    str     x16, [sp, #2216]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #2144]
+    ldr     x17, [sp, #2216]
     str     x11, [x17]
     ldr     x9, [sp, #0]
     movz    x10, #0x0004
@@ -5307,14 +6177,14 @@ _parse_postfix:
     ldr     x9, [sp, #224]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #2312]
+    str     x16, [sp, #2384]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #208]
     mov     x0, x9
     mov     x1, x10
     bl      _mk_ptr
     mov     x11, x0
-    ldr     x17, [sp, #2312]
+    ldr     x17, [sp, #2384]
     str     x11, [x17]
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
@@ -5337,19 +6207,19 @@ _parse_postfix:
     str     x9, [sp, #8]
     movz    x9, #0x0001
     str     x9, [sp, #72]
-.L209:
-.L208:
-.L207:
-.L206:
-.L205:
-.L194:
+.L247:
+.L246:
+.L245:
+.L244:
+.L243:
+.L232:
     ldr     x9, [sp, #72]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L211
-    adrp    x9, L_str23@PAGE
-    add     x9, x9, L_str23@PAGEOFF
+    cbz     w11, .L249
+    adrp    x9, L_str27@PAGE
+    add     x9, x9, L_str27@PAGEOFF
     str     x9, [sp, #240]
     movz    x9, #0x0014
     str     x9, [sp, #248]
@@ -5358,307 +6228,174 @@ _parse_postfix:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #2504]
-.L211:
-    b       .L212
-.L192:
+    str     x0, [sp, #2576]
+.L249:
+    b       .L250
+.L230:
     ldr     w9, [sp, #16]
+    mov     w9, w9
+    movz    x10, #0x002e
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L251
+    bl      _ps_advance
+    str     x0, [sp, #2608]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_type
+    mov     x10, x0
+    str     x10, [sp, #256]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_is_scalar
+    mov     x10, x0
+    mov     x9, #0
+    cmp     x10, x9
+    cset    w11, eq
+    cbz     w11, .L252
+    adrp    x9, L_str28@PAGE
+    add     x9, x9, L_str28@PAGEOFF
+    str     x9, [sp, #264]
+    movz    x9, #0x001c
+    str     x9, [sp, #272]
+    ldr     x9, [sp, #264]
+    ldr     x10, [sp, #272]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #2720]
+.L252:
+    ldr     x9, [sp, #256]
+    mov     x0, x9
+    bl      _type_is_scalar
+    mov     x10, x0
+    mov     x9, #0
+    cmp     x10, x9
+    cset    w11, eq
+    cbz     w11, .L253
+    adrp    x9, L_str29@PAGE
+    add     x9, x9, L_str29@PAGEOFF
+    str     x9, [sp, #280]
+    movz    x9, #0x001d
+    str     x9, [sp, #288]
+    ldr     x9, [sp, #280]
+    ldr     x10, [sp, #288]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #2792]
+.L253:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000e
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #296]
+    ldr     x9, [sp, #296]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [sp, #8]
+    str     x9, [x11]
+    ldr     x9, [sp, #296]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #256]
+    str     x9, [x11]
+    ldr     x9, [sp, #296]
+    str     x9, [sp, #8]
+    b       .L254
+.L251:
+    ldr     w9, [sp, #16]
+    mov     w9, w9
     movz    x10, #0x0015
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L213
+    cbz     w11, .L255
     bl      _ps_advance
-    str     x0, [sp, #2536]
+    str     x0, [sp, #2920]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _parse_expr
     mov     x11, x0
-    str     x11, [sp, #256]
+    str     x11, [sp, #304]
     movz    x9, #0x0016
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #2576]
+    str     x0, [sp, #2960]
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #264]
-    ldr     x9, [sp, #264]
+    str     x9, [sp, #312]
+    ldr     x9, [sp, #312]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L214
-    adrp    x9, L_str24@PAGE
-    add     x9, x9, L_str24@PAGEOFF
-    str     x9, [sp, #272]
+    cbz     w11, .L256
+    adrp    x9, L_str30@PAGE
+    add     x9, x9, L_str30@PAGEOFF
+    str     x9, [sp, #320]
     movz    x9, #0x001e
-    str     x9, [sp, #280]
-    ldr     x9, [sp, #272]
-    ldr     x10, [sp, #280]
+    str     x9, [sp, #328]
+    ldr     x9, [sp, #320]
+    ldr     x10, [sp, #328]
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #2672]
-.L214:
-    ldr     x9, [sp, #264]
+    str     x0, [sp, #3056]
+.L256:
+    ldr     x9, [sp, #312]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0003
+    movz    x10, #0x000a
     cmp     x9, x10
-    cset    w11, ne
-    cbz     w11, .L215
-    adrp    x9, L_str25@PAGE
-    add     x9, x9, L_str25@PAGEOFF
-    str     x9, [sp, #288]
-    movz    x9, #0x0016
-    str     x9, [sp, #296]
-    ldr     x9, [sp, #288]
-    ldr     x10, [sp, #296]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _die_here
-    str     x0, [sp, #2760]
-.L215:
-    ldr     x9, [sp, #264]
-    movz    x10, #0x0008
+    cset    w11, eq
+    cbz     w11, .L257
+    ldr     x9, [sp, #8]
+    mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    mov     x0, x9
-    bl      _type_width
-    mov     x10, x0
-    str     x10, [sp, #304]
-    ldr     x9, [sp, #256]
-    str     x9, [sp, #312]
-    ldr     x9, [sp, #304]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L216
-    ldr     x9, [sp, #0]
-    mov     x10, #0
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_expr
-    mov     x11, x0
-    str     x11, [sp, #320]
-    ldr     x9, [sp, #320]
-    movz    x10, #0x0010
-    add     x11, x9, x10
-    ldr     x9, [sp, #304]
-    str     x9, [x11]
-    ldr     x9, [sp, #320]
-    movz    x10, #0x0008
-    add     x16, x9, x10
-    str     x16, [sp, #2912]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0002
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_prim
-    mov     x11, x0
-    ldr     x17, [sp, #2912]
-    str     x11, [x17]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0004
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_expr
-    mov     x11, x0
-    str     x11, [sp, #328]
-    ldr     x9, [sp, #328]
-    movz    x10, #0x0040
-    add     x11, x9, x10
-    movz    x9, #0x0002
-    str     x9, [x11]
-    ldr     x9, [sp, #328]
-    movz    x10, #0x0030
-    add     x11, x9, x10
-    ldr     x9, [sp, #256]
-    str     x9, [x11]
-    ldr     x9, [sp, #328]
-    movz    x10, #0x0038
-    add     x11, x9, x10
-    ldr     x9, [sp, #320]
-    str     x9, [x11]
-    ldr     x9, [sp, #328]
-    movz    x10, #0x0008
-    add     x16, x9, x10
-    str     x16, [sp, #3080]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0002
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_prim
-    mov     x11, x0
-    ldr     x17, [sp, #3080]
-    str     x11, [x17]
-    ldr     x9, [sp, #328]
-    str     x9, [sp, #312]
-.L216:
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0004
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_expr
-    mov     x11, x0
-    str     x11, [sp, #336]
+    cbz     w11, .L258
+    adrp    x9, L_str31@PAGE
+    add     x9, x9, L_str31@PAGEOFF
+    str     x9, [sp, #336]
+    movz    x9, #0x0022
+    str     x9, [sp, #344]
     ldr     x9, [sp, #336]
-    movz    x10, #0x0040
-    add     x11, x9, x10
-    mov     x9, #0
-    str     x9, [x11]
-    ldr     x9, [sp, #336]
-    movz    x10, #0x0030
-    add     x11, x9, x10
-    ldr     x9, [sp, #8]
-    str     x9, [x11]
-    ldr     x9, [sp, #336]
-    movz    x10, #0x0038
-    add     x11, x9, x10
-    ldr     x9, [sp, #312]
-    str     x9, [x11]
-    ldr     x9, [sp, #336]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [sp, #264]
-    str     x9, [x11]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0003
+    ldr     x10, [sp, #344]
     mov     x0, x9
     mov     x1, x10
-    bl      _mk_expr
-    mov     x11, x0
-    str     x11, [sp, #344]
-    ldr     x9, [sp, #344]
-    movz    x10, #0x0028
-    add     x11, x9, x10
-    ldr     x9, [sp, #336]
-    str     x9, [x11]
-    ldr     x9, [sp, #344]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [sp, #264]
-    movz    x10, #0x0008
-    add     x12, x9, x10
-    ldr     x9, [x12]
-    str     x9, [x11]
-    ldr     x9, [sp, #344]
-    str     x9, [sp, #8]
-    b       .L217
-.L213:
-    ldr     x9, [sp, #8]
-    mov     x0, x9
-    b       .L961
-.L217:
-.L212:
-    b       .L190
-.L191:
-    ldr     x9, [sp, #8]
-    mov     x0, x9
-    b       .L961
-.L961:
-    add     sp, sp, #3408
-    ldp     x29, x30, [sp], #16
-    ret
-
-    .globl   _parse_unary
-_parse_unary:
-    stp     x29, x30, [sp, #-16]!
-    mov     x29, sp
-    sub     sp, sp, #544
-    str     x0, [sp, #0]
-    bl      _ps_kind
-    mov     x9, x0
-    str     w9, [sp, #8]
-    ldr     w9, [sp, #8]
-    movz    x10, #0x002a
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L218
-    bl      _ps_advance
-    str     x0, [sp, #88]
-    ldr     x9, [sp, #0]
-    mov     x0, x9
-    bl      _parse_unary
-    mov     x10, x0
-    str     x10, [sp, #16]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0003
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_expr
-    mov     x11, x0
-    str     x11, [sp, #24]
-    ldr     x9, [sp, #24]
-    movz    x10, #0x0028
-    add     x11, x9, x10
-    ldr     x9, [sp, #16]
-    str     x9, [x11]
-    ldr     x9, [sp, #16]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    str     x9, [sp, #32]
-    ldr     x9, [sp, #32]
-    mov     x10, #0
-    cmp     x9, x10
-    cset    w11, ne
-    cbz     w11, .L219
-    ldr     x9, [sp, #32]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0003
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L220
-    ldr     x9, [sp, #24]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [sp, #32]
-    movz    x10, #0x0008
-    add     x12, x9, x10
-    ldr     x9, [x12]
-    str     x9, [x11]
-.L220:
-.L219:
-    ldr     x9, [sp, #24]
-    mov     x0, x9
-    b       .L962
-.L218:
-    ldr     w9, [sp, #8]
-    movz    x10, #0x001b
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L221
-    bl      _ps_advance
-    str     x0, [sp, #360]
-    ldr     x9, [sp, #0]
-    mov     x0, x9
-    bl      _parse_unary
-    mov     x10, x0
-    str     x10, [sp, #40]
+    bl      _die_here
+    str     x0, [sp, #3192]
+.L258:
     ldr     x9, [sp, #0]
     movz    x10, #0x000c
     mov     x0, x9
     mov     x1, x10
     bl      _mk_expr
     mov     x11, x0
-    str     x11, [sp, #48]
-    ldr     x9, [sp, #48]
+    str     x11, [sp, #352]
+    ldr     x9, [sp, #352]
     movz    x10, #0x0028
     add     x11, x9, x10
-    ldr     x9, [sp, #40]
+    ldr     x9, [sp, #8]
     str     x9, [x11]
-    ldr     x9, [sp, #48]
+    ldr     x9, [sp, #352]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #456]
+    str     x16, [sp, #3272]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #40]
+    ldr     x10, [sp, #312]
     movz    x11, #0x0008
     add     x12, x10, x11
     ldr     x10, [x12]
@@ -5666,20 +6403,431 @@ _parse_unary:
     mov     x1, x10
     bl      _mk_ptr
     mov     x11, x0
-    ldr     x17, [sp, #456]
+    ldr     x17, [sp, #3272]
     str     x11, [x17]
-    ldr     x9, [sp, #48]
+    ldr     x9, [sp, #352]
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #352]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #312]
+.L257:
+    ldr     x9, [sp, #312]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L259
+    adrp    x9, L_str32@PAGE
+    add     x9, x9, L_str32@PAGEOFF
+    str     x9, [sp, #360]
+    movz    x9, #0x0016
+    str     x9, [sp, #368]
+    ldr     x9, [sp, #360]
+    ldr     x10, [sp, #368]
     mov     x0, x9
-    b       .L962
-.L221:
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #3448]
+.L259:
+    ldr     x9, [sp, #312]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    str     x10, [sp, #376]
+    ldr     x9, [sp, #304]
+    str     x9, [sp, #384]
+    ldr     x9, [sp, #376]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L260
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #392]
+    ldr     x9, [sp, #392]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #376]
+    str     x9, [x11]
+    ldr     x9, [sp, #392]
+    movz    x10, #0x0008
+    add     x16, x9, x10
+    str     x16, [sp, #3600]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    ldr     x17, [sp, #3600]
+    str     x11, [x17]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #400]
+    ldr     x9, [sp, #400]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    movz    x9, #0x0002
+    str     x9, [x11]
+    ldr     x9, [sp, #400]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [sp, #304]
+    str     x9, [x11]
+    ldr     x9, [sp, #400]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [sp, #392]
+    str     x9, [x11]
+    ldr     x9, [sp, #400]
+    movz    x10, #0x0008
+    add     x16, x9, x10
+    str     x16, [sp, #3768]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    ldr     x17, [sp, #3768]
+    str     x11, [x17]
+    ldr     x9, [sp, #400]
+    str     x9, [sp, #384]
+.L260:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #408]
+    ldr     x9, [sp, #408]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #408]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [sp, #8]
+    str     x9, [x11]
+    ldr     x9, [sp, #408]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [sp, #384]
+    str     x9, [x11]
+    ldr     x9, [sp, #408]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #312]
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #416]
+    ldr     x9, [sp, #416]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [sp, #408]
+    str     x9, [x11]
+    ldr     x9, [sp, #416]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #312]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+    ldr     x9, [sp, #416]
+    str     x9, [sp, #8]
+    b       .L261
+.L255:
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    b       .L1135
+.L261:
+.L254:
+.L250:
+    b       .L228
+.L229:
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    b       .L1135
+.L1135:
+    movz    x16, #0x1000
+    add     sp, sp, x16
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _parse_unary
+_parse_unary:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #1232
+    str     x0, [sp, #0]
+    bl      _ps_kind
+    mov     x9, x0
+    str     w9, [sp, #8]
+    ldr     w9, [sp, #8]
+    mov     w9, w9
+    movz    x10, #0x0030
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L262
+    bl      _ps_advance
+    str     x0, [sp, #136]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_unary
+    mov     x10, x0
+    str     x10, [sp, #16]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0005
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #32]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [sp, #16]
+    str     x9, [x11]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    str     x9, [x11]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0008
+    add     x16, x9, x10
+    str     x16, [sp, #376]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    ldr     x17, [sp, #376]
+    str     x11, [x17]
+    ldr     x9, [sp, #32]
+    mov     x0, x9
+    b       .L1136
+.L262:
+    ldr     w9, [sp, #8]
+    mov     w9, w9
+    movz    x10, #0x0019
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L263
+    bl      _ps_advance
+    str     x0, [sp, #440]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_unary
+    mov     x10, x0
+    str     x10, [sp, #40]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #48]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #56]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    movz    x9, #0x0001
+    str     x9, [x11]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [sp, #48]
+    str     x9, [x11]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    str     x9, [x11]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+    ldr     x9, [sp, #56]
+    mov     x0, x9
+    b       .L1136
+.L263:
+    ldr     w9, [sp, #8]
+    mov     w9, w9
+    movz    x10, #0x002a
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L264
+    bl      _ps_advance
+    str     x0, [sp, #784]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_unary
+    mov     x10, x0
+    str     x10, [sp, #64]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #72]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [sp, #64]
+    str     x9, [x11]
+    ldr     x9, [sp, #64]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #80]
+    ldr     x9, [sp, #80]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L265
+    ldr     x9, [sp, #80]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L266
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0008
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+.L266:
+.L265:
+    ldr     x9, [sp, #72]
+    mov     x0, x9
+    b       .L1136
+.L264:
+    ldr     w9, [sp, #8]
+    mov     w9, w9
+    movz    x10, #0x001b
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L267
+    bl      _ps_advance
+    str     x0, [sp, #1056]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_unary
+    mov     x10, x0
+    str     x10, [sp, #88]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000c
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_expr
+    mov     x11, x0
+    str     x11, [sp, #96]
+    ldr     x9, [sp, #96]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [sp, #88]
+    str     x9, [x11]
+    ldr     x9, [sp, #96]
+    movz    x10, #0x0008
+    add     x16, x9, x10
+    str     x16, [sp, #1152]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ptr
+    mov     x11, x0
+    ldr     x17, [sp, #1152]
+    str     x11, [x17]
+    ldr     x9, [sp, #96]
+    mov     x0, x9
+    b       .L1136
+.L267:
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_postfix
     mov     x10, x0
     mov     x0, x10
-    b       .L962
-.L962:
-    add     sp, sp, #544
+    b       .L1136
+.L1136:
+    add     sp, sp, #1232
     ldp     x29, x30, [sp], #16
     ret
 
@@ -5687,148 +6835,193 @@ _parse_unary:
 _bin_prec:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #496
+    sub     sp, sp, #592
     str     w0, [sp, #0]
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0017
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L222
-    movz    x9, #0x0006
+    cbz     w11, .L268
+    movz    x9, #0x0008
     mov     x0, x9
-    b       .L963
-.L222:
+    b       .L1137
+.L268:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x001a
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L223
-    movz    x9, #0x0006
+    cbz     w11, .L269
+    movz    x9, #0x0008
     mov     x0, x9
-    b       .L963
-.L223:
+    b       .L1137
+.L269:
     ldr     w9, [sp, #0]
+    mov     w9, w9
+    movz    x10, #0x002f
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L270
+    movz    x9, #0x0008
+    mov     x0, x9
+    b       .L1137
+.L270:
+    ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0018
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L224
-    movz    x9, #0x0005
+    cbz     w11, .L271
+    movz    x9, #0x0007
     mov     x0, x9
-    b       .L963
-.L224:
+    b       .L1137
+.L271:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0019
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L225
-    movz    x9, #0x0005
+    cbz     w11, .L272
+    movz    x9, #0x0007
     mov     x0, x9
-    b       .L963
-.L225:
+    b       .L1137
+.L272:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x002b
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L226
-    movz    x9, #0x0005
+    cbz     w11, .L273
+    movz    x9, #0x0007
     mov     x0, x9
-    b       .L963
-.L226:
+    b       .L1137
+.L273:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x002c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L227
-    movz    x9, #0x0005
+    cbz     w11, .L274
+    movz    x9, #0x0007
     mov     x0, x9
-    b       .L963
-.L227:
+    b       .L1137
+.L274:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x001b
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L228
-    movz    x9, #0x0004
+    cbz     w11, .L275
+    movz    x9, #0x0006
     mov     x0, x9
-    b       .L963
-.L228:
+    b       .L1137
+.L275:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x001d
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L229
-    movz    x9, #0x0003
+    cbz     w11, .L276
+    movz    x9, #0x0005
     mov     x0, x9
-    b       .L963
-.L229:
+    b       .L1137
+.L276:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x001c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L230
-    movz    x9, #0x0002
+    cbz     w11, .L277
+    movz    x9, #0x0004
     mov     x0, x9
-    b       .L963
-.L230:
+    b       .L1137
+.L277:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x001f
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L231
-    movz    x9, #0x0001
+    cbz     w11, .L278
+    movz    x9, #0x0003
     mov     x0, x9
-    b       .L963
-.L231:
+    b       .L1137
+.L278:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0020
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L232
-    movz    x9, #0x0001
+    cbz     w11, .L279
+    movz    x9, #0x0003
     mov     x0, x9
-    b       .L963
-.L232:
+    b       .L1137
+.L279:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0021
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L233
-    movz    x9, #0x0001
+    cbz     w11, .L280
+    movz    x9, #0x0003
     mov     x0, x9
-    b       .L963
-.L233:
+    b       .L1137
+.L280:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0022
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L234
-    movz    x9, #0x0001
+    cbz     w11, .L281
+    movz    x9, #0x0003
     mov     x0, x9
-    b       .L963
-.L234:
+    b       .L1137
+.L281:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0023
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L235
-    movz    x9, #0x0001
+    cbz     w11, .L282
+    movz    x9, #0x0003
     mov     x0, x9
-    b       .L963
-.L235:
+    b       .L1137
+.L282:
     ldr     w9, [sp, #0]
+    mov     w9, w9
     movz    x10, #0x0024
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L236
+    cbz     w11, .L283
+    movz    x9, #0x0003
+    mov     x0, x9
+    b       .L1137
+.L283:
+    ldr     w9, [sp, #0]
+    mov     w9, w9
+    movz    x10, #0x0031
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L284
+    movz    x9, #0x0002
+    mov     x0, x9
+    b       .L1137
+.L284:
+    ldr     w9, [sp, #0]
+    mov     w9, w9
+    movz    x10, #0x0032
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L285
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L963
-.L236:
+    b       .L1137
+.L285:
     mov     x9, #0
     mov     x0, x9
-    b       .L963
-.L963:
-    add     sp, sp, #496
+    b       .L1137
+.L1137:
+    add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
 
@@ -5836,7 +7029,7 @@ _bin_prec:
 _parse_expr:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1280
+    sub     sp, sp, #1440
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
@@ -5844,20 +7037,21 @@ _parse_expr:
     bl      _parse_unary
     mov     x10, x0
     str     x10, [sp, #16]
-.L237:
+.L286:
     bl      _ps_kind
     mov     x9, x0
     mov     x0, x9
     bl      _bin_prec
     mov     x10, x0
     ldr     x9, [sp, #8]
-    cmp     w10, w9
+    cmp     x10, x9
     cset    w11, hs
-    cbz     w11, .L238
+    cbz     w11, .L287
     bl      _ps_kind
     mov     x9, x0
     str     w9, [sp, #24]
     ldr     w9, [sp, #24]
+    mov     w9, w9
     mov     x0, x9
     bl      _bin_prec
     mov     x10, x0
@@ -5881,170 +7075,221 @@ _parse_expr:
     mov     x11, x0
     str     x11, [sp, #48]
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0017
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L239
+    cbz     w11, .L288
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0002
     str     x9, [x11]
-.L239:
+.L288:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x001a
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L240
+    cbz     w11, .L289
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0003
     str     x9, [x11]
-.L240:
+.L289:
     ldr     w9, [sp, #24]
+    mov     w9, w9
+    movz    x10, #0x002f
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L290
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    movz    x9, #0x0009
+    str     x9, [x11]
+.L290:
+    ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0018
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L241
+    cbz     w11, .L291
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     mov     x9, #0
     str     x9, [x11]
-.L241:
+.L291:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0019
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L242
+    cbz     w11, .L292
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0001
     str     x9, [x11]
-.L242:
+.L292:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x001b
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L243
+    cbz     w11, .L293
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0004
     str     x9, [x11]
-.L243:
+.L293:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x001d
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L244
+    cbz     w11, .L294
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0006
     str     x9, [x11]
-.L244:
+.L294:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x001c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L245
+    cbz     w11, .L295
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0005
     str     x9, [x11]
-.L245:
+.L295:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x002b
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L246
+    cbz     w11, .L296
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0007
     str     x9, [x11]
-.L246:
+.L296:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x002c
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L247
+    cbz     w11, .L297
     ldr     x9, [sp, #48]
     movz    x10, #0x0040
     add     x11, x9, x10
     movz    x9, #0x0008
     str     x9, [x11]
-.L247:
+.L297:
     ldr     w9, [sp, #24]
+    mov     w9, w9
+    movz    x10, #0x0031
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L298
+    ldr     x9, [sp, #48]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x000f
+    str     x9, [x11]
+.L298:
+    ldr     w9, [sp, #24]
+    mov     w9, w9
+    movz    x10, #0x0032
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L299
+    ldr     x9, [sp, #48]
+    mov     x10, #0
+    add     x11, x9, x10
+    movz    x9, #0x0010
+    str     x9, [x11]
+.L299:
+    ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x001f
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L248
+    cbz     w11, .L300
     ldr     x9, [sp, #48]
     mov     x10, #0
     add     x11, x9, x10
     movz    x9, #0x0005
     str     x9, [x11]
-.L248:
+.L300:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0020
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L249
+    cbz     w11, .L301
     ldr     x9, [sp, #48]
     mov     x10, #0
     add     x11, x9, x10
     movz    x9, #0x0006
     str     x9, [x11]
-.L249:
+.L301:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0021
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L250
+    cbz     w11, .L302
     ldr     x9, [sp, #48]
     mov     x10, #0
     add     x11, x9, x10
     movz    x9, #0x0007
     str     x9, [x11]
-.L250:
+.L302:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0022
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L251
+    cbz     w11, .L303
     ldr     x9, [sp, #48]
     mov     x10, #0
     add     x11, x9, x10
     movz    x9, #0x0008
     str     x9, [x11]
-.L251:
+.L303:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0023
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L252
+    cbz     w11, .L304
     ldr     x9, [sp, #48]
     mov     x10, #0
     add     x11, x9, x10
     movz    x9, #0x0009
     str     x9, [x11]
-.L252:
+.L304:
     ldr     w9, [sp, #24]
+    mov     w9, w9
     movz    x10, #0x0024
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L253
+    cbz     w11, .L305
     ldr     x9, [sp, #48]
     mov     x10, #0
     add     x11, x9, x10
     movz    x9, #0x000a
     str     x9, [x11]
-.L253:
+.L305:
     ldr     x9, [sp, #48]
     movz    x10, #0x0030
     add     x11, x9, x10
@@ -6062,7 +7307,7 @@ _parse_expr:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L254
+    cbz     w11, .L306
     ldr     x9, [sp, #48]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -6071,30 +7316,30 @@ _parse_expr:
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
-    b       .L255
-.L254:
+    b       .L307
+.L306:
     ldr     x9, [sp, #48]
     movz    x10, #0x0008
     add     x16, x9, x10
-    str     x16, [sp, #1224]
+    str     x16, [sp, #1392]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x17, [sp, #1224]
+    ldr     x17, [sp, #1392]
     str     x11, [x17]
-.L255:
+.L307:
     ldr     x9, [sp, #48]
     str     x9, [sp, #16]
-    b       .L237
-.L238:
+    b       .L286
+.L287:
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L964
-.L964:
-    add     sp, sp, #1280
+    b       .L1138
+.L1138:
+    add     sp, sp, #1440
     ldp     x29, x30, [sp], #16
     ret
 
@@ -6174,8 +7419,8 @@ _mk_stmt:
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L965
-.L965:
+    b       .L1139
+.L1139:
     add     sp, sp, #448
     ldp     x29, x30, [sp], #16
     ret
@@ -6189,11 +7434,12 @@ _ps_expect:
     bl      _ps_kind
     mov     x9, x0
     ldr     w10, [sp, #0]
+    mov     w10, w10
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L256
-    adrp    x9, L_str26@PAGE
-    add     x9, x9, L_str26@PAGEOFF
+    cbz     w11, .L308
+    adrp    x9, L_str33@PAGE
+    add     x9, x9, L_str33@PAGEOFF
     str     x9, [sp, #8]
     movz    x9, #0x0011
     str     x9, [sp, #16]
@@ -6203,10 +7449,10 @@ _ps_expect:
     mov     x1, x10
     bl      _die_here
     str     x0, [sp, #80]
-.L256:
+.L308:
     bl      _ps_advance
     str     x0, [sp, #88]
-.L966:
+.L1140:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -6220,19 +7466,20 @@ _ps_accept:
     bl      _ps_kind
     mov     x9, x0
     ldr     w10, [sp, #0]
+    mov     w10, w10
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L257
+    cbz     w11, .L309
     bl      _ps_advance
     str     x0, [sp, #32]
     movz    x9, #0x0001
     mov     w0, w9
-    b       .L967
-.L257:
+    b       .L1141
+.L309:
     mov     x9, #0
     mov     w0, w9
-    b       .L967
-.L967:
+    b       .L1141
+.L1141:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -6250,11 +7497,11 @@ _bytes_eq_at:
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L258
+    cbz     w11, .L310
     mov     x9, #0
     mov     w0, w9
-    b       .L968
-.L258:
+    b       .L1142
+.L310:
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
     str     x9, [sp, #32]
@@ -6272,8 +7519,8 @@ _bytes_eq_at:
     bl      _bytes_eq
     mov     x12, x0
     mov     w0, w12
-    b       .L968
-.L968:
+    b       .L1142
+.L1142:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -6282,82 +7529,175 @@ _bytes_eq_at:
 _parse_type:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1072
+    sub     sp, sp, #2032
     str     x0, [sp, #0]
     bl      _ps_kind
     mov     x9, x0
-    movz    x10, #0x0017
+    movz    x10, #0x0015
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L259
+    cbz     w11, .L311
     bl      _ps_advance
-    str     x0, [sp, #152]
-    ldr     x9, [sp, #0]
-    mov     x0, x9
-    bl      _parse_type
-    mov     x10, x0
-    str     x10, [sp, #8]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_ptr
-    mov     x11, x0
-    mov     x0, x11
-    b       .L969
-.L259:
+    str     x0, [sp, #272]
+    adrp    x9, _TOK_CUR@PAGE
+    add     x9, x9, _TOK_CUR@PAGEOFF
+    str     x9, [sp, #8]
     bl      _ps_kind
     mov     x9, x0
-    movz    x10, #0x000e
+    movz    x10, #0x000f
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L260
-    adrp    x9, L_str27@PAGE
-    add     x9, x9, L_str27@PAGEOFF
+    cbz     w11, .L312
+    adrp    x9, L_str34@PAGE
+    add     x9, x9, L_str34@PAGEOFF
     str     x9, [sp, #16]
-    movz    x9, #0x0010
+    movz    x9, #0x0021
     str     x9, [sp, #24]
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #24]
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #256]
-.L260:
+    str     x0, [sp, #344]
+.L312:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L313
+    adrp    x9, L_str35@PAGE
+    add     x9, x9, L_str35@PAGEOFF
+    str     x9, [sp, #40]
+    movz    x9, #0x0018
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #440]
+.L313:
+    bl      _ps_advance
+    str     x0, [sp, #448]
+    movz    x9, #0x0016
+    mov     x0, x9
+    bl      _ps_expect
+    str     x0, [sp, #464]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_type
+    mov     x10, x0
+    str     x10, [sp, #56]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #56]
+    ldr     x11, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _mk_array
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1143
+.L311:
+    bl      _ps_kind
+    mov     x9, x0
+    movz    x10, #0x0017
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L314
+    bl      _ps_advance
+    str     x0, [sp, #544]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_type
+    mov     x10, x0
+    str     x10, [sp, #64]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #64]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ptr
+    mov     x11, x0
+    mov     x0, x11
+    b       .L1143
+.L314:
+    bl      _ps_kind
+    mov     x9, x0
+    movz    x10, #0x000e
+    cmp     w9, w10
+    cset    w11, ne
+    cbz     w11, .L315
+    adrp    x9, L_str36@PAGE
+    add     x9, x9, L_str36@PAGEOFF
+    str     x9, [sp, #72]
+    movz    x9, #0x0010
+    str     x9, [sp, #80]
+    ldr     x9, [sp, #72]
+    ldr     x10, [sp, #80]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #648]
+.L315:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
-    str     x9, [sp, #32]
-    adrp    x9, L_str28@PAGE
-    add     x9, x9, L_str28@PAGEOFF
-    str     x9, [sp, #40]
-    movz    x9, #0x0002
-    str     x9, [sp, #48]
-    adrp    x9, L_str29@PAGE
-    add     x9, x9, L_str29@PAGEOFF
-    str     x9, [sp, #56]
-    movz    x9, #0x0003
-    str     x9, [sp, #64]
-    adrp    x9, L_str30@PAGE
-    add     x9, x9, L_str30@PAGEOFF
-    str     x9, [sp, #72]
-    movz    x9, #0x0003
-    str     x9, [sp, #80]
-    adrp    x9, L_str31@PAGE
-    add     x9, x9, L_str31@PAGEOFF
     str     x9, [sp, #88]
-    movz    x9, #0x0003
+    adrp    x9, L_str37@PAGE
+    add     x9, x9, L_str37@PAGEOFF
     str     x9, [sp, #96]
-    mov     x9, #0
+    movz    x9, #0x0002
     str     x9, [sp, #104]
-    ldr     x9, [sp, #32]
+    adrp    x9, L_str38@PAGE
+    add     x9, x9, L_str38@PAGEOFF
+    str     x9, [sp, #112]
+    movz    x9, #0x0003
+    str     x9, [sp, #120]
+    adrp    x9, L_str39@PAGE
+    add     x9, x9, L_str39@PAGEOFF
+    str     x9, [sp, #128]
+    movz    x9, #0x0003
+    str     x9, [sp, #136]
+    adrp    x9, L_str40@PAGE
+    add     x9, x9, L_str40@PAGEOFF
+    str     x9, [sp, #144]
+    movz    x9, #0x0002
+    str     x9, [sp, #152]
+    adrp    x9, L_str41@PAGE
+    add     x9, x9, L_str41@PAGEOFF
+    str     x9, [sp, #160]
+    movz    x9, #0x0003
+    str     x9, [sp, #168]
+    adrp    x9, L_str42@PAGE
+    add     x9, x9, L_str42@PAGEOFF
+    str     x9, [sp, #176]
+    movz    x9, #0x0003
+    str     x9, [sp, #184]
+    adrp    x9, L_str43@PAGE
+    add     x9, x9, L_str43@PAGEOFF
+    str     x9, [sp, #192]
+    movz    x9, #0x0004
+    str     x9, [sp, #200]
+    adrp    x9, L_str44@PAGE
+    add     x9, x9, L_str44@PAGEOFF
+    str     x9, [sp, #208]
+    movz    x9, #0x0003
+    str     x9, [sp, #216]
+    mov     x9, #0
+    str     x9, [sp, #224]
+    ldr     x9, [sp, #88]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #88]
     movz    x11, #0x0010
     add     x12, x10, x11
     ldr     x10, [x12]
-    ldr     x11, [sp, #40]
+    ldr     x11, [sp, #96]
     movz    x12, #0x0002
     mov     x0, x9
     mov     x1, x10
@@ -6368,24 +7708,24 @@ _parse_type:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L261
+    cbz     w10, .L316
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    str     x11, [sp, #104]
-.L261:
-    ldr     x9, [sp, #32]
+    str     x11, [sp, #224]
+.L316:
+    ldr     x9, [sp, #88]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #88]
     movz    x11, #0x0010
     add     x12, x10, x11
     ldr     x10, [x12]
-    ldr     x11, [sp, #56]
+    ldr     x11, [sp, #112]
     movz    x12, #0x0003
     mov     x0, x9
     mov     x1, x10
@@ -6396,24 +7736,24 @@ _parse_type:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L262
+    cbz     w10, .L317
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    str     x11, [sp, #104]
-.L262:
-    ldr     x9, [sp, #32]
+    str     x11, [sp, #224]
+.L317:
+    ldr     x9, [sp, #88]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #88]
     movz    x11, #0x0010
     add     x12, x10, x11
     ldr     x10, [x12]
-    ldr     x11, [sp, #72]
+    ldr     x11, [sp, #128]
     movz    x12, #0x0003
     mov     x0, x9
     mov     x1, x10
@@ -6424,24 +7764,52 @@ _parse_type:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L263
+    cbz     w10, .L318
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    str     x11, [sp, #104]
-.L263:
-    ldr     x9, [sp, #32]
+    str     x11, [sp, #224]
+.L318:
+    ldr     x9, [sp, #88]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #88]
     movz    x11, #0x0010
     add     x12, x10, x11
     ldr     x10, [x12]
-    ldr     x11, [sp, #88]
+    ldr     x11, [sp, #144]
+    movz    x12, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _bytes_eq_at
+    mov     x13, x0
+    movz    x9, #0x0001
+    cmp     w13, w9
+    cset    w10, eq
+    cbz     w10, .L319
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0006
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    str     x11, [sp, #224]
+.L319:
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #160]
     movz    x12, #0x0003
     mov     x0, x9
     mov     x1, x10
@@ -6452,41 +7820,125 @@ _parse_type:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L264
+    cbz     w10, .L320
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    str     x11, [sp, #224]
+.L320:
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #176]
+    movz    x12, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _bytes_eq_at
+    mov     x13, x0
+    movz    x9, #0x0001
+    cmp     w13, w9
+    cset    w10, eq
+    cbz     w10, .L321
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    str     x11, [sp, #224]
+.L321:
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #192]
+    movz    x12, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _bytes_eq_at
+    mov     x13, x0
+    movz    x9, #0x0001
+    cmp     w13, w9
+    cset    w10, eq
+    cbz     w10, .L322
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0009
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    str     x11, [sp, #224]
+.L322:
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #88]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #208]
+    movz    x12, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _bytes_eq_at
+    mov     x13, x0
+    movz    x9, #0x0001
+    cmp     w13, w9
+    cset    w10, eq
+    cbz     w10, .L323
     ldr     x9, [sp, #0]
     movz    x10, #0x0004
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    str     x11, [sp, #104]
-.L264:
-    ldr     x9, [sp, #104]
+    str     x11, [sp, #224]
+.L323:
+    ldr     x9, [sp, #224]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L265
+    cbz     w11, .L324
     ldr     x9, [sp, #0]
     movz    x10, #0x0005
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    str     x11, [sp, #104]
+    str     x11, [sp, #224]
     bl      _cur_prog
     mov     x9, x0
-    str     x9, [sp, #112]
-    ldr     x9, [sp, #112]
+    str     x9, [sp, #232]
+    ldr     x9, [sp, #232]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L266
-    ldr     x9, [sp, #112]
-    ldr     x10, [sp, #32]
+    cbz     w11, .L325
+    ldr     x9, [sp, #232]
+    ldr     x10, [sp, #88]
     movz    x11, #0x0008
     add     x12, x10, x11
     ldr     x10, [x12]
-    ldr     x11, [sp, #32]
+    ldr     x11, [sp, #88]
     movz    x12, #0x0010
     add     x13, x11, x12
     ldr     x11, [x13]
@@ -6495,21 +7947,21 @@ _parse_type:
     mov     x2, x11
     bl      _lookup_struct
     mov     x12, x0
-    str     x12, [sp, #120]
-    ldr     x9, [sp, #104]
+    str     x12, [sp, #240]
+    ldr     x9, [sp, #224]
     movz    x10, #0x0010
     add     x11, x9, x10
-    ldr     x9, [sp, #120]
+    ldr     x9, [sp, #240]
     str     x9, [x11]
-.L266:
-.L265:
+.L325:
+.L324:
     bl      _ps_advance
-    str     x0, [sp, #1048]
-    ldr     x9, [sp, #104]
+    str     x0, [sp, #2016]
+    ldr     x9, [sp, #224]
     mov     x0, x9
-    b       .L969
-.L969:
-    add     sp, sp, #1072
+    b       .L1143
+.L1143:
+    add     sp, sp, #2032
     ldp     x29, x30, [sp], #16
     ret
 
@@ -6517,67 +7969,260 @@ _parse_type:
 _parse_block:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #240
+    sub     sp, sp, #560
     str     x0, [sp, #0]
-    movz    x9, #0x0013
-    mov     x0, x9
-    bl      _ps_expect
-    str     x0, [sp, #40]
-    mov     x9, #0
+    bl      _cur_func
+    mov     x9, x0
     str     x9, [sp, #8]
     mov     x9, #0
     str     x9, [sp, #16]
-.L267:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L326
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+.L326:
+    movz    x9, #0x0013
+    mov     x0, x9
+    bl      _ps_expect
+    str     x0, [sp, #152]
+    mov     x9, #0
+    str     x9, [sp, #24]
+    mov     x9, #0
+    str     x9, [sp, #32]
+.L327:
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0014
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L268
+    cbz     w11, .L328
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_stmt
     mov     x10, x0
-    str     x10, [sp, #24]
-    ldr     x9, [sp, #8]
+    str     x10, [sp, #40]
+    ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L269
-    ldr     x9, [sp, #24]
-    str     x9, [sp, #8]
-    b       .L270
-.L269:
-    ldr     x9, [sp, #16]
+    cbz     w11, .L329
+    ldr     x9, [sp, #40]
+    str     x9, [sp, #24]
+    b       .L330
+.L329:
+    ldr     x9, [sp, #32]
     movz    x10, #0x0050
     add     x11, x9, x10
-    ldr     x9, [sp, #24]
+    ldr     x9, [sp, #40]
     str     x9, [x11]
-.L270:
-    ldr     x9, [sp, #24]
-    str     x9, [sp, #16]
-.L271:
+.L330:
+    ldr     x9, [sp, #40]
+    str     x9, [sp, #32]
+.L331:
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0025
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L272
+    cbz     w11, .L332
     bl      _ps_advance
-    str     x0, [sp, #200]
-    b       .L271
-.L272:
-    b       .L267
-.L268:
+    str     x0, [sp, #312]
+    b       .L331
+.L332:
+    b       .L327
+.L328:
     movz    x9, #0x0014
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #216]
+    str     x0, [sp, #328]
     ldr     x9, [sp, #8]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L333
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #16]
+    str     x9, [sp, #56]
+.L334:
+    ldr     x9, [sp, #56]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0040
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L335
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #56]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #64]
+    ldr     x9, [sp, #64]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    b       .L334
+.L335:
+.L333:
+    ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L970
-.L970:
-    add     sp, sp, #240
+    b       .L1144
+.L1144:
+    add     sp, sp, #560
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _require_initialized
+_require_initialized:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #720
+    str     x0, [sp, #0]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L336
+    b       .L1145
+.L336:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000c
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L337
+    b       .L1145
+.L337:
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L338
+    bl      _cur_func
+    mov     x9, x0
+    str     x9, [sp, #8]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0078
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L339
+    adrp    x9, L_str45@PAGE
+    add     x9, x9, L_str45@PAGEOFF
+    str     x9, [sp, #32]
+    movz    x9, #0x0020
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #376]
+.L339:
+    b       .L1145
+.L338:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #416]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #456]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #496]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L340
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #48]
+    mov     x9, #0
+    str     x9, [sp, #56]
+.L341:
+    ldr     x9, [sp, #56]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0050
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L342
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #56]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #688]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #56]
+    b       .L341
+.L342:
+.L340:
+.L1145:
+    add     sp, sp, #720
     ldp     x29, x30, [sp], #16
     ret
 
@@ -6585,18 +8230,19 @@ _parse_block:
 _parse_stmt:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #2128
+    sub     sp, sp, #2896
     str     x0, [sp, #0]
     bl      _ps_kind
     mov     x9, x0
     str     w9, [sp, #8]
     ldr     w9, [sp, #8]
+    mov     w9, w9
     movz    x10, #0x0002
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L273
+    cbz     w11, .L343
     bl      _ps_advance
-    str     x0, [sp, #176]
+    str     x0, [sp, #216]
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #16]
@@ -6605,9 +8251,9 @@ _parse_stmt:
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L274
-    adrp    x9, L_str32@PAGE
-    add     x9, x9, L_str32@PAGEOFF
+    cbz     w11, .L344
+    adrp    x9, L_str46@PAGE
+    add     x9, x9, L_str46@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x001a
     str     x9, [sp, #32]
@@ -6616,8 +8262,8 @@ _parse_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #248]
-.L274:
+    str     x0, [sp, #288]
+.L344:
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -6642,7 +8288,7 @@ _parse_stmt:
     ldr     x9, [x12]
     str     x9, [x11]
     bl      _ps_advance
-    str     x0, [sp, #392]
+    str     x0, [sp, #432]
     movz    x9, #0x0027
     mov     x0, x9
     bl      _ps_accept
@@ -6650,18 +8296,18 @@ _parse_stmt:
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L275
+    cbz     w11, .L345
     ldr     x9, [sp, #40]
     movz    x10, #0x0018
     add     x16, x9, x10
-    str     x16, [sp, #448]
+    str     x16, [sp, #488]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_type
     mov     x10, x0
-    ldr     x17, [sp, #448]
+    ldr     x17, [sp, #488]
     str     x10, [x17]
-.L275:
+.L345:
     movz    x9, #0x001e
     mov     x0, x9
     bl      _ps_accept
@@ -6669,34 +8315,73 @@ _parse_stmt:
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L276
+    cbz     w11, .L346
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L347
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000a
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L348
+    adrp    x9, L_str47@PAGE
+    add     x9, x9, L_str47@PAGEOFF
+    str     x9, [sp, #48]
+    movz    x9, #0x0023
+    str     x9, [sp, #56]
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #696]
+.L348:
+.L347:
     ldr     x9, [sp, #40]
     movz    x10, #0x0020
     add     x16, x9, x10
-    str     x16, [sp, #520]
+    str     x16, [sp, #720]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _parse_expr
     mov     x11, x0
-    ldr     x17, [sp, #520]
+    ldr     x17, [sp, #720]
     str     x11, [x17]
-.L276:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #784]
+.L346:
     bl      _cur_func
     mov     x9, x0
-    str     x9, [sp, #48]
-    ldr     x9, [sp, #48]
+    str     x9, [sp, #64]
+    ldr     x9, [sp, #64]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L277
+    cbz     w11, .L349
     ldr     x9, [sp, #40]
     movz    x10, #0x0058
     add     x16, x9, x10
-    str     x16, [sp, #600]
+    str     x16, [sp, #840]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #48]
+    ldr     x10, [sp, #64]
     ldr     x11, [sp, #40]
     movz    x12, #0x0008
     add     x13, x11, x12
@@ -6716,164 +8401,98 @@ _parse_stmt:
     mov     x4, x13
     bl      _add_local
     mov     x14, x0
-    ldr     x17, [sp, #600]
+    ldr     x17, [sp, #840]
     str     x14, [x17]
-.L277:
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L350
+    ldr     x9, [sp, #64]
+    ldr     x10, [sp, #40]
+    movz    x11, #0x0058
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mark_local_initialized
+    str     x0, [sp, #1056]
+.L350:
+.L349:
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L971
-.L273:
+    b       .L1146
+.L343:
     ldr     w9, [sp, #8]
+    mov     w9, w9
     movz    x10, #0x0004
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L278
+    cbz     w11, .L351
     bl      _ps_advance
-    str     x0, [sp, #760]
+    str     x0, [sp, #1096]
     ldr     x9, [sp, #0]
     movz    x10, #0x0007
     mov     x0, x9
     mov     x1, x10
     bl      _mk_stmt
     mov     x11, x0
-    str     x11, [sp, #56]
+    str     x11, [sp, #72]
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0025
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L279
+    cbz     w11, .L352
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0014
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L280
-    ldr     x9, [sp, #56]
+    cbz     w11, .L353
+    ldr     x9, [sp, #72]
     movz    x10, #0x0040
     add     x16, x9, x10
-    str     x16, [sp, #856]
+    str     x16, [sp, #1192]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _parse_expr
     mov     x11, x0
-    ldr     x17, [sp, #856]
+    ldr     x17, [sp, #1192]
     str     x11, [x17]
-.L280:
-.L279:
-    ldr     x9, [sp, #56]
+    ldr     x9, [sp, #72]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    ldr     x9, [x11]
     mov     x0, x9
-    b       .L971
-.L278:
+    bl      _require_initialized
+    str     x0, [sp, #1256]
+.L353:
+.L352:
+    ldr     x9, [sp, #72]
+    mov     x0, x9
+    b       .L1146
+.L351:
     ldr     w9, [sp, #8]
+    mov     w9, w9
     movz    x10, #0x0005
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L281
+    cbz     w11, .L354
     bl      _ps_advance
-    str     x0, [sp, #920]
-    movz    x9, #0x0011
-    mov     x0, x9
-    bl      _ps_accept
-    mov     x10, x0
-    str     w10, [sp, #64]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0005
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_stmt
-    mov     x11, x0
-    str     x11, [sp, #72]
-    ldr     x9, [sp, #72]
-    movz    x10, #0x0028
-    add     x16, x9, x10
-    str     x16, [sp, #984]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0001
-    mov     x0, x9
-    mov     x1, x10
-    bl      _parse_expr
-    mov     x11, x0
-    ldr     x17, [sp, #984]
-    str     x11, [x17]
-    ldr     w9, [sp, #64]
-    movz    x10, #0x0001
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L282
-    movz    x9, #0x0012
-    mov     x0, x9
-    bl      _ps_expect
-    str     x0, [sp, #1048]
-.L282:
-    ldr     x9, [sp, #72]
-    movz    x10, #0x0030
-    add     x16, x9, x10
-    str     x16, [sp, #1072]
-    ldr     x9, [sp, #0]
-    mov     x0, x9
-    bl      _parse_block
-    mov     x10, x0
-    ldr     x17, [sp, #1072]
-    str     x10, [x17]
-    bl      _ps_kind
-    mov     x9, x0
-    movz    x10, #0x0006
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L283
-    bl      _ps_advance
-    str     x0, [sp, #1120]
-    bl      _ps_kind
-    mov     x9, x0
-    movz    x10, #0x0005
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L284
-    ldr     x9, [sp, #72]
-    movz    x10, #0x0038
-    add     x16, x9, x10
-    str     x16, [sp, #1168]
-    ldr     x9, [sp, #0]
-    mov     x0, x9
-    bl      _parse_stmt
-    mov     x10, x0
-    ldr     x17, [sp, #1168]
-    str     x10, [x17]
-    b       .L285
-.L284:
-    ldr     x9, [sp, #72]
-    movz    x10, #0x0038
-    add     x16, x9, x10
-    str     x16, [sp, #1208]
-    ldr     x9, [sp, #0]
-    mov     x0, x9
-    bl      _parse_block
-    mov     x10, x0
-    ldr     x17, [sp, #1208]
-    str     x10, [x17]
-.L285:
-.L283:
-    ldr     x9, [sp, #72]
-    mov     x0, x9
-    b       .L971
-.L281:
-    ldr     w9, [sp, #8]
-    movz    x10, #0x0008
-    cmp     w9, w10
-    cset    w11, eq
-    cbz     w11, .L286
-    bl      _ps_advance
-    str     x0, [sp, #1264]
+    str     x0, [sp, #1296]
     movz    x9, #0x0011
     mov     x0, x9
     bl      _ps_accept
     mov     x10, x0
     str     w10, [sp, #80]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0004
+    movz    x10, #0x0005
     mov     x0, x9
     mov     x1, x10
     bl      _mk_stmt
@@ -6882,74 +8501,186 @@ _parse_stmt:
     ldr     x9, [sp, #88]
     movz    x10, #0x0028
     add     x16, x9, x10
-    str     x16, [sp, #1328]
+    str     x16, [sp, #1360]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _parse_expr
     mov     x11, x0
-    ldr     x17, [sp, #1328]
+    ldr     x17, [sp, #1360]
     str     x11, [x17]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #1424]
     ldr     w9, [sp, #80]
+    mov     w9, w9
     movz    x10, #0x0001
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L287
+    cbz     w11, .L355
     movz    x9, #0x0012
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #1392]
-.L287:
+    str     x0, [sp, #1464]
+.L355:
     ldr     x9, [sp, #88]
     movz    x10, #0x0030
     add     x16, x9, x10
-    str     x16, [sp, #1416]
+    str     x16, [sp, #1488]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_block
     mov     x10, x0
-    ldr     x17, [sp, #1416]
+    ldr     x17, [sp, #1488]
     str     x10, [x17]
+    bl      _ps_kind
+    mov     x9, x0
+    movz    x10, #0x0006
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L356
+    bl      _ps_advance
+    str     x0, [sp, #1536]
+    bl      _ps_kind
+    mov     x9, x0
+    movz    x10, #0x0005
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L357
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0038
+    add     x16, x9, x10
+    str     x16, [sp, #1584]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_stmt
+    mov     x10, x0
+    ldr     x17, [sp, #1584]
+    str     x10, [x17]
+    b       .L358
+.L357:
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0038
+    add     x16, x9, x10
+    str     x16, [sp, #1624]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_block
+    mov     x10, x0
+    ldr     x17, [sp, #1624]
+    str     x10, [x17]
+.L358:
+.L356:
     ldr     x9, [sp, #88]
     mov     x0, x9
-    b       .L971
-.L286:
+    b       .L1146
+.L354:
     ldr     w9, [sp, #8]
+    mov     w9, w9
+    movz    x10, #0x0008
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L359
+    bl      _ps_advance
+    str     x0, [sp, #1680]
+    movz    x9, #0x0011
+    mov     x0, x9
+    bl      _ps_accept
+    mov     x10, x0
+    str     w10, [sp, #96]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_stmt
+    mov     x11, x0
+    str     x11, [sp, #104]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0028
+    add     x16, x9, x10
+    str     x16, [sp, #1744]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    bl      _parse_expr
+    mov     x11, x0
+    ldr     x17, [sp, #1744]
+    str     x11, [x17]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #1808]
+    ldr     w9, [sp, #96]
+    mov     w9, w9
+    movz    x10, #0x0001
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L360
+    movz    x9, #0x0012
+    mov     x0, x9
+    bl      _ps_expect
+    str     x0, [sp, #1848]
+.L360:
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0030
+    add     x16, x9, x10
+    str     x16, [sp, #1872]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _parse_block
+    mov     x10, x0
+    ldr     x17, [sp, #1872]
+    str     x10, [x17]
+    ldr     x9, [sp, #104]
+    mov     x0, x9
+    b       .L1146
+.L359:
+    ldr     w9, [sp, #8]
+    mov     w9, w9
     movz    x10, #0x0007
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L288
+    cbz     w11, .L361
     bl      _ps_advance
-    str     x0, [sp, #1472]
+    str     x0, [sp, #1928]
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     mov     x0, x9
     mov     x1, x10
     bl      _mk_stmt
     mov     x11, x0
-    str     x11, [sp, #96]
-    ldr     x9, [sp, #96]
+    str     x11, [sp, #112]
+    ldr     x9, [sp, #112]
     movz    x10, #0x0030
     add     x16, x9, x10
-    str     x16, [sp, #1520]
+    str     x16, [sp, #1976]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_block
     mov     x10, x0
-    ldr     x17, [sp, #1520]
+    ldr     x17, [sp, #1976]
     str     x10, [x17]
-    ldr     x9, [sp, #96]
+    ldr     x9, [sp, #112]
     mov     x0, x9
-    b       .L971
-.L288:
+    b       .L1146
+.L361:
     ldr     w9, [sp, #8]
+    mov     w9, w9
     movz    x10, #0x0009
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L289
+    cbz     w11, .L362
     bl      _ps_advance
-    str     x0, [sp, #1576]
+    str     x0, [sp, #2032]
     ldr     x9, [sp, #0]
     movz    x10, #0x0006
     mov     x0, x9
@@ -6957,15 +8688,32 @@ _parse_stmt:
     bl      _mk_stmt
     mov     x11, x0
     mov     x0, x11
-    b       .L971
-.L289:
+    b       .L1146
+.L362:
+    ldr     w9, [sp, #8]
+    mov     w9, w9
+    movz    x10, #0x002d
+    cmp     w9, w10
+    cset    w11, eq
+    cbz     w11, .L363
+    bl      _ps_advance
+    str     x0, [sp, #2088]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0009
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_stmt
+    mov     x11, x0
+    mov     x0, x11
+    b       .L1146
+.L363:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _parse_expr
     mov     x11, x0
-    str     x11, [sp, #104]
+    str     x11, [sp, #120]
     movz    x9, #0x001e
     mov     x0, x9
     bl      _ps_accept
@@ -6973,101 +8721,159 @@ _parse_stmt:
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L290
+    cbz     w11, .L364
+    ldr     x9, [sp, #120]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L365
+    ldr     x9, [sp, #120]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000a
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L366
+    adrp    x9, L_str48@PAGE
+    add     x9, x9, L_str48@PAGEOFF
+    str     x9, [sp, #128]
+    movz    x9, #0x0020
+    str     x9, [sp, #136]
+    ldr     x9, [sp, #128]
+    ldr     x10, [sp, #136]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _die_here
+    str     x0, [sp, #2328]
+.L366:
+.L365:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _parse_expr
     mov     x11, x0
-    str     x11, [sp, #112]
-    ldr     x9, [sp, #104]
+    str     x11, [sp, #144]
+    ldr     x9, [sp, #144]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #2368]
+    ldr     x9, [sp, #120]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L291
+    cbz     w11, .L367
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _mk_stmt
     mov     x11, x0
-    str     x11, [sp, #120]
-    ldr     x9, [sp, #120]
+    str     x11, [sp, #152]
+    ldr     x9, [sp, #152]
     movz    x10, #0x0048
     add     x11, x9, x10
-    ldr     x9, [sp, #104]
+    ldr     x9, [sp, #120]
     movz    x10, #0x0028
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
-    ldr     x9, [sp, #120]
+    ldr     x9, [sp, #152]
     movz    x10, #0x0020
     add     x11, x9, x10
-    ldr     x9, [sp, #112]
+    ldr     x9, [sp, #144]
     str     x9, [x11]
-    ldr     x9, [sp, #120]
+    ldr     x9, [sp, #152]
     mov     x0, x9
-    b       .L971
-.L291:
+    b       .L1146
+.L367:
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
     mov     x1, x10
     bl      _mk_stmt
     mov     x11, x0
-    str     x11, [sp, #128]
-    ldr     x9, [sp, #128]
+    str     x11, [sp, #160]
+    ldr     x9, [sp, #160]
     movz    x10, #0x0048
     add     x11, x9, x10
-    ldr     x9, [sp, #104]
+    ldr     x9, [sp, #120]
     str     x9, [x11]
-    ldr     x9, [sp, #128]
+    ldr     x9, [sp, #160]
     movz    x10, #0x0020
     add     x11, x9, x10
-    ldr     x9, [sp, #112]
+    ldr     x9, [sp, #144]
     str     x9, [x11]
-    ldr     x9, [sp, #104]
+    ldr     x9, [sp, #120]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L292
-    ldr     x9, [sp, #128]
+    cbz     w11, .L368
+    ldr     x9, [sp, #160]
     movz    x10, #0x0058
     add     x11, x9, x10
-    ldr     x9, [sp, #104]
+    ldr     x9, [sp, #120]
     movz    x10, #0x0078
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
-.L292:
-    ldr     x9, [sp, #128]
+    bl      _cur_func
+    mov     x9, x0
+    str     x9, [sp, #168]
+    ldr     x9, [sp, #168]
+    ldr     x10, [sp, #120]
+    movz    x11, #0x0078
+    add     x12, x10, x11
+    ldr     x10, [x12]
     mov     x0, x9
-    b       .L971
-.L290:
+    mov     x1, x10
+    bl      _mark_local_initialized
+    str     x0, [sp, #2784]
+    b       .L369
+.L368:
+    ldr     x9, [sp, #120]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #2800]
+.L369:
+    ldr     x9, [sp, #160]
+    mov     x0, x9
+    b       .L1146
+.L364:
+    ldr     x9, [sp, #120]
+    mov     x0, x9
+    bl      _require_initialized
+    str     x0, [sp, #2824]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     mov     x0, x9
     mov     x1, x10
     bl      _mk_stmt
     mov     x11, x0
-    str     x11, [sp, #136]
-    ldr     x9, [sp, #136]
+    str     x11, [sp, #176]
+    ldr     x9, [sp, #176]
     movz    x10, #0x0048
     add     x11, x9, x10
-    ldr     x9, [sp, #104]
+    ldr     x9, [sp, #120]
     str     x9, [x11]
-    ldr     x9, [sp, #136]
+    ldr     x9, [sp, #176]
     mov     x0, x9
-    b       .L971
-.L971:
-    add     sp, sp, #2128
+    b       .L1146
+.L1146:
+    add     sp, sp, #2896
     ldp     x29, x30, [sp], #16
     ret
 
@@ -7116,8 +8922,8 @@ _mk_program:
     str     x9, [x11]
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L972
-.L972:
+    b       .L1147
+.L1147:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -7126,20 +8932,20 @@ _mk_program:
 _parse_fun:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1584
+    sub     sp, sp, #1616
     str     x0, [sp, #0]
     movz    x9, #0x0001
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #104]
+    str     x0, [sp, #112]
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L293
-    adrp    x9, L_str33@PAGE
-    add     x9, x9, L_str33@PAGEOFF
+    cbz     w11, .L370
+    adrp    x9, L_str49@PAGE
+    add     x9, x9, L_str49@PAGEOFF
     str     x9, [sp, #8]
     movz    x9, #0x001a
     str     x9, [sp, #16]
@@ -7148,8 +8954,8 @@ _parse_fun:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #168]
-.L293:
+    str     x0, [sp, #176]
+.L370:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #24]
@@ -7204,14 +9010,14 @@ _parse_fun:
     ldr     x9, [sp, #32]
     movz    x10, #0x0038
     add     x16, x9, x10
-    str     x16, [sp, #496]
+    str     x16, [sp, #504]
     ldr     x9, [sp, #0]
     movz    x10, #0x0800
     mov     x0, x9
     mov     x1, x10
     bl      _arena_take
     mov     x11, x0
-    ldr     x17, [sp, #496]
+    ldr     x17, [sp, #504]
     str     x11, [x17]
     ldr     x9, [sp, #32]
     movz    x10, #0x0040
@@ -7221,32 +9027,32 @@ _parse_fun:
     ldr     x9, [sp, #32]
     mov     x0, x9
     bl      _cur_func_set
-    str     x0, [sp, #568]
-    bl      _ps_advance
     str     x0, [sp, #576]
+    bl      _ps_advance
+    str     x0, [sp, #584]
     movz    x9, #0x0011
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #592]
+    str     x0, [sp, #600]
     mov     x9, #0
     str     x9, [sp, #40]
     mov     x9, #0
     str     x9, [sp, #48]
-.L294:
+.L371:
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0012
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L295
+    cbz     w11, .L372
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L296
-    adrp    x9, L_str34@PAGE
-    add     x9, x9, L_str34@PAGEOFF
+    cbz     w11, .L373
+    adrp    x9, L_str50@PAGE
+    add     x9, x9, L_str50@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0020
     str     x9, [sp, #64]
@@ -7255,8 +9061,8 @@ _parse_fun:
     mov     x0, x9
     mov     x1, x10
     bl      _die_here
-    str     x0, [sp, #696]
-.L296:
+    str     x0, [sp, #704]
+.L373:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #72]
@@ -7289,36 +9095,36 @@ _parse_fun:
     mov     x9, #0
     str     x9, [x11]
     bl      _ps_advance
-    str     x0, [sp, #880]
+    str     x0, [sp, #888]
     movz    x9, #0x0027
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #896]
+    str     x0, [sp, #904]
     ldr     x9, [sp, #80]
     movz    x10, #0x0010
     add     x16, x9, x10
-    str     x16, [sp, #920]
+    str     x16, [sp, #928]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_type
     mov     x10, x0
-    ldr     x17, [sp, #920]
+    ldr     x17, [sp, #928]
     str     x10, [x17]
     ldr     x9, [sp, #40]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L297
+    cbz     w11, .L374
     ldr     x9, [sp, #80]
     str     x9, [sp, #40]
-    b       .L298
-.L297:
+    b       .L375
+.L374:
     ldr     x9, [sp, #48]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [sp, #80]
     str     x9, [x11]
-.L298:
+.L375:
     ldr     x9, [sp, #80]
     str     x9, [sp, #48]
     ldr     x9, [sp, #80]
@@ -7333,7 +9139,7 @@ _parse_fun:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L299
+    cbz     w11, .L376
     ldr     x9, [sp, #32]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -7344,8 +9150,8 @@ _parse_fun:
     movz    x10, #0x0002
     add     x12, x9, x10
     str     x12, [x11]
-    b       .L300
-.L299:
+    b       .L377
+.L376:
     ldr     x9, [sp, #32]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -7356,7 +9162,7 @@ _parse_fun:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L300:
+.L377:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     ldr     x11, [sp, #80]
@@ -7377,24 +9183,31 @@ _parse_fun:
     mov     x3, x12
     mov     x4, x13
     bl      _add_local
-    str     x0, [sp, #1352]
+    mov     x14, x0
+    str     x14, [sp, #96]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #96]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mark_local_initialized
+    str     x0, [sp, #1384]
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0012
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L301
+    cbz     w11, .L378
     movz    x9, #0x0026
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #1392]
-.L301:
-    b       .L294
-.L295:
+    str     x0, [sp, #1424]
+.L378:
+    b       .L371
+.L372:
     movz    x9, #0x0012
     mov     x0, x9
     bl      _ps_expect
-    str     x0, [sp, #1408]
+    str     x0, [sp, #1440]
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
     add     x11, x9, x10
@@ -7405,39 +9218,39 @@ _parse_fun:
     movz    x10, #0x0029
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L302
+    cbz     w11, .L379
     bl      _ps_advance
-    str     x0, [sp, #1472]
+    str     x0, [sp, #1504]
     ldr     x9, [sp, #32]
     movz    x10, #0x0020
     add     x16, x9, x10
-    str     x16, [sp, #1496]
+    str     x16, [sp, #1528]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_type
     mov     x10, x0
-    ldr     x17, [sp, #1496]
+    ldr     x17, [sp, #1528]
     str     x10, [x17]
-.L302:
+.L379:
     ldr     x9, [sp, #32]
     movz    x10, #0x0028
     add     x16, x9, x10
-    str     x16, [sp, #1536]
+    str     x16, [sp, #1568]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_block
     mov     x10, x0
-    ldr     x17, [sp, #1536]
+    ldr     x17, [sp, #1568]
     str     x10, [x17]
     mov     x9, #0
     mov     x0, x9
     bl      _cur_func_set
-    str     x0, [sp, #1568]
+    str     x0, [sp, #1600]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L973
-.L973:
-    add     sp, sp, #1584
+    b       .L1148
+.L1148:
+    add     sp, sp, #1616
     ldp     x29, x30, [sp], #16
     ret
 
@@ -7456,9 +9269,9 @@ _parse_const_decl:
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L303
-    adrp    x9, L_str35@PAGE
-    add     x9, x9, L_str35@PAGEOFF
+    cbz     w11, .L380
+    adrp    x9, L_str51@PAGE
+    add     x9, x9, L_str51@PAGEOFF
     str     x9, [sp, #8]
     movz    x9, #0x001c
     str     x9, [sp, #16]
@@ -7468,7 +9281,7 @@ _parse_const_decl:
     mov     x1, x10
     bl      _die_here
     str     x0, [sp, #136]
-.L303:
+.L380:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #24]
@@ -7525,9 +9338,9 @@ _parse_const_decl:
     movz    x10, #0x000f
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L304
-    adrp    x9, L_str36@PAGE
-    add     x9, x9, L_str36@PAGEOFF
+    cbz     w11, .L381
+    adrp    x9, L_str52@PAGE
+    add     x9, x9, L_str52@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x001b
     str     x9, [sp, #48]
@@ -7537,7 +9350,7 @@ _parse_const_decl:
     mov     x1, x10
     bl      _die_here
     str     x0, [sp, #456]
-.L304:
+.L381:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #56]
@@ -7553,8 +9366,8 @@ _parse_const_decl:
     str     x0, [sp, #528]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L974
-.L974:
+    b       .L1149
+.L1149:
     add     sp, sp, #544
     ldp     x29, x30, [sp], #16
     ret
@@ -7574,9 +9387,9 @@ _parse_bss_decl:
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L305
-    adrp    x9, L_str37@PAGE
-    add     x9, x9, L_str37@PAGEOFF
+    cbz     w11, .L382
+    adrp    x9, L_str53@PAGE
+    add     x9, x9, L_str53@PAGEOFF
     str     x9, [sp, #8]
     movz    x9, #0x001a
     str     x9, [sp, #16]
@@ -7586,7 +9399,7 @@ _parse_bss_decl:
     mov     x1, x10
     bl      _die_here
     str     x0, [sp, #136]
-.L305:
+.L382:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #24]
@@ -7629,9 +9442,9 @@ _parse_bss_decl:
     movz    x10, #0x000f
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L306
-    adrp    x9, L_str38@PAGE
-    add     x9, x9, L_str38@PAGEOFF
+    cbz     w11, .L383
+    adrp    x9, L_str54@PAGE
+    add     x9, x9, L_str54@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0014
     str     x9, [sp, #48]
@@ -7641,7 +9454,7 @@ _parse_bss_decl:
     mov     x1, x10
     bl      _die_here
     str     x0, [sp, #400]
-.L306:
+.L383:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #56]
@@ -7657,8 +9470,8 @@ _parse_bss_decl:
     str     x0, [sp, #472]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L975
-.L975:
+    b       .L1150
+.L1150:
     add     sp, sp, #496
     ldp     x29, x30, [sp], #16
     ret
@@ -7678,9 +9491,9 @@ _parse_struct_decl:
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L307
-    adrp    x9, L_str39@PAGE
-    add     x9, x9, L_str39@PAGEOFF
+    cbz     w11, .L384
+    adrp    x9, L_str55@PAGE
+    add     x9, x9, L_str55@PAGEOFF
     str     x9, [sp, #8]
     movz    x9, #0x001d
     str     x9, [sp, #16]
@@ -7690,7 +9503,7 @@ _parse_struct_decl:
     mov     x1, x10
     bl      _die_here
     str     x0, [sp, #176]
-.L307:
+.L384:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #24]
@@ -7741,7 +9554,7 @@ _parse_struct_decl:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L308
+    cbz     w11, .L385
     ldr     x9, [sp, #40]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -7749,20 +9562,20 @@ _parse_struct_decl:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L309
+    cbz     w11, .L386
     ldr     x9, [sp, #40]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [sp, #32]
     str     x9, [x11]
-    b       .L310
-.L309:
+    b       .L387
+.L386:
     ldr     x9, [sp, #40]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #48]
-.L311:
+.L388:
     ldr     x9, [sp, #48]
     movz    x10, #0x0020
     add     x11, x9, x10
@@ -7770,21 +9583,21 @@ _parse_struct_decl:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L312
+    cbz     w11, .L389
     ldr     x9, [sp, #48]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #48]
-    b       .L311
-.L312:
+    b       .L388
+.L389:
     ldr     x9, [sp, #48]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [sp, #32]
     str     x9, [x11]
-.L310:
-.L308:
+.L387:
+.L385:
     movz    x9, #0x0013
     mov     x0, x9
     bl      _ps_expect
@@ -7793,21 +9606,21 @@ _parse_struct_decl:
     str     x9, [sp, #56]
     mov     x9, #0
     str     x9, [sp, #64]
-.L313:
+.L390:
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0014
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L314
+    cbz     w11, .L391
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x000e
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L315
-    adrp    x9, L_str40@PAGE
-    add     x9, x9, L_str40@PAGEOFF
+    cbz     w11, .L392
+    adrp    x9, L_str56@PAGE
+    add     x9, x9, L_str56@PAGEOFF
     str     x9, [sp, #72]
     movz    x9, #0x001c
     str     x9, [sp, #80]
@@ -7817,7 +9630,7 @@ _parse_struct_decl:
     mov     x1, x10
     bl      _die_here
     str     x0, [sp, #800]
-.L315:
+.L392:
     adrp    x9, _TOK_CUR@PAGE
     add     x9, x9, _TOK_CUR@PAGEOFF
     str     x9, [sp, #88]
@@ -7869,17 +9682,17 @@ _parse_struct_decl:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L316
+    cbz     w11, .L393
     ldr     x9, [sp, #96]
     str     x9, [sp, #56]
-    b       .L317
-.L316:
+    b       .L394
+.L393:
     ldr     x9, [sp, #64]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [sp, #96]
     str     x9, [x11]
-.L317:
+.L394:
     ldr     x9, [sp, #96]
     str     x9, [sp, #64]
     ldr     x9, [sp, #32]
@@ -7902,12 +9715,12 @@ _parse_struct_decl:
     movz    x10, #0x0026
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L318
+    cbz     w11, .L395
     bl      _ps_advance
     str     x0, [sp, #1248]
-.L318:
-    b       .L313
-.L314:
+.L395:
+    b       .L390
+.L391:
     movz    x9, #0x0014
     mov     x0, x9
     bl      _ps_expect
@@ -7919,9 +9732,267 @@ _parse_struct_decl:
     str     x9, [x11]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L976
-.L976:
+    b       .L1151
+.L1151:
     add     sp, sp, #1312
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _resolve_call_types_expr
+_resolve_call_types_expr:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #912
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L396
+    b       .L1152
+.L396:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L397
+    adrp    x9, L_str57@PAGE
+    add     x9, x9, L_str57@PAGEOFF
+    str     x9, [sp, #16]
+    movz    x9, #0x0007
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0058
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0060
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _bytes_eq_at
+    mov     x13, x0
+    mov     x9, #0
+    cmp     w13, w9
+    cset    w10, eq
+    cbz     w10, .L398
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+.L399:
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L400
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #32]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0058
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    ldr     x12, [sp, #8]
+    movz    x13, #0x0060
+    add     x14, x12, x13
+    ldr     x12, [x14]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _bytes_eq_off
+    mov     x13, x0
+    movz    x9, #0x0001
+    cmp     w13, w9
+    cset    w10, eq
+    cbz     w10, .L401
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L402
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0020
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+.L402:
+    b       .L400
+.L401:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    b       .L399
+.L400:
+.L398:
+    mov     x9, #0
+    str     x9, [sp, #40]
+.L403:
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0050
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L404
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #48]
+    ldr     x11, [sp, #40]
+    movz    x12, #0x0008
+    mul     x13, x11, x12
+    add     x11, x10, x13
+    ldr     x10, [x11]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #736]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #40]
+    b       .L403
+.L404:
+.L397:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #808]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0030
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #856]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0038
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #904]
+.L1152:
+    add     sp, sp, #912
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _resolve_call_types_stmt
+_resolve_call_types_stmt:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #384
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #8]
+    str     x9, [sp, #16]
+.L405:
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L406
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0020
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #96]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #144]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0040
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #192]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0048
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_expr
+    str     x0, [sp, #240]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0030
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_stmt
+    str     x0, [sp, #288]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0038
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _resolve_call_types_stmt
+    str     x0, [sp, #336]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0050
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    b       .L405
+.L406:
+.L1153:
+    add     sp, sp, #384
     ldp     x29, x30, [sp], #16
     ret
 
@@ -7929,7 +10000,7 @@ _parse_struct_decl:
 _parse:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #976
+    sub     sp, sp, #1120
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -7938,9 +10009,9 @@ _parse:
     mov     x0, x9
     mov     x1, x10
     bl      _ps_init
-    str     x0, [sp, #120]
-    bl      _str_table_init
     str     x0, [sp, #128]
+    bl      _str_table_init
+    str     x0, [sp, #136]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _mk_program
@@ -7949,47 +10020,48 @@ _parse:
     ldr     x9, [sp, #24]
     mov     x0, x9
     bl      _cur_prog_set
-    str     x0, [sp, #160]
+    str     x0, [sp, #168]
     mov     x9, #0
     str     x9, [sp, #32]
     mov     x9, #0
     str     x9, [sp, #40]
     mov     x9, #0
     str     x9, [sp, #48]
-.L319:
+.L407:
     bl      _ps_kind
     mov     x9, x0
     mov     x10, #0
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L320
-.L321:
+    cbz     w11, .L408
+.L409:
     bl      _ps_kind
     mov     x9, x0
     movz    x10, #0x0025
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L322
+    cbz     w11, .L410
     bl      _ps_advance
-    str     x0, [sp, #240]
-    b       .L321
-.L322:
+    str     x0, [sp, #248]
+    b       .L409
+.L410:
     bl      _ps_kind
     mov     x9, x0
     mov     x10, #0
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L323
-    b       .L320
-.L323:
+    cbz     w11, .L411
+    b       .L408
+.L411:
     bl      _ps_kind
     mov     x9, x0
     str     w9, [sp, #56]
     ldr     w9, [sp, #56]
+    mov     w9, w9
     movz    x10, #0x0001
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L324
+    cbz     w11, .L412
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_fun
@@ -8002,28 +10074,29 @@ _parse:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L325
+    cbz     w11, .L413
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [sp, #64]
     str     x9, [x11]
-    b       .L326
-.L325:
+    b       .L414
+.L413:
     ldr     x9, [sp, #32]
     movz    x10, #0x0030
     add     x11, x9, x10
     ldr     x9, [sp, #64]
     str     x9, [x11]
-.L326:
+.L414:
     ldr     x9, [sp, #64]
     str     x9, [sp, #32]
-.L324:
+.L412:
     ldr     w9, [sp, #56]
+    mov     w9, w9
     movz    x10, #0x0003
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L327
+    cbz     w11, .L415
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_const_decl
@@ -8036,28 +10109,29 @@ _parse:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L328
+    cbz     w11, .L416
     ldr     x9, [sp, #24]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [sp, #72]
     str     x9, [x11]
-    b       .L329
-.L328:
+    b       .L417
+.L416:
     ldr     x9, [sp, #40]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [sp, #72]
     str     x9, [x11]
-.L329:
+.L417:
     ldr     x9, [sp, #72]
     str     x9, [sp, #40]
-.L327:
+.L415:
     ldr     w9, [sp, #56]
+    mov     w9, w9
     movz    x10, #0x000b
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L330
+    cbz     w11, .L418
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_bss_decl
@@ -8070,35 +10144,36 @@ _parse:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L331
+    cbz     w11, .L419
     ldr     x9, [sp, #24]
     movz    x10, #0x0010
     add     x11, x9, x10
     ldr     x9, [sp, #80]
     str     x9, [x11]
-    b       .L332
-.L331:
+    b       .L420
+.L419:
     ldr     x9, [sp, #48]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [sp, #80]
     str     x9, [x11]
-.L332:
+.L420:
     ldr     x9, [sp, #80]
     str     x9, [sp, #48]
-.L330:
+.L418:
     ldr     w9, [sp, #56]
+    mov     w9, w9
     movz    x10, #0x000a
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L333
+    cbz     w11, .L421
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _parse_struct_decl
-    str     x0, [sp, #792]
-.L333:
-    b       .L319
-.L320:
+    str     x0, [sp, #800]
+.L421:
+    b       .L407
+.L408:
     adrp    x9, _STR_HEAD@PAGE
     add     x9, x9, _STR_HEAD@PAGEOFF
     str     x9, [sp, #88]
@@ -8126,10 +10201,37 @@ _parse:
     ldr     x9, [x10]
     str     x9, [x11]
     ldr     x9, [sp, #24]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #104]
+.L422:
+    ldr     x9, [sp, #104]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L423
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #104]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
     mov     x0, x9
-    b       .L977
-.L977:
-    add     sp, sp, #976
+    mov     x1, x10
+    bl      _resolve_call_types_stmt
+    str     x0, [sp, #1064]
+    ldr     x9, [sp, #104]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #104]
+    b       .L422
+.L423:
+    ldr     x9, [sp, #24]
+    mov     x0, x9
+    b       .L1154
+.L1154:
+    add     sp, sp, #1120
     ldp     x29, x30, [sp], #16
     ret
 
@@ -8152,8 +10254,8 @@ _ir_init:
     str     x0, [sp, #40]
     ldr     x9, [sp, #0]
     mov     x0, x9
-    b       .L978
-.L978:
+    b       .L1155
+.L1155:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -8169,18 +10271,18 @@ _ir_width_of:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L334
+    cbz     w11, .L424
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L979
-.L334:
+    b       .L1156
+.L424:
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _type_width
     mov     x10, x0
     mov     x0, x10
-    b       .L979
-.L979:
+    b       .L1156
+.L1156:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -8189,11 +10291,11 @@ _ir_width_of:
 _mk_ins:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #544
+    sub     sp, sp, #576
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0078
+    movz    x10, #0x0080
     mov     x0, x9
     mov     x1, x10
     bl      _arena_take
@@ -8275,10 +10377,15 @@ _mk_ins:
     mov     x9, #0
     str     x9, [x11]
     ldr     x9, [sp, #16]
+    movz    x10, #0x0078
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L980
-.L980:
-    add     sp, sp, #544
+    b       .L1157
+.L1157:
+    add     sp, sp, #576
     ldp     x29, x30, [sp], #16
     ret
 
@@ -8369,8 +10476,8 @@ _mk_ir_fn:
     str     x9, [x11]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L981
-.L981:
+    b       .L1158
+.L1158:
     add     sp, sp, #512
     ldp     x29, x30, [sp], #16
     ret
@@ -8389,7 +10496,7 @@ _ir_emit:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L335
+    cbz     w11, .L425
     ldr     x9, [sp, #0]
     movz    x10, #0x0058
     add     x11, x9, x10
@@ -8400,15 +10507,15 @@ _ir_emit:
     add     x11, x9, x10
     ldr     x9, [sp, #8]
     str     x9, [x11]
-    b       .L982
-.L335:
+    b       .L1159
+.L425:
     ldr     x9, [sp, #0]
     movz    x10, #0x0060
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #16]
     ldr     x9, [sp, #16]
-    movz    x10, #0x0070
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [sp, #8]
     str     x9, [x11]
@@ -8417,7 +10524,7 @@ _ir_emit:
     add     x11, x9, x10
     ldr     x9, [sp, #8]
     str     x9, [x11]
-.L982:
+.L1159:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -8426,11 +10533,11 @@ _ir_emit:
 _mk_builder:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #416
+    sub     sp, sp, #480
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0048
+    movz    x10, #0x0050
     mov     x0, x9
     mov     x1, x10
     bl      _arena_take
@@ -8490,16 +10597,28 @@ _mk_builder:
     add     x11, x9, x10
     ldr     x9, [sp, #32]
     str     x9, [x11]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0080
+    mov     x0, x9
+    mov     x1, x10
+    bl      _arena_take
+    mov     x11, x0
+    str     x11, [sp, #40]
     ldr     x9, [sp, #16]
     movz    x10, #0x0040
+    add     x11, x9, x10
+    ldr     x9, [sp, #40]
+    str     x9, [x11]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0048
     add     x11, x9, x10
     mov     x9, #0
     str     x9, [x11]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L983
-.L983:
-    add     sp, sp, #416
+    b       .L1160
+.L1160:
+    add     sp, sp, #480
     ldp     x29, x30, [sp], #16
     ret
 
@@ -8529,7 +10648,7 @@ _ir_new_slot:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L336
+    cbz     w11, .L426
     ldr     x9, [sp, #0]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -8537,7 +10656,7 @@ _ir_new_slot:
     movz    x10, #0x0001
     add     x12, x9, x10
     str     x12, [x11]
-.L336:
+.L426:
     ldr     x9, [sp, #0]
     movz    x10, #0x0020
     add     x11, x9, x10
@@ -8552,8 +10671,8 @@ _ir_new_slot:
     str     x9, [x10]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L984
-.L984:
+    b       .L1161
+.L1161:
     add     sp, sp, #304
     ldp     x29, x30, [sp], #16
     ret
@@ -8585,8 +10704,8 @@ _ir_new_label:
     str     x12, [x10]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L985
-.L985:
+    b       .L1162
+.L1162:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -8622,7 +10741,7 @@ _ir_emit_label:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #144]
-.L986:
+.L1163:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -8658,7 +10777,7 @@ _ir_emit_jmp:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #144]
-.L987:
+.L1164:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -8700,7 +10819,7 @@ _ir_emit_jz:
     mov     x1, x10
     bl      _ir_emit
     str     x0, [sp, #184]
-.L988:
+.L1165:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -8709,7 +10828,7 @@ _ir_emit_jz:
 _lower_expr:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    movz    x16, #0x1430
+    movz    x16, #0x1c50
     sub     sp, sp, x16
     str     x0, [sp, #0]
     str     x1, [sp, #8]
@@ -8720,7 +10839,7 @@ _lower_expr:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L337
+    cbz     w11, .L427
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -8762,11 +10881,11 @@ _lower_expr:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #576]
+    str     x0, [sp, #664]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L989
-.L337:
+    b       .L1166
+.L427:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -8774,7 +10893,7 @@ _lower_expr:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L338
+    cbz     w11, .L428
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -8816,7 +10935,7 @@ _lower_expr:
     ldr     x9, [sp, #40]
     movz    x10, #0x0028
     add     x16, x9, x10
-    str     x16, [sp, #872]
+    str     x16, [sp, #960]
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #8]
     movz    x11, #0x0078
@@ -8831,8 +10950,26 @@ _lower_expr:
     mov     x1, x10
     bl      _ir_width_of
     mov     x11, x0
-    ldr     x17, [sp, #872]
+    ldr     x17, [sp, #960]
     str     x11, [x17]
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0070
+    add     x16, x9, x10
+    str     x16, [sp, #1072]
+    ldr     x9, [sp, #48]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0078
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    bl      _type_is_signed
+    mov     x10, x0
+    ldr     x17, [sp, #1072]
+    str     x10, [x17]
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -8841,11 +10978,11 @@ _lower_expr:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #1008]
+    str     x0, [sp, #1200]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L989
-.L338:
+    b       .L1166
+.L428:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -8853,7 +10990,7 @@ _lower_expr:
     movz    x10, #0x000b
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L339
+    cbz     w11, .L429
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -8895,11 +11032,49 @@ _lower_expr:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #1296]
+    str     x0, [sp, #1488]
     ldr     x9, [sp, #56]
     mov     x0, x9
-    b       .L989
-.L339:
+    b       .L1166
+.L429:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000f
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L430
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _lower_logical
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L430:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L431
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0001
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _lower_logical
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L431:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -8907,7 +11082,7 @@ _lower_expr:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L340
+    cbz     w11, .L432
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0030
@@ -8928,53 +11103,14 @@ _lower_expr:
     bl      _lower_expr
     mov     x11, x0
     str     x11, [sp, #80]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    movz    x11, #0x0008
-    add     x12, x10, x11
-    ldr     x10, [x12]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _ir_new_slot
-    mov     x11, x0
-    str     x11, [sp, #88]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0007
-    mov     x0, x9
-    mov     x1, x10
-    bl      _mk_ins
-    mov     x11, x0
-    str     x11, [sp, #96]
-    ldr     x9, [sp, #96]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [sp, #88]
-    str     x9, [x11]
-    ldr     x9, [sp, #96]
-    movz    x10, #0x0010
-    add     x11, x9, x10
-    ldr     x9, [sp, #72]
-    str     x9, [x11]
-    ldr     x9, [sp, #96]
-    movz    x10, #0x0018
-    add     x11, x9, x10
-    ldr     x9, [sp, #80]
-    str     x9, [x11]
-    ldr     x9, [sp, #96]
-    movz    x10, #0x0048
-    add     x11, x9, x10
     ldr     x9, [sp, #8]
     movz    x10, #0x0040
-    add     x12, x9, x10
-    ldr     x9, [x12]
-    str     x9, [x11]
-    ldr     x9, [sp, #96]
-    movz    x10, #0x0028
-    add     x16, x9, x10
-    str     x16, [sp, #1720]
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0009
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L433
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -8984,143 +11120,15 @@ _lower_expr:
     mov     x1, x10
     bl      _ir_width_of
     mov     x11, x0
-    ldr     x17, [sp, #1720]
-    str     x11, [x17]
-    ldr     x9, [sp, #0]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    ldr     x10, [sp, #96]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _ir_emit
-    str     x0, [sp, #1816]
-    ldr     x9, [sp, #88]
-    mov     x0, x9
-    b       .L989
-.L340:
+    str     x11, [sp, #88]
     ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0005
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L341
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    movz    x11, #0x0008
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _lower_cmp
-    mov     x12, x0
-    mov     x0, x12
-    b       .L989
-.L341:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0006
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L342
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    movz    x11, #0x0009
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _lower_cmp
-    mov     x12, x0
-    mov     x0, x12
-    b       .L989
-.L342:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0007
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L343
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    movz    x11, #0x000a
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _lower_cmp
-    mov     x12, x0
-    mov     x0, x12
-    b       .L989
-.L343:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
     movz    x10, #0x0008
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L344
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    movz    x11, #0x000b
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _lower_cmp
-    mov     x12, x0
-    mov     x0, x12
-    b       .L989
-.L344:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0009
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L345
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    movz    x11, #0x000c
     mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _lower_cmp
-    mov     x12, x0
-    mov     x0, x12
-    b       .L989
-.L345:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x000a
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L346
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    movz    x11, #0x000d
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _lower_cmp
-    mov     x12, x0
-    mov     x0, x12
-    b       .L989
-.L346:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x000c
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L347
+    bl      _type_is_signed
+    mov     x10, x0
+    str     x10, [sp, #96]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -9135,7 +11143,7 @@ _lower_expr:
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0002
+    movz    x10, #0x0007
     mov     x0, x9
     mov     x1, x10
     bl      _mk_ins
@@ -9146,18 +11154,30 @@ _lower_expr:
     add     x11, x9, x10
     ldr     x9, [sp, #104]
     str     x9, [x11]
-    ldr     x9, [sp, #8]
+    ldr     x9, [sp, #112]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #72]
+    str     x9, [x11]
+    ldr     x9, [sp, #112]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [sp, #80]
+    str     x9, [x11]
+    ldr     x9, [sp, #112]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    movz    x9, #0x0003
+    str     x9, [x11]
+    ldr     x9, [sp, #112]
     movz    x10, #0x0028
     add     x11, x9, x10
-    ldr     x9, [x11]
-    str     x9, [sp, #120]
+    ldr     x9, [sp, #88]
+    str     x9, [x11]
     ldr     x9, [sp, #112]
-    movz    x10, #0x0020
+    movz    x10, #0x0070
     add     x11, x9, x10
-    ldr     x9, [sp, #120]
-    movz    x10, #0x0078
-    add     x12, x9, x10
-    ldr     x9, [x12]
+    ldr     x9, [sp, #96]
     str     x9, [x11]
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -9167,29 +11187,66 @@ _lower_expr:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #2616]
-    ldr     x9, [sp, #104]
-    mov     x0, x9
-    b       .L989
-.L347:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0003
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L348
+    str     x0, [sp, #2272]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
-    movz    x11, #0x0028
+    movz    x11, #0x0008
     add     x12, x10, x11
     ldr     x10, [x12]
     mov     x0, x9
     mov     x1, x10
-    bl      _lower_expr
+    bl      _ir_new_slot
+    mov     x11, x0
+    str     x11, [sp, #120]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0007
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
     mov     x11, x0
     str     x11, [sp, #128]
+    ldr     x9, [sp, #128]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #120]
+    str     x9, [x11]
+    ldr     x9, [sp, #128]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #104]
+    str     x9, [x11]
+    ldr     x9, [sp, #128]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [sp, #80]
+    str     x9, [x11]
+    ldr     x9, [sp, #128]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    movz    x9, #0x0002
+    str     x9, [x11]
+    ldr     x9, [sp, #128]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [sp, #88]
+    str     x9, [x11]
+    ldr     x9, [sp, #128]
+    movz    x10, #0x0070
+    add     x11, x9, x10
+    ldr     x9, [sp, #96]
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #128]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit
+    str     x0, [sp, #2608]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -9204,7 +11261,7 @@ _lower_expr:
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0005
+    movz    x10, #0x0007
     mov     x0, x9
     mov     x1, x10
     bl      _mk_ins
@@ -9218,23 +11275,28 @@ _lower_expr:
     ldr     x9, [sp, #144]
     movz    x10, #0x0010
     add     x11, x9, x10
-    ldr     x9, [sp, #128]
+    ldr     x9, [sp, #72]
+    str     x9, [x11]
+    ldr     x9, [sp, #144]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [sp, #120]
+    str     x9, [x11]
+    ldr     x9, [sp, #144]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    movz    x9, #0x0001
     str     x9, [x11]
     ldr     x9, [sp, #144]
     movz    x10, #0x0028
-    add     x16, x9, x10
-    str     x16, [sp, #2904]
-    ldr     x9, [sp, #8]
-    movz    x10, #0x0008
     add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0008
-    mov     x0, x9
-    mov     x1, x10
-    bl      _ir_width_of
-    mov     x11, x0
-    ldr     x17, [sp, #2904]
-    str     x11, [x17]
+    ldr     x9, [sp, #88]
+    str     x9, [x11]
+    ldr     x9, [sp, #144]
+    movz    x10, #0x0070
+    add     x11, x9, x10
+    ldr     x9, [sp, #96]
+    str     x9, [x11]
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -9243,19 +11305,11 @@ _lower_expr:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #3000]
+    str     x0, [sp, #2944]
     ldr     x9, [sp, #136]
     mov     x0, x9
-    b       .L989
-.L348:
-    ldr     x9, [sp, #8]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x000d
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L349
+    b       .L1166
+.L433:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -9270,7 +11324,7 @@ _lower_expr:
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0001
+    movz    x10, #0x0007
     mov     x0, x9
     mov     x1, x10
     bl      _mk_ins
@@ -9282,21 +11336,51 @@ _lower_expr:
     ldr     x9, [sp, #152]
     str     x9, [x11]
     ldr     x9, [sp, #160]
-    movz    x10, #0x0050
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #72]
+    str     x9, [x11]
+    ldr     x9, [sp, #160]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [sp, #80]
+    str     x9, [x11]
+    ldr     x9, [sp, #160]
+    movz    x10, #0x0048
     add     x11, x9, x10
     ldr     x9, [sp, #8]
-    movz    x10, #0x0058
+    movz    x10, #0x0040
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
     ldr     x9, [sp, #160]
-    movz    x10, #0x0058
-    add     x11, x9, x10
+    movz    x10, #0x0028
+    add     x16, x9, x10
+    str     x16, [sp, #3224]
     ldr     x9, [sp, #8]
-    movz    x10, #0x0060
-    add     x12, x9, x10
-    ldr     x9, [x12]
-    str     x9, [x11]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_width_of
+    mov     x11, x0
+    ldr     x17, [sp, #3224]
+    str     x11, [x17]
+    ldr     x9, [sp, #160]
+    movz    x10, #0x0070
+    add     x16, x9, x10
+    str     x16, [sp, #3296]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_is_signed
+    mov     x10, x0
+    ldr     x17, [sp, #3296]
+    str     x10, [x17]
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -9305,136 +11389,385 @@ _lower_expr:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #3344]
+    str     x0, [sp, #3384]
     ldr     x9, [sp, #152]
     mov     x0, x9
-    b       .L989
-.L349:
+    b       .L1166
+.L432:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0002
+    movz    x10, #0x000e
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L350
-    ldr     x9, [sp, #8]
-    movz    x10, #0x0050
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    str     x9, [sp, #168]
-    ldr     x9, [sp, #8]
-    movz    x10, #0x0048
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    str     x9, [sp, #176]
-    ldr     x9, [sp, #168]
-    movz    x10, #0x0010
-    mul     x11, x9, x10
-    str     x11, [sp, #184]
-    ldr     x9, [sp, #184]
-    mov     x10, #0
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L351
-    movz    x9, #0x0008
-    str     x9, [sp, #184]
-.L351:
+    cbz     w11, .L434
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _lower_expr
+    mov     x11, x0
+    str     x11, [sp, #168]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_new_slot
+    mov     x11, x0
+    str     x11, [sp, #176]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0013
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
+    mov     x11, x0
+    str     x11, [sp, #184]
+    ldr     x9, [sp, #184]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #176]
+    str     x9, [x11]
+    ldr     x9, [sp, #184]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #168]
+    str     x9, [x11]
+    ldr     x9, [sp, #184]
+    movz    x10, #0x0028
+    add     x16, x9, x10
+    str     x16, [sp, #3672]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_width_of
+    mov     x11, x0
+    ldr     x17, [sp, #3672]
+    str     x11, [x17]
+    ldr     x9, [sp, #184]
+    movz    x10, #0x0070
+    add     x16, x9, x10
+    str     x16, [sp, #3744]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_is_signed
+    mov     x10, x0
+    ldr     x17, [sp, #3744]
+    str     x10, [x17]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
     ldr     x10, [sp, #184]
     mov     x0, x9
     mov     x1, x10
-    bl      _arena_take
-    mov     x11, x0
-    str     x11, [sp, #192]
-    mov     x9, #0
-    str     x9, [sp, #200]
-    mov     x9, #0
-    str     x9, [sp, #208]
-.L352:
-    ldr     x9, [sp, #208]
-    ldr     x10, [sp, #168]
-    cmp     x9, x10
-    cset    w11, lo
-    cbz     w11, .L353
+    bl      _ir_emit
+    str     x0, [sp, #3832]
     ldr     x9, [sp, #176]
-    ldr     x10, [sp, #208]
+    mov     x0, x9
+    b       .L1166
+.L434:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L435
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
     movz    x11, #0x0008
-    mul     x12, x10, x11
-    add     x10, x9, x12
-    ldr     x9, [x10]
-    str     x9, [sp, #216]
-    mov     x9, #0
-    str     x9, [sp, #224]
-    ldr     x9, [sp, #216]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    str     x9, [sp, #232]
-    ldr     x9, [sp, #232]
-    mov     x10, #0
-    cmp     x9, x10
-    cset    w11, ne
-    cbz     w11, .L354
-    ldr     x9, [sp, #232]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0004
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L355
-    ldr     x9, [sp, #216]
-    mov     x10, #0
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    movz    x10, #0x0001
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L356
-    movz    x9, #0x0001
-    str     x9, [sp, #224]
-.L356:
-.L355:
-.L354:
-    ldr     x9, [sp, #224]
-    movz    x10, #0x0001
-    cmp     x9, x10
-    cset    w11, eq
-    cbz     w11, .L357
-    ldr     x16, [sp, #0]
-    str     x16, [sp, #3856]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x16, [x11]
-    str     x16, [sp, #3888]
-    ldr     x9, [sp, #0]
-    movz    x10, #0x0008
-    add     x11, x9, x10
-    ldr     x9, [x11]
-    mov     x10, #0
     mov     x0, x9
     mov     x1, x10
-    bl      _mk_prim
-    mov     x11, x0
-    ldr     x0, [sp, #3888]
-    mov     x1, x11
-    bl      _mk_ptr
-    mov     x9, x0
-    ldr     x0, [sp, #3856]
-    mov     x1, x9
+    mov     x2, x11
+    bl      _lower_cmp
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L435:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L436
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0009
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _lower_cmp
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L436:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L437
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x000a
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _lower_cmp
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L437:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L438
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x000b
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _lower_cmp
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L438:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0009
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L439
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x000c
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _lower_cmp
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L439:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000a
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L440
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x000d
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _lower_cmp
+    mov     x12, x0
+    mov     x0, x12
+    b       .L1166
+.L440:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000c
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L441
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
     bl      _ir_new_slot
-    mov     x10, x0
-    str     x10, [sp, #240]
+    mov     x11, x0
+    str     x11, [sp, #192]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
+    mov     x11, x0
+    str     x11, [sp, #200]
+    ldr     x9, [sp, #200]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #192]
+    str     x9, [x11]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #208]
+    ldr     x9, [sp, #200]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [sp, #208]
+    movz    x10, #0x0078
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #200]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit
+    str     x0, [sp, #4632]
+    ldr     x9, [sp, #192]
+    mov     x0, x9
+    b       .L1166
+.L441:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L442
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _lower_expr
+    mov     x11, x0
+    str     x11, [sp, #216]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_new_slot
+    mov     x11, x0
+    str     x11, [sp, #224]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0005
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
+    mov     x11, x0
+    str     x11, [sp, #232]
+    ldr     x9, [sp, #232]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #224]
+    str     x9, [x11]
+    ldr     x9, [sp, #232]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #216]
+    str     x9, [x11]
+    ldr     x9, [sp, #232]
+    movz    x10, #0x0028
+    add     x16, x9, x10
+    str     x16, [sp, #4920]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0008
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_width_of
+    mov     x11, x0
+    ldr     x17, [sp, #4920]
+    str     x11, [x17]
+    ldr     x9, [sp, #232]
+    movz    x10, #0x0070
+    add     x16, x9, x10
+    str     x16, [sp, #4992]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_is_signed
+    mov     x10, x0
+    ldr     x17, [sp, #4992]
+    str     x10, [x17]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #232]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit
+    str     x0, [sp, #5080]
+    ldr     x9, [sp, #224]
+    mov     x0, x9
+    b       .L1166
+.L442:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x000d
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L443
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_new_slot
+    mov     x11, x0
+    str     x11, [sp, #240]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _mk_ins
@@ -9446,17 +11779,20 @@ _lower_expr:
     ldr     x9, [sp, #240]
     str     x9, [x11]
     ldr     x9, [sp, #248]
-    movz    x10, #0x0020
+    movz    x10, #0x0050
     add     x11, x9, x10
-    ldr     x9, [sp, #216]
-    movz    x10, #0x0078
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0058
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
     ldr     x9, [sp, #248]
-    movz    x10, #0x0028
+    movz    x10, #0x0058
     add     x11, x9, x10
-    movz    x9, #0x0008
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0060
+    add     x12, x9, x10
+    ldr     x9, [x12]
     str     x9, [x11]
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -9466,34 +11802,131 @@ _lower_expr:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #4168]
-    ldr     x9, [sp, #192]
-    ldr     x10, [sp, #200]
-    movz    x11, #0x0008
-    mul     x12, x10, x11
-    add     x10, x9, x12
+    str     x0, [sp, #5424]
     ldr     x9, [sp, #240]
-    str     x9, [x10]
-    ldr     x9, [sp, #200]
-    movz    x10, #0x0001
+    mov     x0, x9
+    b       .L1166
+.L443:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
     add     x11, x9, x10
-    str     x11, [sp, #200]
-    ldr     x16, [sp, #0]
-    str     x16, [sp, #4248]
+    ldr     x9, [x11]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L444
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0050
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #256]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #264]
+    ldr     x9, [sp, #256]
+    movz    x10, #0x0010
+    mul     x11, x9, x10
+    str     x11, [sp, #272]
+    ldr     x9, [sp, #272]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L445
+    movz    x9, #0x0008
+    str     x9, [sp, #272]
+.L445:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x9, [x11]
-    movz    x10, #0x0002
+    ldr     x10, [sp, #272]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _arena_take
+    mov     x11, x0
+    str     x11, [sp, #280]
+    mov     x9, #0
+    str     x9, [sp, #288]
+    mov     x9, #0
+    str     x9, [sp, #296]
+.L446:
+    ldr     x9, [sp, #296]
+    ldr     x10, [sp, #256]
+    cmp     x9, x10
+    cset    w11, lo
+    cbz     w11, .L447
+    ldr     x9, [sp, #264]
+    ldr     x10, [sp, #296]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    str     x9, [sp, #304]
+    mov     x9, #0
+    str     x9, [sp, #312]
+    ldr     x9, [sp, #304]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #320]
+    ldr     x9, [sp, #320]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L448
+    ldr     x9, [sp, #320]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L449
+    ldr     x9, [sp, #304]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L450
+    movz    x9, #0x0001
+    str     x9, [sp, #312]
+.L450:
+.L449:
+.L448:
+    ldr     x9, [sp, #312]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L451
+    ldr     x16, [sp, #0]
+    str     x16, [sp, #5936]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x16, [x11]
+    str     x16, [sp, #5968]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
     mov     x0, x9
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x0, [sp, #4248]
+    ldr     x0, [sp, #5968]
     mov     x1, x11
-    bl      _ir_new_slot
+    bl      _mk_ptr
     mov     x9, x0
-    str     x9, [sp, #256]
+    ldr     x0, [sp, #5936]
+    mov     x1, x9
+    bl      _ir_new_slot
+    mov     x10, x0
+    str     x10, [sp, #328]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -9503,23 +11936,21 @@ _lower_expr:
     mov     x1, x10
     bl      _mk_ins
     mov     x11, x0
-    str     x11, [sp, #264]
-    ldr     x9, [sp, #264]
+    str     x11, [sp, #336]
+    ldr     x9, [sp, #336]
     movz    x10, #0x0008
     add     x11, x9, x10
-    ldr     x9, [sp, #256]
+    ldr     x9, [sp, #328]
     str     x9, [x11]
-    ldr     x9, [sp, #264]
+    ldr     x9, [sp, #336]
     movz    x10, #0x0020
     add     x11, x9, x10
-    ldr     x9, [sp, #216]
+    ldr     x9, [sp, #304]
     movz    x10, #0x0078
     add     x12, x9, x10
     ldr     x9, [x12]
-    movz    x10, #0x0001
-    add     x12, x9, x10
-    str     x12, [x11]
-    ldr     x9, [sp, #264]
+    str     x9, [x11]
+    ldr     x9, [sp, #336]
     movz    x10, #0x0028
     add     x11, x9, x10
     movz    x9, #0x0008
@@ -9528,68 +11959,134 @@ _lower_expr:
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #264]
+    ldr     x10, [sp, #336]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #4536]
-    ldr     x9, [sp, #192]
-    ldr     x10, [sp, #200]
+    str     x0, [sp, #6248]
+    ldr     x9, [sp, #280]
+    ldr     x10, [sp, #288]
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x10, x9, x12
-    ldr     x9, [sp, #256]
+    ldr     x9, [sp, #328]
     str     x9, [x10]
-    ldr     x9, [sp, #200]
+    ldr     x9, [sp, #288]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #200]
-    b       .L358
-.L357:
-    ldr     x9, [sp, #192]
-    ldr     x10, [sp, #200]
+    str     x11, [sp, #288]
+    ldr     x16, [sp, #0]
+    str     x16, [sp, #6328]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0002
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_prim
+    mov     x11, x0
+    ldr     x0, [sp, #6328]
+    mov     x1, x11
+    bl      _ir_new_slot
+    mov     x9, x0
+    str     x9, [sp, #344]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0003
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
+    mov     x11, x0
+    str     x11, [sp, #352]
+    ldr     x9, [sp, #352]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #344]
+    str     x9, [x11]
+    ldr     x9, [sp, #352]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [sp, #304]
+    movz    x10, #0x0078
+    add     x12, x9, x10
+    ldr     x9, [x12]
+    movz    x10, #0x0001
+    add     x12, x9, x10
+    str     x12, [x11]
+    ldr     x9, [sp, #352]
+    movz    x10, #0x0028
+    add     x11, x9, x10
+    movz    x9, #0x0008
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #352]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit
+    str     x0, [sp, #6616]
+    ldr     x9, [sp, #280]
+    ldr     x10, [sp, #288]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #344]
+    str     x9, [x10]
+    ldr     x9, [sp, #288]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #288]
+    b       .L452
+.L451:
+    ldr     x9, [sp, #280]
+    ldr     x10, [sp, #288]
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x16, x9, x12
-    str     x16, [sp, #4648]
+    str     x16, [sp, #6728]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #216]
+    ldr     x10, [sp, #304]
     mov     x0, x9
     mov     x1, x10
     bl      _lower_expr
     mov     x11, x0
-    ldr     x17, [sp, #4648]
+    ldr     x17, [sp, #6728]
     str     x11, [x17]
-    ldr     x9, [sp, #200]
+    ldr     x9, [sp, #288]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #200]
-.L358:
-    ldr     x9, [sp, #208]
+    str     x11, [sp, #288]
+.L452:
+    ldr     x9, [sp, #296]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #208]
-    b       .L352
-.L353:
-    ldr     x9, [sp, #200]
+    str     x11, [sp, #296]
+    b       .L446
+.L447:
+    ldr     x9, [sp, #288]
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L359
-    adrp    x9, L_str41@PAGE
-    add     x9, x9, L_str41@PAGEOFF
-    str     x9, [sp, #272]
+    cbz     w11, .L453
+    adrp    x9, L_str58@PAGE
+    add     x9, x9, L_str58@PAGEOFF
+    str     x9, [sp, #360]
     movz    x9, #0x0016
-    str     x9, [sp, #280]
-    ldr     x9, [sp, #272]
-    ldr     x10, [sp, #280]
+    str     x9, [sp, #368]
+    ldr     x9, [sp, #360]
+    ldr     x10, [sp, #368]
     mov     x11, #0
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _die_line
-    str     x0, [sp, #4792]
-.L359:
+    str     x0, [sp, #6872]
+.L453:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -9599,7 +12096,7 @@ _lower_expr:
     mov     x1, x10
     bl      _ir_new_slot
     mov     x11, x0
-    str     x11, [sp, #288]
+    str     x11, [sp, #376]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -9609,13 +12106,13 @@ _lower_expr:
     mov     x1, x10
     bl      _mk_ins
     mov     x11, x0
-    str     x11, [sp, #296]
-    ldr     x9, [sp, #296]
+    str     x11, [sp, #384]
+    ldr     x9, [sp, #384]
     movz    x10, #0x0008
     add     x11, x9, x10
-    ldr     x9, [sp, #288]
+    ldr     x9, [sp, #376]
     str     x9, [x11]
-    ldr     x9, [sp, #296]
+    ldr     x9, [sp, #384]
     movz    x10, #0x0050
     add     x11, x9, x10
     ldr     x9, [sp, #8]
@@ -9623,7 +12120,7 @@ _lower_expr:
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
-    ldr     x9, [sp, #296]
+    ldr     x9, [sp, #384]
     movz    x10, #0x0058
     add     x11, x9, x10
     ldr     x9, [sp, #8]
@@ -9631,35 +12128,268 @@ _lower_expr:
     add     x12, x9, x10
     ldr     x9, [x12]
     str     x9, [x11]
-    ldr     x9, [sp, #296]
+    ldr     x9, [sp, #384]
     movz    x10, #0x0060
     add     x11, x9, x10
-    ldr     x9, [sp, #192]
+    ldr     x9, [sp, #280]
     str     x9, [x11]
-    ldr     x9, [sp, #296]
+    ldr     x9, [sp, #384]
     movz    x10, #0x0068
     add     x11, x9, x10
-    ldr     x9, [sp, #200]
+    ldr     x9, [sp, #288]
     str     x9, [x11]
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #296]
+    ldr     x10, [sp, #384]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #5144]
-    ldr     x9, [sp, #288]
+    str     x0, [sp, #7224]
+    ldr     x9, [sp, #376]
     mov     x0, x9
-    b       .L989
-.L350:
+    b       .L1166
+.L444:
     mov     x9, #0
     mov     x0, x9
-    b       .L989
-.L989:
-    movz    x16, #0x1430
+    b       .L1166
+.L1166:
+    movz    x16, #0x1c50
     add     sp, sp, x16
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _lower_logical
+_lower_logical:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #1184
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_new_slot
+    mov     x11, x0
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
+    mov     x11, x0
+    str     x11, [sp, #32]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    str     x9, [x11]
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [sp, #16]
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit
+    str     x0, [sp, #304]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0030
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _lower_expr
+    mov     x11, x0
+    str     x11, [sp, #40]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _ir_new_label
+    mov     x10, x0
+    str     x10, [sp, #48]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L454
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _ir_new_label
+    mov     x10, x0
+    str     x10, [sp, #56]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ir_emit_jz
+    str     x0, [sp, #440]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit_jmp
+    str     x0, [sp, #464]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit_label
+    str     x0, [sp, #488]
+    b       .L455
+.L454:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _ir_emit_jz
+    str     x0, [sp, #520]
+.L455:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0038
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _lower_expr
+    mov     x11, x0
+    str     x11, [sp, #64]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_new_slot
+    mov     x11, x0
+    str     x11, [sp, #72]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
+    mov     x11, x0
+    str     x11, [sp, #80]
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #72]
+    str     x9, [x11]
+    ldr     x9, [sp, #80]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    mov     x9, #0
+    str     x9, [x11]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #80]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit
+    str     x0, [sp, #776]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0009
+    mov     x0, x9
+    mov     x1, x10
+    bl      _mk_ins
+    mov     x11, x0
+    str     x11, [sp, #88]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [sp, #24]
+    str     x9, [x11]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0010
+    add     x11, x9, x10
+    ldr     x9, [sp, #64]
+    str     x9, [x11]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [sp, #72]
+    str     x9, [x11]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0038
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0028
+    add     x16, x9, x10
+    str     x16, [sp, #976]
+    ldr     x9, [sp, #96]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0004
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_width_of
+    mov     x11, x0
+    ldr     x17, [sp, #976]
+    str     x11, [x17]
+    ldr     x9, [sp, #88]
+    movz    x10, #0x0070
+    add     x16, x9, x10
+    str     x16, [sp, #1048]
+    ldr     x9, [sp, #96]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_is_signed
+    mov     x10, x0
+    ldr     x17, [sp, #1048]
+    str     x10, [x17]
+    ldr     x9, [sp, #0]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    ldr     x10, [sp, #88]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit
+    str     x0, [sp, #1136]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit_label
+    str     x0, [sp, #1160]
+    ldr     x9, [sp, #24]
+    mov     x0, x9
+    b       .L1167
+.L1167:
+    add     sp, sp, #1184
     ldp     x29, x30, [sp], #16
     ret
 
@@ -9667,7 +12397,7 @@ _lower_expr:
 _lower_cmp:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #512
+    sub     sp, sp, #576
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -9746,6 +12476,19 @@ _lower_cmp:
     mov     x11, x0
     ldr     x17, [sp, #400]
     str     x11, [x17]
+    ldr     x9, [sp, #48]
+    movz    x10, #0x0070
+    add     x16, x9, x10
+    str     x16, [sp, #472]
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0008
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x0, x9
+    bl      _type_is_signed
+    mov     x10, x0
+    ldr     x17, [sp, #472]
+    str     x10, [x17]
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -9754,12 +12497,12 @@ _lower_cmp:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #496]
+    str     x0, [sp, #560]
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L990
-.L990:
-    add     sp, sp, #512
+    b       .L1168
+.L1168:
+    add     sp, sp, #576
     ldp     x29, x30, [sp], #16
     ret
 
@@ -9767,7 +12510,7 @@ _lower_cmp:
 _lower_stmt:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    movz    x16, #0x1490
+    movz    x16, #0x16b0
     sub     sp, sp, x16
     str     x0, [sp, #0]
     str     x1, [sp, #8]
@@ -9778,7 +12521,7 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L360
+    cbz     w11, .L456
     ldr     x9, [sp, #8]
     movz    x10, #0x0020
     add     x11, x9, x10
@@ -9786,7 +12529,7 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L361
+    cbz     w11, .L457
     ldr     x9, [sp, #0]
     movz    x10, #0x0020
     add     x11, x9, x10
@@ -9808,7 +12551,7 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L362
+    cbz     w11, .L458
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -9816,7 +12559,7 @@ _lower_stmt:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L363
+    cbz     w11, .L459
     ldr     x9, [sp, #8]
     movz    x10, #0x0020
     add     x11, x9, x10
@@ -9829,29 +12572,29 @@ _lower_stmt:
     movz    x10, #0x000b
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L364
+    cbz     w11, .L460
     movz    x9, #0x0001
     str     x9, [sp, #32]
-.L364:
-.L363:
-.L362:
+.L460:
+.L459:
+.L458:
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L365
+    cbz     w11, .L461
     ldr     x9, [sp, #8]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #48]
     ldr     x16, [sp, #0]
-    str     x16, [sp, #744]
+    str     x16, [sp, #792]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
     ldr     x16, [x11]
-    str     x16, [sp, #776]
+    str     x16, [sp, #824]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -9861,11 +12604,11 @@ _lower_stmt:
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x0, [sp, #776]
+    ldr     x0, [sp, #824]
     mov     x1, x11
     bl      _mk_ptr
     mov     x9, x0
-    ldr     x0, [sp, #744]
+    ldr     x0, [sp, #792]
     mov     x1, x9
     bl      _ir_new_slot
     mov     x10, x0
@@ -9901,7 +12644,7 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #1024]
+    str     x0, [sp, #1072]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -9938,9 +12681,9 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #1240]
+    str     x0, [sp, #1288]
     ldr     x16, [sp, #0]
-    str     x16, [sp, #1248]
+    str     x16, [sp, #1296]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -9950,7 +12693,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _mk_prim
     mov     x11, x0
-    ldr     x0, [sp, #1248]
+    ldr     x0, [sp, #1296]
     mov     x1, x11
     bl      _ir_new_slot
     mov     x9, x0
@@ -9986,7 +12729,7 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #1488]
+    str     x0, [sp, #1536]
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -10025,9 +12768,9 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #1720]
-    b       .L991
-.L365:
+    str     x0, [sp, #1768]
+    b       .L1169
+.L461:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -10064,14 +12807,14 @@ _lower_stmt:
     ldr     x9, [sp, #112]
     movz    x10, #0x0028
     add     x16, x9, x10
-    str     x16, [sp, #1928]
+    str     x16, [sp, #1976]
     ldr     x9, [sp, #24]
     movz    x10, #0x0008
     mov     x0, x9
     mov     x1, x10
     bl      _ir_width_of
     mov     x11, x0
-    ldr     x17, [sp, #1928]
+    ldr     x17, [sp, #1976]
     str     x11, [x17]
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -10081,10 +12824,10 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #2000]
-.L361:
-    b       .L991
-.L360:
+    str     x0, [sp, #2048]
+.L457:
+    b       .L1169
+.L456:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10092,7 +12835,7 @@ _lower_stmt:
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L366
+    cbz     w11, .L462
     ldr     x9, [sp, #8]
     movz    x10, #0x0020
     add     x11, x9, x10
@@ -10100,7 +12843,7 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L367
+    cbz     w11, .L463
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -10142,7 +12885,7 @@ _lower_stmt:
     ldr     x9, [sp, #128]
     movz    x10, #0x0028
     add     x16, x9, x10
-    str     x16, [sp, #2336]
+    str     x16, [sp, #2384]
     ldr     x9, [sp, #136]
     ldr     x10, [sp, #8]
     movz    x11, #0x0058
@@ -10157,7 +12900,7 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_width_of
     mov     x11, x0
-    ldr     x17, [sp, #2336]
+    ldr     x17, [sp, #2384]
     str     x11, [x17]
     ldr     x9, [sp, #0]
     mov     x10, #0
@@ -10167,10 +12910,10 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #2472]
-.L367:
-    b       .L991
-.L366:
+    str     x0, [sp, #2520]
+.L463:
+    b       .L1169
+.L462:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10178,7 +12921,7 @@ _lower_stmt:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L368
+    cbz     w11, .L464
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0048
@@ -10238,7 +12981,7 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L369
+    cbz     w11, .L465
     ldr     x9, [sp, #176]
     mov     x10, #0
     add     x11, x9, x10
@@ -10246,11 +12989,11 @@ _lower_stmt:
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L370
+    cbz     w11, .L466
     ldr     x9, [sp, #160]
     movz    x10, #0x0028
     add     x16, x9, x10
-    str     x16, [sp, #2920]
+    str     x16, [sp, #2968]
     ldr     x9, [sp, #176]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -10260,10 +13003,10 @@ _lower_stmt:
     mov     x1, x10
     bl      _ir_width_of
     mov     x11, x0
-    ldr     x17, [sp, #2920]
+    ldr     x17, [sp, #2968]
     str     x11, [x17]
-.L370:
-.L369:
+.L466:
+.L465:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -10272,9 +13015,9 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #3016]
-    b       .L991
-.L368:
+    str     x0, [sp, #3064]
+    b       .L1169
+.L464:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10282,7 +13025,7 @@ _lower_stmt:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L371
+    cbz     w11, .L467
     ldr     x9, [sp, #8]
     movz    x10, #0x0040
     add     x11, x9, x10
@@ -10290,7 +13033,7 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L372
+    cbz     w11, .L468
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0040
@@ -10324,9 +13067,9 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #3288]
-    b       .L991
-.L372:
+    str     x0, [sp, #3336]
+    b       .L1169
+.L468:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -10355,9 +13098,9 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit
-    str     x0, [sp, #3448]
-    b       .L991
-.L371:
+    str     x0, [sp, #3496]
+    b       .L1169
+.L467:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10365,7 +13108,7 @@ _lower_stmt:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L373
+    cbz     w11, .L469
     ldr     x9, [sp, #8]
     movz    x10, #0x0048
     add     x11, x9, x10
@@ -10373,7 +13116,7 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L374
+    cbz     w11, .L470
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0048
@@ -10382,10 +13125,10 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _lower_expr
-    str     x0, [sp, #3592]
-.L374:
-    b       .L991
-.L373:
+    str     x0, [sp, #3640]
+.L470:
+    b       .L1169
+.L469:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10393,7 +13136,7 @@ _lower_stmt:
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L375
+    cbz     w11, .L471
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0028
@@ -10416,7 +13159,7 @@ _lower_stmt:
     mov     x1, x10
     mov     x2, x11
     bl      _ir_emit_jz
-    str     x0, [sp, #3736]
+    str     x0, [sp, #3784]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0030
@@ -10425,7 +13168,7 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _lower_block
-    str     x0, [sp, #3784]
+    str     x0, [sp, #3832]
     ldr     x9, [sp, #8]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -10433,15 +13176,15 @@ _lower_stmt:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L376
+    cbz     w11, .L472
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #216]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_label
-    str     x0, [sp, #3856]
-    b       .L991
-.L376:
+    str     x0, [sp, #3904]
+    b       .L1169
+.L472:
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _ir_new_label
@@ -10452,13 +13195,13 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_jmp
-    str     x0, [sp, #3896]
+    str     x0, [sp, #3944]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #216]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_label
-    str     x0, [sp, #3920]
+    str     x0, [sp, #3968]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0038
@@ -10467,15 +13210,15 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _lower_block
-    str     x0, [sp, #3968]
+    str     x0, [sp, #4016]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #224]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_label
-    str     x0, [sp, #3992]
-    b       .L991
-.L375:
+    str     x0, [sp, #4040]
+    b       .L1169
+.L471:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10483,7 +13226,7 @@ _lower_stmt:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L377
+    cbz     w11, .L473
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _ir_new_label
@@ -10499,7 +13242,7 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_label
-    str     x0, [sp, #4096]
+    str     x0, [sp, #4144]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0028
@@ -10517,15 +13260,20 @@ _lower_stmt:
     mov     x1, x10
     mov     x2, x11
     bl      _ir_emit_jz
-    str     x0, [sp, #4176]
+    str     x0, [sp, #4224]
     ldr     x9, [sp, #0]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #256]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #264]
     ldr     x9, [sp, #256]
     ldr     x10, [sp, #0]
-    movz    x11, #0x0040
+    movz    x11, #0x0048
     add     x12, x10, x11
     ldr     x10, [x12]
     movz    x11, #0x0008
@@ -10533,11 +13281,21 @@ _lower_stmt:
     add     x10, x9, x12
     ldr     x9, [sp, #240]
     str     x9, [x10]
+    ldr     x9, [sp, #264]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0048
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #232]
+    str     x9, [x10]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x11, x9, x10
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x12, x9, x10
     ldr     x9, [x12]
     movz    x10, #0x0001
@@ -10551,12 +13309,12 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _lower_block
-    str     x0, [sp, #4400]
+    str     x0, [sp, #4552]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x11, x9, x10
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x12, x9, x10
     ldr     x9, [x12]
     movz    x10, #0x0001
@@ -10567,15 +13325,15 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_jmp
-    str     x0, [sp, #4496]
+    str     x0, [sp, #4648]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #240]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_label
-    str     x0, [sp, #4520]
-    b       .L991
-.L377:
+    str     x0, [sp, #4672]
+    b       .L1169
+.L473:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10583,31 +13341,46 @@ _lower_stmt:
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L378
-    ldr     x9, [sp, #0]
-    mov     x0, x9
-    bl      _ir_new_label
-    mov     x10, x0
-    str     x10, [sp, #264]
+    cbz     w11, .L474
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _ir_new_label
     mov     x10, x0
     str     x10, [sp, #272]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #264]
+    mov     x0, x9
+    bl      _ir_new_label
+    mov     x10, x0
+    str     x10, [sp, #280]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #272]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_label
-    str     x0, [sp, #4624]
+    str     x0, [sp, #4776]
     ldr     x9, [sp, #0]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #280]
-    ldr     x9, [sp, #280]
+    str     x9, [sp, #288]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #296]
+    ldr     x9, [sp, #288]
     ldr     x10, [sp, #0]
-    movz    x11, #0x0040
+    movz    x11, #0x0048
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #280]
+    str     x9, [x10]
+    ldr     x9, [sp, #296]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0048
     add     x12, x10, x11
     ldr     x10, [x12]
     movz    x11, #0x0008
@@ -10616,10 +13389,10 @@ _lower_stmt:
     ldr     x9, [sp, #272]
     str     x9, [x10]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x11, x9, x10
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x12, x9, x10
     ldr     x9, [x12]
     movz    x10, #0x0001
@@ -10633,31 +13406,31 @@ _lower_stmt:
     mov     x0, x9
     mov     x1, x10
     bl      _lower_block
-    str     x0, [sp, #4848]
+    str     x0, [sp, #5104]
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x11, x9, x10
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x12, x9, x10
     ldr     x9, [x12]
     movz    x10, #0x0001
     sub     x12, x9, x10
     str     x12, [x11]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #264]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _ir_emit_jmp
-    str     x0, [sp, #4944]
-    ldr     x9, [sp, #0]
     ldr     x10, [sp, #272]
     mov     x0, x9
     mov     x1, x10
+    bl      _ir_emit_jmp
+    str     x0, [sp, #5200]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #280]
+    mov     x0, x9
+    mov     x1, x10
     bl      _ir_emit_label
-    str     x0, [sp, #4968]
-    b       .L991
-.L378:
+    str     x0, [sp, #5224]
+    b       .L1169
+.L474:
     ldr     x9, [sp, #8]
     mov     x10, #0
     add     x11, x9, x10
@@ -10665,37 +13438,37 @@ _lower_stmt:
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L379
+    cbz     w11, .L475
     ldr     x9, [sp, #0]
-    movz    x10, #0x0040
+    movz    x10, #0x0048
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L380
-    adrp    x9, L_str42@PAGE
-    add     x9, x9, L_str42@PAGEOFF
-    str     x9, [sp, #288]
+    cbz     w11, .L476
+    adrp    x9, L_str59@PAGE
+    add     x9, x9, L_str59@PAGEOFF
+    str     x9, [sp, #304]
     movz    x9, #0x0013
-    str     x9, [sp, #296]
-    ldr     x9, [sp, #288]
-    ldr     x10, [sp, #296]
+    str     x9, [sp, #312]
+    ldr     x9, [sp, #304]
+    ldr     x10, [sp, #312]
     mov     x11, #0
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _die_line
-    str     x0, [sp, #5112]
-.L380:
+    str     x0, [sp, #5368]
+.L476:
     ldr     x9, [sp, #0]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #304]
-    ldr     x9, [sp, #304]
+    str     x9, [sp, #320]
+    ldr     x9, [sp, #320]
     ldr     x10, [sp, #0]
-    movz    x11, #0x0040
+    movz    x11, #0x0048
     add     x12, x10, x11
     ldr     x10, [x12]
     movz    x11, #0x0001
@@ -10704,17 +13477,72 @@ _lower_stmt:
     mul     x11, x12, x10
     add     x10, x9, x11
     ldr     x9, [x10]
-    str     x9, [sp, #312]
+    str     x9, [sp, #328]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #312]
+    ldr     x10, [sp, #328]
     mov     x0, x9
     mov     x1, x10
     bl      _ir_emit_jmp
-    str     x0, [sp, #5256]
-    b       .L991
-.L379:
-.L991:
-    movz    x16, #0x1490
+    str     x0, [sp, #5512]
+    b       .L1169
+.L475:
+    ldr     x9, [sp, #8]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0009
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L477
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0048
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L478
+    adrp    x9, L_str60@PAGE
+    add     x9, x9, L_str60@PAGEOFF
+    str     x9, [sp, #336]
+    movz    x9, #0x0016
+    str     x9, [sp, #344]
+    ldr     x9, [sp, #336]
+    ldr     x10, [sp, #344]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _die_line
+    str     x0, [sp, #5656]
+.L478:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0040
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #352]
+    ldr     x9, [sp, #352]
+    ldr     x10, [sp, #0]
+    movz    x11, #0x0048
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0001
+    sub     x12, x10, x11
+    movz    x10, #0x0008
+    mul     x11, x12, x10
+    add     x10, x9, x11
+    ldr     x9, [x10]
+    str     x9, [sp, #360]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #360]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _ir_emit_jmp
+    str     x0, [sp, #5800]
+    b       .L1169
+.L477:
+.L1169:
+    movz    x16, #0x16b0
     add     sp, sp, x16
     ldp     x29, x30, [sp], #16
     ret
@@ -10728,12 +13556,12 @@ _lower_block:
     str     x1, [sp, #8]
     ldr     x9, [sp, #8]
     str     x9, [sp, #16]
-.L381:
+.L479:
     ldr     x9, [sp, #16]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L382
+    cbz     w11, .L480
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     mov     x0, x9
@@ -10745,9 +13573,9 @@ _lower_block:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #16]
-    b       .L381
-.L382:
-.L992:
+    b       .L479
+.L480:
+.L1170:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -10831,12 +13659,12 @@ _lower_one_fn:
     str     x9, [sp, #56]
     mov     x9, #0
     str     x9, [sp, #64]
-.L383:
+.L481:
     ldr     x9, [sp, #64]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L384
+    cbz     w11, .L482
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #64]
     movz    x11, #0x0008
@@ -10858,8 +13686,8 @@ _lower_one_fn:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #64]
-    b       .L383
-.L384:
+    b       .L481
+.L482:
     ldr     x9, [sp, #32]
     movz    x10, #0x0008
     mul     x11, x9, x10
@@ -10868,10 +13696,10 @@ _lower_one_fn:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L385
+    cbz     w11, .L483
     movz    x9, #0x0008
     str     x9, [sp, #80]
-.L385:
+.L483:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #80]
     mov     x0, x9
@@ -10881,12 +13709,12 @@ _lower_one_fn:
     str     x11, [sp, #88]
     mov     x9, #0
     str     x9, [sp, #64]
-.L386:
+.L484:
     ldr     x9, [sp, #64]
     ldr     x10, [sp, #32]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L387
+    cbz     w11, .L485
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #64]
     movz    x11, #0x0008
@@ -10908,8 +13736,8 @@ _lower_one_fn:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #64]
-    b       .L386
-.L387:
+    b       .L484
+.L485:
     ldr     x9, [sp, #40]
     movz    x10, #0x0018
     add     x11, x9, x10
@@ -10942,8 +13770,8 @@ _lower_one_fn:
     str     x9, [x11]
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L993
-.L993:
+    b       .L1171
+.L1171:
     add     sp, sp, #1152
     ldp     x29, x30, [sp], #16
     ret
@@ -10961,27 +13789,27 @@ _ir_count_ins:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #16]
-.L388:
+.L486:
     ldr     x9, [sp, #16]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L389
+    cbz     w11, .L487
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #8]
     ldr     x9, [sp, #16]
-    movz    x10, #0x0070
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #16]
-    b       .L388
-.L389:
+    b       .L486
+.L487:
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L994
-.L994:
+    b       .L1172
+.L1172:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -10999,11 +13827,11 @@ _ir_has_dst:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L390
+    cbz     w11, .L488
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L390:
+    b       .L1173
+.L488:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11011,11 +13839,11 @@ _ir_has_dst:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L391
+    cbz     w11, .L489
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L391:
+    b       .L1173
+.L489:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11023,11 +13851,11 @@ _ir_has_dst:
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L392
+    cbz     w11, .L490
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L392:
+    b       .L1173
+.L490:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11035,11 +13863,11 @@ _ir_has_dst:
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L393
+    cbz     w11, .L491
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L393:
+    b       .L1173
+.L491:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11047,11 +13875,11 @@ _ir_has_dst:
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L394
+    cbz     w11, .L492
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L394:
+    b       .L1173
+.L492:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11059,11 +13887,11 @@ _ir_has_dst:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L395
+    cbz     w11, .L493
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L395:
+    b       .L1173
+.L493:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11071,11 +13899,11 @@ _ir_has_dst:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L396
+    cbz     w11, .L494
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L396:
+    b       .L1173
+.L494:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11083,11 +13911,11 @@ _ir_has_dst:
     movz    x10, #0x0009
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L397
+    cbz     w11, .L495
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L397:
+    b       .L1173
+.L495:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11095,11 +13923,11 @@ _ir_has_dst:
     movz    x10, #0x000a
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L398
+    cbz     w11, .L496
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L398:
+    b       .L1173
+.L496:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11107,11 +13935,11 @@ _ir_has_dst:
     movz    x10, #0x000b
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L399
+    cbz     w11, .L497
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L399:
+    b       .L1173
+.L497:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11119,11 +13947,11 @@ _ir_has_dst:
     movz    x10, #0x000c
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L400
+    cbz     w11, .L498
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L400:
+    b       .L1173
+.L498:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11131,11 +13959,11 @@ _ir_has_dst:
     movz    x10, #0x000d
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L401
+    cbz     w11, .L499
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L401:
+    b       .L1173
+.L499:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11143,15 +13971,15 @@ _ir_has_dst:
     movz    x10, #0x000e
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L402
+    cbz     w11, .L500
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L995
-.L402:
+    b       .L1173
+.L500:
     mov     x9, #0
     mov     x0, x9
-    b       .L995
-.L995:
+    b       .L1173
+.L1173:
     add     sp, sp, #752
     ldp     x29, x30, [sp], #16
     ret
@@ -11170,7 +13998,7 @@ _collect_uses:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L403
+    cbz     w11, .L501
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11183,8 +14011,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L996
-.L403:
+    b       .L1174
+.L501:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11192,7 +14020,7 @@ _collect_uses:
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L404
+    cbz     w11, .L502
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11205,8 +14033,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L996
-.L404:
+    b       .L1174
+.L502:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11214,7 +14042,7 @@ _collect_uses:
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L405
+    cbz     w11, .L503
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11237,8 +14065,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L405:
+    b       .L1174
+.L503:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11246,7 +14074,7 @@ _collect_uses:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L406
+    cbz     w11, .L504
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11269,8 +14097,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L406:
+    b       .L1174
+.L504:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11278,7 +14106,7 @@ _collect_uses:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L407
+    cbz     w11, .L505
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11301,8 +14129,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L407:
+    b       .L1174
+.L505:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11310,7 +14138,7 @@ _collect_uses:
     movz    x10, #0x0009
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L408
+    cbz     w11, .L506
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11333,8 +14161,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L408:
+    b       .L1174
+.L506:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11342,7 +14170,7 @@ _collect_uses:
     movz    x10, #0x000a
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L409
+    cbz     w11, .L507
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11365,8 +14193,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L409:
+    b       .L1174
+.L507:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11374,7 +14202,7 @@ _collect_uses:
     movz    x10, #0x000b
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L410
+    cbz     w11, .L508
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11397,8 +14225,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L410:
+    b       .L1174
+.L508:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11406,7 +14234,7 @@ _collect_uses:
     movz    x10, #0x000c
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L411
+    cbz     w11, .L509
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11429,8 +14257,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L411:
+    b       .L1174
+.L509:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11438,7 +14266,7 @@ _collect_uses:
     movz    x10, #0x000d
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L412
+    cbz     w11, .L510
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11461,8 +14289,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L996
-.L412:
+    b       .L1174
+.L510:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11470,7 +14298,7 @@ _collect_uses:
     movz    x10, #0x0011
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L413
+    cbz     w11, .L511
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11483,8 +14311,8 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L996
-.L413:
+    b       .L1174
+.L511:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11492,7 +14320,7 @@ _collect_uses:
     movz    x10, #0x000f
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L414
+    cbz     w11, .L512
     ldr     x9, [sp, #0]
     movz    x10, #0x0030
     add     x11, x9, x10
@@ -11500,7 +14328,7 @@ _collect_uses:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L415
+    cbz     w11, .L513
     ldr     x9, [sp, #8]
     mov     x10, #0
     movz    x11, #0x0008
@@ -11513,12 +14341,12 @@ _collect_uses:
     str     x9, [x10]
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L996
-.L415:
+    b       .L1174
+.L513:
     mov     x9, #0
     mov     x0, x9
-    b       .L996
-.L414:
+    b       .L1174
+.L512:
     ldr     x9, [sp, #0]
     mov     x10, #0
     add     x11, x9, x10
@@ -11526,7 +14354,7 @@ _collect_uses:
     movz    x10, #0x000e
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L416
+    cbz     w11, .L514
     mov     x9, #0
     str     x9, [sp, #16]
     ldr     x9, [sp, #0]
@@ -11534,7 +14362,7 @@ _collect_uses:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L417:
+.L515:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #0]
     movz    x11, #0x0068
@@ -11542,7 +14370,7 @@ _collect_uses:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L418
+    cbz     w11, .L516
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     movz    x11, #0x0008
@@ -11559,19 +14387,19 @@ _collect_uses:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #16]
-    b       .L417
-.L418:
+    b       .L515
+.L516:
     ldr     x9, [sp, #0]
     movz    x10, #0x0068
     add     x11, x9, x10
     ldr     x9, [x11]
     mov     x0, x9
-    b       .L996
-.L416:
+    b       .L1174
+.L514:
     mov     x9, #0
     mov     x0, x9
-    b       .L996
-.L996:
+    b       .L1174
+.L1174:
     add     sp, sp, #2496
     ldp     x29, x30, [sp], #16
     ret
@@ -11580,7 +14408,7 @@ _collect_uses:
 _regalloc:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #3600
+    sub     sp, sp, #3920
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #8]
@@ -11601,10 +14429,10 @@ _regalloc:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L419
+    cbz     w11, .L517
     movz    x9, #0x0008
     str     x9, [sp, #32]
-.L419:
+.L517:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     mov     x0, x9
@@ -11619,12 +14447,12 @@ _regalloc:
     str     x9, [sp, #48]
     mov     x9, #0
     str     x9, [sp, #56]
-.L420:
+.L518:
     ldr     x9, [sp, #48]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L421
+    cbz     w11, .L519
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #56]
     movz    x11, #0x0008
@@ -11637,12 +14465,12 @@ _regalloc:
     add     x11, x9, x10
     str     x11, [sp, #56]
     ldr     x9, [sp, #48]
-    movz    x10, #0x0070
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #48]
-    b       .L420
-.L421:
+    b       .L518
+.L519:
     ldr     x9, [sp, #24]
     movz    x10, #0x0008
     mul     x11, x9, x10
@@ -11651,10 +14479,10 @@ _regalloc:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L422
+    cbz     w11, .L520
     movz    x9, #0x0008
     str     x9, [sp, #64]
-.L422:
+.L520:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #64]
     mov     x0, x9
@@ -11678,12 +14506,12 @@ _regalloc:
     str     x11, [sp, #88]
     mov     x9, #0
     str     x9, [sp, #96]
-.L423:
+.L521:
     ldr     x9, [sp, #96]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L424
+    cbz     w11, .L522
     ldr     x9, [sp, #72]
     ldr     x10, [sp, #96]
     movz    x11, #0x0008
@@ -11709,8 +14537,8 @@ _regalloc:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #96]
-    b       .L423
-.L424:
+    b       .L521
+.L522:
     ldr     x9, [sp, #16]
     movz    x10, #0x0008
     mul     x11, x9, x10
@@ -11719,10 +14547,10 @@ _regalloc:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L425
+    cbz     w11, .L523
     movz    x9, #0x0008
     str     x9, [sp, #104]
-.L425:
+.L523:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #104]
     mov     x0, x9
@@ -11734,12 +14562,12 @@ _regalloc:
     str     x9, [sp, #120]
     mov     x9, #0
     str     x9, [sp, #128]
-.L426:
+.L524:
     ldr     x9, [sp, #128]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L427
+    cbz     w11, .L525
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #128]
     movz    x11, #0x0008
@@ -11752,7 +14580,7 @@ _regalloc:
     movz    x10, #0x000e
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L428
+    cbz     w11, .L526
     ldr     x9, [sp, #112]
     ldr     x10, [sp, #120]
     movz    x11, #0x0008
@@ -11764,13 +14592,63 @@ _regalloc:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #120]
-.L428:
+.L526:
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #128]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0010
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L527
+    ldr     x9, [sp, #112]
+    ldr     x10, [sp, #120]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #128]
+    str     x9, [x10]
+    ldr     x9, [sp, #120]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #120]
+.L527:
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #128]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x10, #0
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0011
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L528
+    ldr     x9, [sp, #112]
+    ldr     x10, [sp, #120]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [sp, #128]
+    str     x9, [x10]
+    ldr     x9, [sp, #120]
+    movz    x10, #0x0001
+    add     x11, x9, x10
+    str     x11, [sp, #120]
+.L528:
     ldr     x9, [sp, #128]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #128]
-    b       .L426
-.L427:
+    b       .L524
+.L525:
     ldr     x9, [sp, #0]
     movz    x10, #0x0080
     mov     x0, x9
@@ -11780,12 +14658,12 @@ _regalloc:
     str     x11, [sp, #136]
     ldr     x9, [sp, #16]
     str     x9, [sp, #128]
-.L429:
+.L529:
     ldr     x9, [sp, #128]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L430
+    cbz     w11, .L530
     ldr     x9, [sp, #128]
     movz    x10, #0x0001
     sub     x11, x9, x10
@@ -11804,12 +14682,12 @@ _regalloc:
     str     x11, [sp, #144]
     mov     x9, #0
     str     x9, [sp, #152]
-.L431:
+.L531:
     ldr     x9, [sp, #152]
     ldr     x10, [sp, #144]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L432
+    cbz     w11, .L532
     ldr     x9, [sp, #136]
     ldr     x10, [sp, #152]
     movz    x11, #0x0008
@@ -11826,7 +14704,7 @@ _regalloc:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L433
+    cbz     w11, .L533
     ldr     x9, [sp, #72]
     ldr     x10, [sp, #160]
     movz    x11, #0x0008
@@ -11834,23 +14712,23 @@ _regalloc:
     add     x10, x9, x12
     ldr     x9, [sp, #128]
     str     x9, [x10]
-.L433:
+.L533:
     ldr     x9, [sp, #152]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #152]
-    b       .L431
-.L432:
-    b       .L429
-.L430:
+    b       .L531
+.L532:
+    b       .L529
+.L530:
     mov     x9, #0
     str     x9, [sp, #128]
-.L434:
+.L534:
     ldr     x9, [sp, #128]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L435
+    cbz     w11, .L535
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #128]
     movz    x11, #0x0008
@@ -11863,9 +14741,9 @@ _regalloc:
     bl      _ir_has_dst
     mov     x10, x0
     mov     x9, #0
-    cmp     w10, w9
+    cmp     x10, x9
     cset    w11, ne
-    cbz     w11, .L436
+    cbz     w11, .L536
     ldr     x9, [sp, #168]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -11880,7 +14758,7 @@ _regalloc:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L437
+    cbz     w11, .L537
     ldr     x9, [sp, #80]
     ldr     x10, [sp, #176]
     movz    x11, #0x0008
@@ -11888,22 +14766,22 @@ _regalloc:
     add     x10, x9, x12
     ldr     x9, [sp, #128]
     str     x9, [x10]
-.L437:
-.L436:
+.L537:
+.L536:
     ldr     x9, [sp, #128]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #128]
-    b       .L434
-.L435:
+    b       .L534
+.L535:
     mov     x9, #0
     str     x9, [sp, #96]
-.L438:
+.L538:
     ldr     x9, [sp, #96]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L439
+    cbz     w11, .L539
     ldr     x9, [sp, #80]
     ldr     x10, [sp, #96]
     movz    x11, #0x0008
@@ -11913,7 +14791,7 @@ _regalloc:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L440
+    cbz     w11, .L540
     ldr     x9, [sp, #72]
     ldr     x10, [sp, #96]
     movz    x11, #0x0008
@@ -11923,15 +14801,15 @@ _regalloc:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L441
+    cbz     w11, .L541
     mov     x9, #0
     str     x9, [sp, #184]
-.L442:
+.L542:
     ldr     x9, [sp, #184]
     ldr     x10, [sp, #120]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L443
+    cbz     w11, .L543
     ldr     x9, [sp, #112]
     ldr     x10, [sp, #184]
     movz    x11, #0x0008
@@ -11948,7 +14826,7 @@ _regalloc:
     ldr     x10, [x11]
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L444
+    cbz     w11, .L544
     ldr     x9, [sp, #192]
     ldr     x10, [sp, #72]
     ldr     x11, [sp, #96]
@@ -11958,7 +14836,7 @@ _regalloc:
     ldr     x10, [x11]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L445
+    cbz     w11, .L545
     ldr     x9, [sp, #88]
     ldr     x10, [sp, #96]
     movz    x11, #0x0008
@@ -11966,22 +14844,22 @@ _regalloc:
     add     x10, x9, x12
     movz    x9, #0x0001
     str     x9, [x10]
-.L445:
-.L444:
+.L545:
+.L544:
     ldr     x9, [sp, #184]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #184]
-    b       .L442
-.L443:
-.L441:
-.L440:
+    b       .L542
+.L543:
+.L541:
+.L540:
     ldr     x9, [sp, #96]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #96]
-    b       .L438
-.L439:
+    b       .L538
+.L539:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #64]
     mov     x0, x9
@@ -11991,12 +14869,12 @@ _regalloc:
     str     x11, [sp, #200]
     mov     x9, #0
     str     x9, [sp, #96]
-.L446:
+.L546:
     ldr     x9, [sp, #96]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L447
+    cbz     w11, .L547
     ldr     x9, [sp, #200]
     ldr     x10, [sp, #96]
     movz    x11, #0x0008
@@ -12008,8 +14886,8 @@ _regalloc:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #96]
-    b       .L446
-.L447:
+    b       .L546
+.L547:
     ldr     x9, [sp, #8]
     movz    x10, #0x0048
     add     x11, x9, x10
@@ -12034,12 +14912,12 @@ _regalloc:
     str     x11, [sp, #216]
     mov     x9, #0
     str     x9, [sp, #224]
-.L448:
+.L548:
     ldr     x9, [sp, #224]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L449
+    cbz     w11, .L549
     ldr     x9, [sp, #216]
     ldr     x10, [sp, #224]
     movz    x11, #0x0008
@@ -12051,16 +14929,16 @@ _regalloc:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #224]
-    b       .L448
-.L449:
+    b       .L548
+.L549:
     mov     x9, #0
     str     x9, [sp, #128]
-.L450:
+.L550:
     ldr     x9, [sp, #128]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L451
+    cbz     w11, .L551
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #128]
     movz    x11, #0x0008
@@ -12073,9 +14951,9 @@ _regalloc:
     bl      _ir_has_dst
     mov     x10, x0
     mov     x9, #0
-    cmp     w10, w9
+    cmp     x10, x9
     cset    w11, ne
-    cbz     w11, .L452
+    cbz     w11, .L552
     ldr     x9, [sp, #232]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -12085,7 +14963,7 @@ _regalloc:
     ldr     x10, [sp, #208]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L453
+    cbz     w11, .L553
     ldr     x9, [sp, #72]
     ldr     x10, [sp, #240]
     movz    x11, #0x0008
@@ -12095,7 +14973,7 @@ _regalloc:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L454
+    cbz     w11, .L554
     ldr     x9, [sp, #88]
     ldr     x10, [sp, #240]
     movz    x11, #0x0008
@@ -12105,17 +14983,17 @@ _regalloc:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L455
+    cbz     w11, .L555
     mov     x9, #0
     str     x9, [sp, #248]
     movz    x9, #0x0007
     str     x9, [sp, #256]
-.L456:
+.L556:
     ldr     x9, [sp, #248]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L457
+    cbz     w11, .L557
     ldr     x9, [sp, #216]
     ldr     x10, [sp, #248]
     movz    x11, #0x0008
@@ -12125,27 +15003,27 @@ _regalloc:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L458
+    cbz     w11, .L558
     ldr     x9, [sp, #256]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L459
+    cbz     w11, .L559
     ldr     x9, [sp, #248]
     str     x9, [sp, #256]
-.L459:
-.L458:
+.L559:
+.L558:
     ldr     x9, [sp, #248]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #248]
-    b       .L456
-.L457:
+    b       .L556
+.L557:
     ldr     x9, [sp, #256]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L460
+    cbz     w11, .L560
     ldr     x9, [sp, #200]
     ldr     x10, [sp, #240]
     movz    x11, #0x0008
@@ -12160,11 +15038,11 @@ _regalloc:
     add     x10, x9, x12
     mov     x9, #0
     str     x9, [x10]
-.L460:
-.L455:
-.L454:
-.L453:
-.L452:
+.L560:
+.L555:
+.L554:
+.L553:
+.L552:
     ldr     x9, [sp, #232]
     ldr     x10, [sp, #136]
     mov     x0, x9
@@ -12174,12 +15052,12 @@ _regalloc:
     str     x11, [sp, #264]
     mov     x9, #0
     str     x9, [sp, #272]
-.L461:
+.L561:
     ldr     x9, [sp, #272]
     ldr     x10, [sp, #264]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L462
+    cbz     w11, .L562
     ldr     x9, [sp, #136]
     ldr     x10, [sp, #272]
     movz    x11, #0x0008
@@ -12196,7 +15074,7 @@ _regalloc:
     ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L463
+    cbz     w11, .L563
     ldr     x9, [sp, #200]
     ldr     x10, [sp, #280]
     movz    x11, #0x0008
@@ -12208,7 +15086,7 @@ _regalloc:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L464
+    cbz     w11, .L564
     ldr     x9, [sp, #216]
     ldr     x10, [sp, #288]
     movz    x11, #0x0008
@@ -12216,22 +15094,22 @@ _regalloc:
     add     x10, x9, x12
     movz    x9, #0x0001
     str     x9, [x10]
-.L464:
-.L463:
+.L564:
+.L563:
     ldr     x9, [sp, #272]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #272]
-    b       .L461
-.L462:
+    b       .L561
+.L562:
     ldr     x9, [sp, #128]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #128]
-    b       .L450
-.L451:
-.L997:
-    add     sp, sp, #3600
+    b       .L550
+.L551:
+.L1175:
+    add     sp, sp, #3920
     ldp     x29, x30, [sp], #16
     ret
 
@@ -12265,7 +15143,7 @@ _finalize_frame:
     add     x11, x9, x10
     ldr     x9, [sp, #16]
     str     x9, [x11]
-.L998:
+.L1176:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -12296,12 +15174,12 @@ _lower:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #40]
-.L465:
+.L565:
     ldr     x9, [sp, #40]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L466
+    cbz     w11, .L566
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #40]
     mov     x0, x9
@@ -12323,13 +15201,13 @@ _lower:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L467
+    cbz     w11, .L567
     ldr     x9, [sp, #48]
     str     x9, [sp, #24]
     ldr     x9, [sp, #48]
     str     x9, [sp, #32]
-    b       .L468
-.L467:
+    b       .L568
+.L567:
     ldr     x9, [sp, #32]
     movz    x10, #0x0068
     add     x11, x9, x10
@@ -12337,18 +15215,18 @@ _lower:
     str     x9, [x11]
     ldr     x9, [sp, #48]
     str     x9, [sp, #32]
-.L468:
+.L568:
     ldr     x9, [sp, #40]
     movz    x10, #0x0030
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #40]
-    b       .L465
-.L466:
+    b       .L565
+.L566:
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L999
-.L999:
+    b       .L1177
+.L1177:
     add     sp, sp, #368
     ldp     x29, x30, [sp], #16
     ret
@@ -12365,14 +15243,14 @@ _dump_ir:
     str     x9, [sp, #16]
     ldr     x9, [sp, #8]
     str     x9, [sp, #24]
-.L469:
+.L569:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L470
-    adrp    x9, L_str43@PAGE
-    add     x9, x9, L_str43@PAGEOFF
+    cbz     w11, .L570
+    adrp    x9, L_str61@PAGE
+    add     x9, x9, L_str61@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x0003
     str     x9, [sp, #40]
@@ -12403,8 +15281,8 @@ _dump_ir:
     mov     x2, x10
     bl      _out_bytes
     str     x0, [sp, #432]
-    adrp    x9, L_str44@PAGE
-    add     x9, x9, L_str44@PAGEOFF
+    adrp    x9, L_str62@PAGE
+    add     x9, x9, L_str62@PAGEOFF
     str     x9, [sp, #48]
     movz    x9, #0x0009
     str     x9, [sp, #56]
@@ -12425,8 +15303,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #528]
-    adrp    x9, L_str45@PAGE
-    add     x9, x9, L_str45@PAGEOFF
+    adrp    x9, L_str63@PAGE
+    add     x9, x9, L_str63@PAGEOFF
     str     x9, [sp, #64]
     movz    x9, #0x0008
     str     x9, [sp, #72]
@@ -12447,8 +15325,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #624]
-    adrp    x9, L_str46@PAGE
-    add     x9, x9, L_str46@PAGEOFF
+    adrp    x9, L_str64@PAGE
+    add     x9, x9, L_str64@PAGEOFF
     str     x9, [sp, #80]
     movz    x9, #0x000d
     str     x9, [sp, #88]
@@ -12480,14 +15358,14 @@ _dump_ir:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #96]
-.L471:
+.L571:
     ldr     x9, [sp, #96]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L472
-    adrp    x9, L_str47@PAGE
-    add     x9, x9, L_str47@PAGEOFF
+    cbz     w11, .L572
+    adrp    x9, L_str65@PAGE
+    add     x9, x9, L_str65@PAGEOFF
     str     x9, [sp, #104]
     movz    x9, #0x0005
     str     x9, [sp, #112]
@@ -12508,8 +15386,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #896]
-    adrp    x9, L_str48@PAGE
-    add     x9, x9, L_str48@PAGEOFF
+    adrp    x9, L_str66@PAGE
+    add     x9, x9, L_str66@PAGEOFF
     str     x9, [sp, #120]
     movz    x9, #0x0005
     str     x9, [sp, #128]
@@ -12530,8 +15408,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #992]
-    adrp    x9, L_str49@PAGE
-    add     x9, x9, L_str49@PAGEOFF
+    adrp    x9, L_str67@PAGE
+    add     x9, x9, L_str67@PAGEOFF
     str     x9, [sp, #136]
     movz    x9, #0x0003
     str     x9, [sp, #144]
@@ -12552,8 +15430,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #1088]
-    adrp    x9, L_str50@PAGE
-    add     x9, x9, L_str50@PAGEOFF
+    adrp    x9, L_str68@PAGE
+    add     x9, x9, L_str68@PAGEOFF
     str     x9, [sp, #152]
     movz    x9, #0x0003
     str     x9, [sp, #160]
@@ -12574,8 +15452,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #1184]
-    adrp    x9, L_str51@PAGE
-    add     x9, x9, L_str51@PAGEOFF
+    adrp    x9, L_str69@PAGE
+    add     x9, x9, L_str69@PAGEOFF
     str     x9, [sp, #168]
     movz    x9, #0x0007
     str     x9, [sp, #176]
@@ -12596,8 +15474,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #1280]
-    adrp    x9, L_str52@PAGE
-    add     x9, x9, L_str52@PAGEOFF
+    adrp    x9, L_str70@PAGE
+    add     x9, x9, L_str70@PAGEOFF
     str     x9, [sp, #184]
     movz    x9, #0x0005
     str     x9, [sp, #192]
@@ -12618,8 +15496,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #1376]
-    adrp    x9, L_str53@PAGE
-    add     x9, x9, L_str53@PAGEOFF
+    adrp    x9, L_str71@PAGE
+    add     x9, x9, L_str71@PAGEOFF
     str     x9, [sp, #200]
     movz    x9, #0x0007
     str     x9, [sp, #208]
@@ -12640,8 +15518,8 @@ _dump_ir:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #1472]
-    adrp    x9, L_str54@PAGE
-    add     x9, x9, L_str54@PAGEOFF
+    adrp    x9, L_str72@PAGE
+    add     x9, x9, L_str72@PAGEOFF
     str     x9, [sp, #216]
     movz    x9, #0x0008
     str     x9, [sp, #224]
@@ -12669,20 +15547,20 @@ _dump_ir:
     bl      _out_byte
     str     x0, [sp, #1592]
     ldr     x9, [sp, #96]
-    movz    x10, #0x0070
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #96]
-    b       .L471
-.L472:
+    b       .L571
+.L572:
     ldr     x9, [sp, #24]
     movz    x10, #0x0068
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L469
-.L470:
-.L1000:
+    b       .L569
+.L570:
+.L1178:
     add     sp, sp, #1664
     ldp     x29, x30, [sp], #16
     ret
@@ -12703,7 +15581,7 @@ _set_target:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L1001:
+.L1179:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -12723,8 +15601,8 @@ _get_target:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1002
-.L1002:
+    b       .L1180
+.L1180:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -12750,7 +15628,7 @@ _out_reg_x:
     mov     x1, x12
     bl      _out_u64
     str     x0, [sp, #72]
-.L1003:
+.L1181:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -12776,7 +15654,7 @@ _out_reg_w:
     mov     x1, x12
     bl      _out_u64
     str     x0, [sp, #72]
-.L1004:
+.L1182:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -12800,7 +15678,7 @@ _out_x_n:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #56]
-.L1005:
+.L1183:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -12824,7 +15702,7 @@ _out_w_n:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #56]
-.L1006:
+.L1184:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -12841,22 +15719,22 @@ _out_reg_wx:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L473
+    cbz     w11, .L573
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #64]
-    b       .L1007
-.L473:
+    b       .L1185
+.L573:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _out_w_n
     str     x0, [sp, #88]
-.L1007:
+.L1185:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -12872,9 +15750,9 @@ _out_mn:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L474
-    adrp    x9, L_str55@PAGE
-    add     x9, x9, L_str55@PAGEOFF
+    cbz     w11, .L574
+    adrp    x9, L_str73@PAGE
+    add     x9, x9, L_str73@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x000c
     str     x9, [sp, #24]
@@ -12886,15 +15764,15 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #144]
-    b       .L1008
-.L474:
+    b       .L1186
+.L574:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L475
-    adrp    x9, L_str56@PAGE
-    add     x9, x9, L_str56@PAGEOFF
+    cbz     w11, .L575
+    adrp    x9, L_str74@PAGE
+    add     x9, x9, L_str74@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x000c
     str     x9, [sp, #40]
@@ -12906,15 +15784,15 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #216]
-    b       .L1008
-.L475:
+    b       .L1186
+.L575:
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L476
-    adrp    x9, L_str57@PAGE
-    add     x9, x9, L_str57@PAGEOFF
+    cbz     w11, .L576
+    adrp    x9, L_str75@PAGE
+    add     x9, x9, L_str75@PAGEOFF
     str     x9, [sp, #48]
     movz    x9, #0x000c
     str     x9, [sp, #56]
@@ -12926,10 +15804,10 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #288]
-    b       .L1008
-.L476:
-    adrp    x9, L_str58@PAGE
-    add     x9, x9, L_str58@PAGEOFF
+    b       .L1186
+.L576:
+    adrp    x9, L_str76@PAGE
+    add     x9, x9, L_str76@PAGEOFF
     str     x9, [sp, #64]
     movz    x9, #0x000c
     str     x9, [sp, #72]
@@ -12941,7 +15819,7 @@ _out_mn:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #336]
-.L1008:
+.L1186:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -12953,8 +15831,8 @@ _out_sp_tail:
     sub     sp, sp, #176
     str     x0, [sp, #0]
     str     x1, [sp, #8]
-    adrp    x9, L_str59@PAGE
-    add     x9, x9, L_str59@PAGEOFF
+    adrp    x9, L_str77@PAGE
+    add     x9, x9, L_str77@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x0008
     str     x9, [sp, #24]
@@ -12972,8 +15850,8 @@ _out_sp_tail:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #112]
-    adrp    x9, L_str60@PAGE
-    add     x9, x9, L_str60@PAGEOFF
+    adrp    x9, L_str78@PAGE
+    add     x9, x9, L_str78@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x0002
     str     x9, [sp, #40]
@@ -12985,7 +15863,7 @@ _out_sp_tail:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #160]
-.L1009:
+.L1187:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -12997,8 +15875,8 @@ _out_mem_tail:
     sub     sp, sp, #176
     str     x0, [sp, #0]
     str     x1, [sp, #8]
-    adrp    x9, L_str61@PAGE
-    add     x9, x9, L_str61@PAGEOFF
+    adrp    x9, L_str79@PAGE
+    add     x9, x9, L_str79@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x0003
     str     x9, [sp, #24]
@@ -13016,8 +15894,8 @@ _out_mem_tail:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #112]
-    adrp    x9, L_str62@PAGE
-    add     x9, x9, L_str62@PAGEOFF
+    adrp    x9, L_str80@PAGE
+    add     x9, x9, L_str80@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x0002
     str     x9, [sp, #40]
@@ -13029,7 +15907,7 @@ _out_mem_tail:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #160]
-.L1010:
+.L1188:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -13078,9 +15956,9 @@ _emit_movi:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L477
-    adrp    x9, L_str63@PAGE
-    add     x9, x9, L_str63@PAGEOFF
+    cbz     w11, .L577
+    adrp    x9, L_str81@PAGE
+    add     x9, x9, L_str81@PAGEOFF
     str     x9, [sp, #80]
     movz    x9, #0x000c
     str     x9, [sp, #88]
@@ -13098,8 +15976,8 @@ _emit_movi:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #528]
-    adrp    x9, L_str64@PAGE
-    add     x9, x9, L_str64@PAGEOFF
+    adrp    x9, L_str82@PAGE
+    add     x9, x9, L_str82@PAGEOFF
     str     x9, [sp, #96]
     movz    x9, #0x0005
     str     x9, [sp, #104]
@@ -13111,8 +15989,8 @@ _emit_movi:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #576]
-    b       .L1011
-.L477:
+    b       .L1189
+.L577:
     movz    x9, #0x0004
     str     x9, [sp, #112]
     mov     x9, #0
@@ -13121,62 +15999,62 @@ _emit_movi:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L478
+    cbz     w11, .L578
     mov     x9, #0
     str     x9, [sp, #112]
     ldr     x9, [sp, #32]
     str     x9, [sp, #120]
-.L478:
+.L578:
     ldr     x9, [sp, #112]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L479
+    cbz     w11, .L579
     ldr     x9, [sp, #48]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L480
+    cbz     w11, .L580
     movz    x9, #0x0001
     str     x9, [sp, #112]
     ldr     x9, [sp, #48]
     str     x9, [sp, #120]
-.L480:
-.L479:
+.L580:
+.L579:
     ldr     x9, [sp, #112]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L481
+    cbz     w11, .L581
     ldr     x9, [sp, #64]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L482
+    cbz     w11, .L582
     movz    x9, #0x0002
     str     x9, [sp, #112]
     ldr     x9, [sp, #64]
     str     x9, [sp, #120]
-.L482:
-.L481:
+.L582:
+.L581:
     ldr     x9, [sp, #112]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L483
+    cbz     w11, .L583
     ldr     x9, [sp, #72]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L484
+    cbz     w11, .L584
     movz    x9, #0x0003
     str     x9, [sp, #112]
     ldr     x9, [sp, #72]
     str     x9, [sp, #120]
-.L484:
-.L483:
-    adrp    x9, L_str65@PAGE
-    add     x9, x9, L_str65@PAGEOFF
+.L584:
+.L583:
+    adrp    x9, L_str83@PAGE
+    add     x9, x9, L_str83@PAGEOFF
     str     x9, [sp, #128]
     movz    x9, #0x000c
     str     x9, [sp, #136]
@@ -13194,8 +16072,8 @@ _emit_movi:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #896]
-    adrp    x9, L_str66@PAGE
-    add     x9, x9, L_str66@PAGEOFF
+    adrp    x9, L_str84@PAGE
+    add     x9, x9, L_str84@PAGEOFF
     str     x9, [sp, #144]
     movz    x9, #0x0005
     str     x9, [sp, #152]
@@ -13217,9 +16095,9 @@ _emit_movi:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L485
-    adrp    x9, L_str67@PAGE
-    add     x9, x9, L_str67@PAGEOFF
+    cbz     w11, .L585
+    adrp    x9, L_str85@PAGE
+    add     x9, x9, L_str85@PAGEOFF
     str     x9, [sp, #160]
     movz    x9, #0x0007
     str     x9, [sp, #168]
@@ -13239,7 +16117,7 @@ _emit_movi:
     mov     x1, x12
     bl      _out_u64
     str     x0, [sp, #1080]
-.L485:
+.L585:
     ldr     x9, [sp, #0]
     movz    x10, #0x000a
     mov     x0, x9
@@ -13250,45 +16128,45 @@ _emit_movi:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #176]
-.L486:
+.L586:
     ldr     x9, [sp, #176]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L487
+    cbz     w11, .L587
     mov     x9, #0
     str     x9, [sp, #184]
     ldr     x9, [sp, #176]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L488
+    cbz     w11, .L588
     ldr     x9, [sp, #48]
     str     x9, [sp, #184]
-.L488:
+.L588:
     ldr     x9, [sp, #176]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L489
+    cbz     w11, .L589
     ldr     x9, [sp, #64]
     str     x9, [sp, #184]
-.L489:
+.L589:
     ldr     x9, [sp, #176]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L490
+    cbz     w11, .L590
     ldr     x9, [sp, #72]
     str     x9, [sp, #184]
-.L490:
+.L590:
     ldr     x9, [sp, #184]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L491
-    adrp    x9, L_str68@PAGE
-    add     x9, x9, L_str68@PAGEOFF
+    cbz     w11, .L591
+    adrp    x9, L_str86@PAGE
+    add     x9, x9, L_str86@PAGEOFF
     str     x9, [sp, #192]
     movz    x9, #0x000c
     str     x9, [sp, #200]
@@ -13306,8 +16184,8 @@ _emit_movi:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #1352]
-    adrp    x9, L_str69@PAGE
-    add     x9, x9, L_str69@PAGEOFF
+    adrp    x9, L_str87@PAGE
+    add     x9, x9, L_str87@PAGEOFF
     str     x9, [sp, #208]
     movz    x9, #0x0005
     str     x9, [sp, #216]
@@ -13325,8 +16203,8 @@ _emit_movi:
     mov     x1, x10
     bl      _out_hex4
     str     x0, [sp, #1424]
-    adrp    x9, L_str70@PAGE
-    add     x9, x9, L_str70@PAGEOFF
+    adrp    x9, L_str88@PAGE
+    add     x9, x9, L_str88@PAGEOFF
     str     x9, [sp, #224]
     movz    x9, #0x0007
     str     x9, [sp, #232]
@@ -13352,14 +16230,14 @@ _emit_movi:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #1536]
-.L491:
+.L591:
     ldr     x9, [sp, #176]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #176]
-    b       .L486
-.L487:
-.L1011:
+    b       .L586
+.L587:
+.L1189:
     add     sp, sp, #1568
     ldp     x29, x30, [sp], #16
     ret
@@ -13380,7 +16258,7 @@ _set_src:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L1012:
+.L1190:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -13400,8 +16278,8 @@ _get_src:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1013
-.L1013:
+    b       .L1191
+.L1191:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -13417,8 +16295,8 @@ _slot_off:
     movz    x10, #0x0008
     mul     x11, x9, x10
     mov     x0, x11
-    b       .L1014
-.L1014:
+    b       .L1192
+.L1192:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -13444,15 +16322,15 @@ _in_reg:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L492
+    cbz     w11, .L592
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L1015
-.L492:
+    b       .L1193
+.L592:
     mov     x9, #0
     mov     x0, x9
-    b       .L1015
-.L1015:
+    b       .L1193
+.L1193:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -13480,17 +16358,17 @@ _dst_x_reg:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L493
+    cbz     w11, .L593
     ldr     x9, [sp, #24]
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L1016
-.L493:
+    b       .L1194
+.L593:
     movz    x9, #0x0010
     mov     x0, x9
-    b       .L1016
-.L1016:
+    b       .L1194
+.L1194:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -13503,8 +16381,8 @@ _emit_ldr_x:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str71@PAGE
-    add     x9, x9, L_str71@PAGEOFF
+    adrp    x9, L_str89@PAGE
+    add     x9, x9, L_str89@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x000c
     str     x9, [sp, #32]
@@ -13522,8 +16400,8 @@ _emit_ldr_x:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #136]
-    adrp    x9, L_str72@PAGE
-    add     x9, x9, L_str72@PAGEOFF
+    adrp    x9, L_str90@PAGE
+    add     x9, x9, L_str90@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0008
     str     x9, [sp, #48]
@@ -13541,8 +16419,8 @@ _emit_ldr_x:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #208]
-    adrp    x9, L_str73@PAGE
-    add     x9, x9, L_str73@PAGEOFF
+    adrp    x9, L_str91@PAGE
+    add     x9, x9, L_str91@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0002
     str     x9, [sp, #64]
@@ -13554,7 +16432,7 @@ _emit_ldr_x:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #256]
-.L1017:
+.L1195:
     add     sp, sp, #272
     ldp     x29, x30, [sp], #16
     ret
@@ -13567,8 +16445,8 @@ _emit_str_x:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str74@PAGE
-    add     x9, x9, L_str74@PAGEOFF
+    adrp    x9, L_str92@PAGE
+    add     x9, x9, L_str92@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x000c
     str     x9, [sp, #32]
@@ -13586,8 +16464,8 @@ _emit_str_x:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #136]
-    adrp    x9, L_str75@PAGE
-    add     x9, x9, L_str75@PAGEOFF
+    adrp    x9, L_str93@PAGE
+    add     x9, x9, L_str93@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0008
     str     x9, [sp, #48]
@@ -13605,8 +16483,8 @@ _emit_str_x:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #208]
-    adrp    x9, L_str76@PAGE
-    add     x9, x9, L_str76@PAGEOFF
+    adrp    x9, L_str94@PAGE
+    add     x9, x9, L_str94@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0002
     str     x9, [sp, #64]
@@ -13618,7 +16496,7 @@ _emit_str_x:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #256]
-.L1018:
+.L1196:
     add     sp, sp, #272
     ldp     x29, x30, [sp], #16
     ret
@@ -13631,8 +16509,8 @@ _emit_mov_x_x:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str77@PAGE
-    add     x9, x9, L_str77@PAGEOFF
+    adrp    x9, L_str95@PAGE
+    add     x9, x9, L_str95@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x000c
     str     x9, [sp, #32]
@@ -13650,8 +16528,8 @@ _emit_mov_x_x:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #120]
-    adrp    x9, L_str78@PAGE
-    add     x9, x9, L_str78@PAGEOFF
+    adrp    x9, L_str96@PAGE
+    add     x9, x9, L_str96@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0002
     str     x9, [sp, #48]
@@ -13675,7 +16553,7 @@ _emit_mov_x_x:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #216]
-.L1019:
+.L1197:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -13688,8 +16566,8 @@ _emit_mov_w_w:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str79@PAGE
-    add     x9, x9, L_str79@PAGEOFF
+    adrp    x9, L_str97@PAGE
+    add     x9, x9, L_str97@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x000c
     str     x9, [sp, #32]
@@ -13707,8 +16585,8 @@ _emit_mov_w_w:
     mov     x1, x10
     bl      _out_w_n
     str     x0, [sp, #120]
-    adrp    x9, L_str80@PAGE
-    add     x9, x9, L_str80@PAGEOFF
+    adrp    x9, L_str98@PAGE
+    add     x9, x9, L_str98@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0002
     str     x9, [sp, #48]
@@ -13732,7 +16610,7 @@ _emit_mov_w_w:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #216]
-.L1020:
+.L1198:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -13763,7 +16641,7 @@ _emit_ldr_w:
     mov     x1, x10
     bl      _out_sp_tail
     str     x0, [sp, #88]
-.L1021:
+.L1199:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -13793,7 +16671,7 @@ _emit_load_slot_to_x:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L494
+    cbz     w11, .L594
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #40]
@@ -13804,8 +16682,8 @@ _emit_load_slot_to_x:
     mov     x2, x13
     bl      _emit_mov_x_x
     str     x0, [sp, #192]
-    b       .L1022
-.L494:
+    b       .L1200
+.L594:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #16]
@@ -13816,7 +16694,7 @@ _emit_load_slot_to_x:
     mov     x2, x13
     bl      _emit_ldr_x
     str     x0, [sp, #240]
-.L1022:
+.L1200:
     add     sp, sp, #256
     ldp     x29, x30, [sp], #16
     ret
@@ -13844,9 +16722,9 @@ _emit_spill_x:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L495
-    b       .L1023
-.L495:
+    cbz     w11, .L595
+    b       .L1201
+.L595:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #16]
@@ -13857,7 +16735,7 @@ _emit_spill_x:
     mov     x2, x13
     bl      _emit_str_x
     str     x0, [sp, #176]
-.L1023:
+.L1201:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -13887,13 +16765,13 @@ _ensure_src_x:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L496
+    cbz     w11, .L596
     ldr     x9, [sp, #40]
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L1024
-.L496:
+    b       .L1202
+.L596:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #16]
@@ -13906,8 +16784,8 @@ _ensure_src_x:
     str     x0, [sp, #216]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L1024
-.L1024:
+    b       .L1202
+.L1202:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -13937,13 +16815,13 @@ _ensure_src_w:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L497
+    cbz     w11, .L597
     ldr     x9, [sp, #40]
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L1025
-.L497:
+    b       .L1203
+.L597:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #16]
@@ -13956,8 +16834,8 @@ _ensure_src_w:
     str     x0, [sp, #216]
     ldr     x9, [sp, #24]
     mov     x0, x9
-    b       .L1025
-.L1025:
+    b       .L1203
+.L1203:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -13966,191 +16844,212 @@ _ensure_src_w:
 _out_binop_mnemonic:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #816
+    sub     sp, sp, #912
     str     x0, [sp, #0]
     str     x1, [sp, #8]
+    str     x2, [sp, #16]
     ldr     x9, [sp, #8]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L498
-    adrp    x9, L_str81@PAGE
-    add     x9, x9, L_str81@PAGEOFF
-    str     x9, [sp, #16]
-    movz    x9, #0x0003
+    cbz     w11, .L598
+    adrp    x9, L_str99@PAGE
+    add     x9, x9, L_str99@PAGEOFF
     str     x9, [sp, #24]
+    movz    x9, #0x0003
+    str     x9, [sp, #32]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #16]
-    ldr     x11, [sp, #24]
+    ldr     x10, [sp, #24]
+    ldr     x11, [sp, #32]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #224]
-    b       .L1026
-.L498:
+    str     x0, [sp, #248]
+    b       .L1204
+.L598:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L499
-    adrp    x9, L_str82@PAGE
-    add     x9, x9, L_str82@PAGEOFF
-    str     x9, [sp, #32]
-    movz    x9, #0x0003
+    cbz     w11, .L599
+    adrp    x9, L_str100@PAGE
+    add     x9, x9, L_str100@PAGEOFF
     str     x9, [sp, #40]
+    movz    x9, #0x0003
+    str     x9, [sp, #48]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #32]
-    ldr     x11, [sp, #40]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #48]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #296]
-    b       .L1026
-.L499:
+    str     x0, [sp, #320]
+    b       .L1204
+.L599:
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L500
-    adrp    x9, L_str83@PAGE
-    add     x9, x9, L_str83@PAGEOFF
-    str     x9, [sp, #48]
-    movz    x9, #0x0003
+    cbz     w11, .L600
+    adrp    x9, L_str101@PAGE
+    add     x9, x9, L_str101@PAGEOFF
     str     x9, [sp, #56]
+    movz    x9, #0x0003
+    str     x9, [sp, #64]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #48]
-    ldr     x11, [sp, #56]
+    ldr     x10, [sp, #56]
+    ldr     x11, [sp, #64]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #368]
-    b       .L1026
-.L500:
+    str     x0, [sp, #392]
+    b       .L1204
+.L600:
     ldr     x9, [sp, #8]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L501
-    adrp    x9, L_str84@PAGE
-    add     x9, x9, L_str84@PAGEOFF
-    str     x9, [sp, #64]
-    movz    x9, #0x0004
+    cbz     w11, .L601
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L602
+    adrp    x9, L_str102@PAGE
+    add     x9, x9, L_str102@PAGEOFF
     str     x9, [sp, #72]
+    movz    x9, #0x0004
+    str     x9, [sp, #80]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #64]
-    ldr     x11, [sp, #72]
+    ldr     x10, [sp, #72]
+    ldr     x11, [sp, #80]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #440]
-    b       .L1026
-.L501:
+    str     x0, [sp, #488]
+    b       .L1204
+.L602:
+    adrp    x9, L_str103@PAGE
+    add     x9, x9, L_str103@PAGEOFF
+    str     x9, [sp, #88]
+    movz    x9, #0x0004
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #88]
+    ldr     x11, [sp, #96]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #536]
+    b       .L1204
+.L601:
     ldr     x9, [sp, #8]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L502
-    adrp    x9, L_str85@PAGE
-    add     x9, x9, L_str85@PAGEOFF
-    str     x9, [sp, #80]
+    cbz     w11, .L603
+    adrp    x9, L_str104@PAGE
+    add     x9, x9, L_str104@PAGEOFF
+    str     x9, [sp, #104]
     movz    x9, #0x0003
-    str     x9, [sp, #88]
+    str     x9, [sp, #112]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #80]
-    ldr     x11, [sp, #88]
+    ldr     x10, [sp, #104]
+    ldr     x11, [sp, #112]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #512]
-    b       .L1026
-.L502:
+    str     x0, [sp, #608]
+    b       .L1204
+.L603:
     ldr     x9, [sp, #8]
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L503
-    adrp    x9, L_str86@PAGE
-    add     x9, x9, L_str86@PAGEOFF
-    str     x9, [sp, #96]
+    cbz     w11, .L604
+    adrp    x9, L_str105@PAGE
+    add     x9, x9, L_str105@PAGEOFF
+    str     x9, [sp, #120]
     movz    x9, #0x0003
-    str     x9, [sp, #104]
+    str     x9, [sp, #128]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #96]
-    ldr     x11, [sp, #104]
+    ldr     x10, [sp, #120]
+    ldr     x11, [sp, #128]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #584]
-    b       .L1026
-.L503:
+    str     x0, [sp, #680]
+    b       .L1204
+.L604:
     ldr     x9, [sp, #8]
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L504
-    adrp    x9, L_str87@PAGE
-    add     x9, x9, L_str87@PAGEOFF
-    str     x9, [sp, #112]
+    cbz     w11, .L605
+    adrp    x9, L_str106@PAGE
+    add     x9, x9, L_str106@PAGEOFF
+    str     x9, [sp, #136]
     movz    x9, #0x0003
-    str     x9, [sp, #120]
+    str     x9, [sp, #144]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #112]
-    ldr     x11, [sp, #120]
+    ldr     x10, [sp, #136]
+    ldr     x11, [sp, #144]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #656]
-    b       .L1026
-.L504:
+    str     x0, [sp, #752]
+    b       .L1204
+.L605:
     ldr     x9, [sp, #8]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L505
-    adrp    x9, L_str88@PAGE
-    add     x9, x9, L_str88@PAGEOFF
-    str     x9, [sp, #128]
+    cbz     w11, .L606
+    adrp    x9, L_str107@PAGE
+    add     x9, x9, L_str107@PAGEOFF
+    str     x9, [sp, #152]
     movz    x9, #0x0003
-    str     x9, [sp, #136]
+    str     x9, [sp, #160]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #128]
-    ldr     x11, [sp, #136]
+    ldr     x10, [sp, #152]
+    ldr     x11, [sp, #160]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #728]
-    b       .L1026
-.L505:
+    str     x0, [sp, #824]
+    b       .L1204
+.L606:
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L506
-    adrp    x9, L_str89@PAGE
-    add     x9, x9, L_str89@PAGEOFF
-    str     x9, [sp, #144]
+    cbz     w11, .L607
+    adrp    x9, L_str108@PAGE
+    add     x9, x9, L_str108@PAGEOFF
+    str     x9, [sp, #168]
     movz    x9, #0x0003
-    str     x9, [sp, #152]
+    str     x9, [sp, #176]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #144]
-    ldr     x11, [sp, #152]
+    ldr     x10, [sp, #168]
+    ldr     x11, [sp, #176]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #800]
-    b       .L1026
-.L506:
-.L1026:
-    add     sp, sp, #816
+    str     x0, [sp, #896]
+    b       .L1204
+.L607:
+.L1204:
+    add     sp, sp, #912
     ldp     x29, x30, [sp], #16
     ret
 
@@ -14196,7 +17095,7 @@ _emit_i_movi:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #192]
-.L1027:
+.L1205:
     add     sp, sp, #208
     ldp     x29, x30, [sp], #16
     ret
@@ -14205,7 +17104,7 @@ _emit_i_movi:
 _emit_i_label_addr:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1456
+    sub     sp, sp, #2000
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -14226,9 +17125,9 @@ _emit_i_label_addr:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L507
-    adrp    x9, L_str90@PAGE
-    add     x9, x9, L_str90@PAGEOFF
+    cbz     w11, .L608
+    adrp    x9, L_str109@PAGE
+    add     x9, x9, L_str109@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x000c
     str     x9, [sp, #40]
@@ -14239,18 +17138,39 @@ _emit_i_label_addr:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #336]
+    str     x0, [sp, #416]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     mov     x0, x9
     mov     x1, x10
     bl      _out_x_n
-    str     x0, [sp, #360]
-    adrp    x9, L_str91@PAGE
-    add     x9, x9, L_str91@PAGEOFF
+    str     x0, [sp, #440]
+    adrp    x9, L_str110@PAGE
+    add     x9, x9, L_str110@PAGEOFF
     str     x9, [sp, #48]
     movz    x9, #0x0003
     str     x9, [sp, #56]
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L609
+    adrp    x9, L_str111@PAGE
+    add     x9, x9, L_str111@PAGEOFF
+    str     x9, [sp, #64]
+    movz    x9, #0x0002
+    str     x9, [sp, #72]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #64]
+    ldr     x11, [sp, #72]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #528]
+    b       .L610
+.L609:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #48]
     ldr     x11, [sp, #56]
@@ -14258,77 +17178,13 @@ _emit_i_label_addr:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #408]
+    str     x0, [sp, #560]
+.L610:
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
-    str     x9, [sp, #64]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #64]
-    mov     x11, #0
-    add     x12, x10, x11
-    ldr     x10, [x12]
-    ldr     x11, [sp, #16]
-    movz    x12, #0x0050
-    add     x13, x11, x12
-    ldr     x11, [x13]
-    add     x12, x10, x11
-    ldr     x10, [sp, #16]
-    movz    x11, #0x0058
-    add     x13, x10, x11
-    ldr     x10, [x13]
-    mov     x0, x9
-    mov     x1, x12
-    mov     x2, x10
-    bl      _out_bytes
-    str     x0, [sp, #536]
-    adrp    x9, L_str92@PAGE
-    add     x9, x9, L_str92@PAGEOFF
-    str     x9, [sp, #72]
-    movz    x9, #0x0012
     str     x9, [sp, #80]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #72]
-    ldr     x11, [sp, #80]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _out_bytes
-    str     x0, [sp, #584]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #24]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _out_x_n
-    str     x0, [sp, #608]
-    adrp    x9, L_str93@PAGE
-    add     x9, x9, L_str93@PAGEOFF
-    str     x9, [sp, #88]
-    movz    x9, #0x0002
-    str     x9, [sp, #96]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #88]
-    ldr     x11, [sp, #96]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _out_bytes
-    str     x0, [sp, #656]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #24]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _out_x_n
-    str     x0, [sp, #680]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #48]
-    ldr     x11, [sp, #56]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _out_bytes
-    str     x0, [sp, #712]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #64]
+    ldr     x10, [sp, #80]
     mov     x11, #0
     add     x12, x10, x11
     ldr     x10, [x12]
@@ -14345,11 +17201,22 @@ _emit_i_label_addr:
     mov     x1, x12
     mov     x2, x10
     bl      _out_bytes
-    str     x0, [sp, #832]
-    adrp    x9, L_str94@PAGE
-    add     x9, x9, L_str94@PAGEOFF
+    str     x0, [sp, #688]
+    adrp    x9, L_str112@PAGE
+    add     x9, x9, L_str112@PAGEOFF
+    str     x9, [sp, #88]
+    movz    x9, #0x0012
+    str     x9, [sp, #96]
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L611
+    adrp    x9, L_str113@PAGE
+    add     x9, x9, L_str113@PAGEOFF
     str     x9, [sp, #104]
-    movz    x9, #0x0009
+    movz    x9, #0x000d
     str     x9, [sp, #112]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #104]
@@ -14358,26 +17225,28 @@ _emit_i_label_addr:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #880]
+    str     x0, [sp, #776]
+    b       .L612
+.L611:
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #8]
-    ldr     x11, [sp, #16]
-    movz    x12, #0x0008
-    add     x13, x11, x12
-    ldr     x11, [x13]
-    ldr     x12, [sp, #24]
+    ldr     x10, [sp, #88]
+    ldr     x11, [sp, #96]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
-    mov     x3, x12
-    bl      _emit_spill_x
-    str     x0, [sp, #944]
-    b       .L1028
-.L507:
-    adrp    x9, L_str95@PAGE
-    add     x9, x9, L_str95@PAGEOFF
+    bl      _out_bytes
+    str     x0, [sp, #808]
+.L612:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_x_n
+    str     x0, [sp, #832]
+    adrp    x9, L_str114@PAGE
+    add     x9, x9, L_str114@PAGEOFF
     str     x9, [sp, #120]
-    movz    x9, #0x000c
+    movz    x9, #0x0002
     str     x9, [sp, #128]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #120]
@@ -14386,17 +17255,23 @@ _emit_i_label_addr:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #992]
+    str     x0, [sp, #880]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     mov     x0, x9
     mov     x1, x10
     bl      _out_x_n
-    str     x0, [sp, #1016]
-    adrp    x9, L_str96@PAGE
-    add     x9, x9, L_str96@PAGEOFF
+    str     x0, [sp, #904]
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L613
+    adrp    x9, L_str115@PAGE
+    add     x9, x9, L_str115@PAGEOFF
     str     x9, [sp, #136]
-    movz    x9, #0x0007
+    movz    x9, #0x0008
     str     x9, [sp, #144]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #136]
@@ -14405,20 +17280,55 @@ _emit_i_label_addr:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #1064]
+    str     x0, [sp, #976]
+    b       .L614
+.L613:
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #16]
-    movz    x11, #0x0040
-    add     x12, x10, x11
-    ldr     x10, [x12]
+    ldr     x10, [sp, #48]
+    ldr     x11, [sp, #56]
     mov     x0, x9
     mov     x1, x10
-    bl      _out_u64
-    str     x0, [sp, #1112]
-    adrp    x9, L_str97@PAGE
-    add     x9, x9, L_str97@PAGEOFF
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1008]
+.L614:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #80]
+    mov     x11, #0
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0050
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    add     x12, x10, x11
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0058
+    add     x13, x10, x11
+    ldr     x10, [x13]
+    mov     x0, x9
+    mov     x1, x12
+    mov     x2, x10
+    bl      _out_bytes
+    str     x0, [sp, #1128]
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L615
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000a
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_byte
+    str     x0, [sp, #1176]
+    b       .L616
+.L615:
+    adrp    x9, L_str116@PAGE
+    add     x9, x9, L_str116@PAGEOFF
     str     x9, [sp, #152]
-    movz    x9, #0x0012
+    movz    x9, #0x0009
     str     x9, [sp, #160]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #152]
@@ -14427,62 +17337,8 @@ _emit_i_label_addr:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #1160]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #24]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _out_x_n
-    str     x0, [sp, #1184]
-    adrp    x9, L_str98@PAGE
-    add     x9, x9, L_str98@PAGEOFF
-    str     x9, [sp, #168]
-    movz    x9, #0x0002
-    str     x9, [sp, #176]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #168]
-    ldr     x11, [sp, #176]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _out_bytes
-    str     x0, [sp, #1232]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #24]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _out_x_n
-    str     x0, [sp, #1256]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #136]
-    ldr     x11, [sp, #144]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _out_bytes
-    str     x0, [sp, #1288]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #16]
-    movz    x11, #0x0040
-    add     x12, x10, x11
-    ldr     x10, [x12]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _out_u64
-    str     x0, [sp, #1336]
-    adrp    x9, L_str99@PAGE
-    add     x9, x9, L_str99@PAGEOFF
-    str     x9, [sp, #184]
-    movz    x9, #0x0009
-    str     x9, [sp, #192]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #184]
-    ldr     x11, [sp, #192]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _out_bytes
-    str     x0, [sp, #1384]
+    str     x0, [sp, #1224]
+.L616:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -14495,9 +17351,192 @@ _emit_i_label_addr:
     mov     x2, x11
     mov     x3, x12
     bl      _emit_spill_x
-    str     x0, [sp, #1448]
-.L1028:
-    add     sp, sp, #1456
+    str     x0, [sp, #1288]
+    b       .L1206
+.L608:
+    adrp    x9, L_str117@PAGE
+    add     x9, x9, L_str117@PAGEOFF
+    str     x9, [sp, #168]
+    movz    x9, #0x000c
+    str     x9, [sp, #176]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #168]
+    ldr     x11, [sp, #176]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1336]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_x_n
+    str     x0, [sp, #1360]
+    adrp    x9, L_str118@PAGE
+    add     x9, x9, L_str118@PAGEOFF
+    str     x9, [sp, #184]
+    movz    x9, #0x0007
+    str     x9, [sp, #192]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #184]
+    ldr     x11, [sp, #192]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1408]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0040
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_u64
+    str     x0, [sp, #1456]
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L617
+    adrp    x9, L_str119@PAGE
+    add     x9, x9, L_str119@PAGEOFF
+    str     x9, [sp, #200]
+    movz    x9, #0x000d
+    str     x9, [sp, #208]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #200]
+    ldr     x11, [sp, #208]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1528]
+    b       .L618
+.L617:
+    adrp    x9, L_str120@PAGE
+    add     x9, x9, L_str120@PAGEOFF
+    str     x9, [sp, #216]
+    movz    x9, #0x0012
+    str     x9, [sp, #224]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #216]
+    ldr     x11, [sp, #224]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1576]
+.L618:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_x_n
+    str     x0, [sp, #1600]
+    adrp    x9, L_str121@PAGE
+    add     x9, x9, L_str121@PAGEOFF
+    str     x9, [sp, #232]
+    movz    x9, #0x0002
+    str     x9, [sp, #240]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #232]
+    ldr     x11, [sp, #240]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1648]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_x_n
+    str     x0, [sp, #1672]
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L619
+    adrp    x9, L_str122@PAGE
+    add     x9, x9, L_str122@PAGEOFF
+    str     x9, [sp, #248]
+    movz    x9, #0x000d
+    str     x9, [sp, #256]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #248]
+    ldr     x11, [sp, #256]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1744]
+    b       .L620
+.L619:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #184]
+    ldr     x11, [sp, #192]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1776]
+.L620:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0040
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_u64
+    str     x0, [sp, #1824]
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L621
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000a
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_byte
+    str     x0, [sp, #1872]
+    b       .L622
+.L621:
+    adrp    x9, L_str123@PAGE
+    add     x9, x9, L_str123@PAGEOFF
+    str     x9, [sp, #264]
+    movz    x9, #0x0009
+    str     x9, [sp, #272]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #264]
+    ldr     x11, [sp, #272]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #1920]
+.L622:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0008
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    ldr     x12, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _emit_spill_x
+    str     x0, [sp, #1984]
+.L1206:
+    add     sp, sp, #2000
     ldp     x29, x30, [sp], #16
     ret
 
@@ -14519,8 +17558,8 @@ _emit_i_addr_local:
     bl      _dst_x_reg
     mov     x11, x0
     str     x11, [sp, #24]
-    adrp    x9, L_str100@PAGE
-    add     x9, x9, L_str100@PAGEOFF
+    adrp    x9, L_str124@PAGE
+    add     x9, x9, L_str124@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x000c
     str     x9, [sp, #40]
@@ -14538,8 +17577,8 @@ _emit_i_addr_local:
     mov     x1, x10
     bl      _out_x_n
     str     x0, [sp, #176]
-    adrp    x9, L_str101@PAGE
-    add     x9, x9, L_str101@PAGEOFF
+    adrp    x9, L_str125@PAGE
+    add     x9, x9, L_str125@PAGEOFF
     str     x9, [sp, #48]
     movz    x9, #0x0007
     str     x9, [sp, #56]
@@ -14581,8 +17620,189 @@ _emit_i_addr_local:
     mov     x3, x12
     bl      _emit_spill_x
     str     x0, [sp, #376]
-.L1029:
+.L1207:
     add     sp, sp, #384
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _emit_normalize
+_emit_normalize:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #768
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    str     x3, [sp, #24]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L623
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L624
+    adrp    x9, L_str126@PAGE
+    add     x9, x9, L_str126@PAGEOFF
+    str     x9, [sp, #32]
+    movz    x9, #0x000c
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #40]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #216]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_x_n
+    str     x0, [sp, #240]
+    adrp    x9, L_str127@PAGE
+    add     x9, x9, L_str127@PAGEOFF
+    str     x9, [sp, #48]
+    movz    x9, #0x0002
+    str     x9, [sp, #56]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #48]
+    ldr     x11, [sp, #56]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #288]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_w_n
+    str     x0, [sp, #312]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000a
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_byte
+    str     x0, [sp, #336]
+    b       .L1208
+.L624:
+    adrp    x9, L_str128@PAGE
+    add     x9, x9, L_str128@PAGEOFF
+    str     x9, [sp, #64]
+    movz    x9, #0x000c
+    str     x9, [sp, #72]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #64]
+    ldr     x11, [sp, #72]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #384]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_w_n
+    str     x0, [sp, #408]
+    adrp    x9, L_str129@PAGE
+    add     x9, x9, L_str129@PAGEOFF
+    str     x9, [sp, #80]
+    movz    x9, #0x0002
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #80]
+    ldr     x11, [sp, #88]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #456]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_w_n
+    str     x0, [sp, #480]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000a
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_byte
+    str     x0, [sp, #504]
+    b       .L1208
+.L623:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L625
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L626
+    adrp    x9, L_str130@PAGE
+    add     x9, x9, L_str130@PAGEOFF
+    str     x9, [sp, #96]
+    movz    x9, #0x000c
+    str     x9, [sp, #104]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #96]
+    ldr     x11, [sp, #104]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #600]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_x_n
+    str     x0, [sp, #624]
+    adrp    x9, L_str131@PAGE
+    add     x9, x9, L_str131@PAGEOFF
+    str     x9, [sp, #112]
+    movz    x9, #0x0002
+    str     x9, [sp, #120]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #112]
+    ldr     x11, [sp, #120]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #672]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_w_n
+    str     x0, [sp, #696]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x000a
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_byte
+    str     x0, [sp, #720]
+    b       .L1208
+.L626:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _emit_mov_w_w
+    str     x0, [sp, #752]
+.L625:
+.L1208:
+    add     sp, sp, #768
     ldp     x29, x30, [sp], #16
     ret
 
@@ -14590,7 +17810,7 @@ _emit_i_addr_local:
 _emit_i_load_local:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #544
+    sub     sp, sp, #624
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -14611,7 +17831,7 @@ _emit_i_load_local:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L508
+    cbz     w11, .L627
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
@@ -14635,8 +17855,8 @@ _emit_i_load_local:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #232]
-    b       .L509
-.L508:
+    b       .L628
+.L627:
     ldr     x9, [sp, #16]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -14644,7 +17864,7 @@ _emit_i_load_local:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L510
+    cbz     w11, .L629
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -14668,8 +17888,8 @@ _emit_i_load_local:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #392]
-    b       .L511
-.L510:
+    b       .L630
+.L629:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #16]
@@ -14683,8 +17903,24 @@ _emit_i_load_local:
     mov     x2, x13
     bl      _emit_ldr_x
     str     x0, [sp, #464]
-.L511:
-.L509:
+.L630:
+.L628:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #24]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0028
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    ldr     x12, [sp, #16]
+    movz    x13, #0x0070
+    add     x14, x12, x13
+    ldr     x12, [x14]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _emit_normalize
+    str     x0, [sp, #552]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -14697,9 +17933,9 @@ _emit_i_load_local:
     mov     x2, x11
     mov     x3, x12
     bl      _emit_spill_x
-    str     x0, [sp, #528]
-.L1030:
-    add     sp, sp, #544
+    str     x0, [sp, #616]
+.L1209:
+    add     sp, sp, #624
     ldp     x29, x30, [sp], #16
     ret
 
@@ -14732,13 +17968,13 @@ _emit_i_store_local:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L512
+    cbz     w11, .L631
     ldr     x9, [sp, #32]
     movz    x10, #0x0009
     add     x11, x9, x10
     str     x11, [sp, #40]
-    b       .L513
-.L512:
+    b       .L632
+.L631:
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
     ldr     x11, [sp, #16]
@@ -14752,7 +17988,7 @@ _emit_i_store_local:
     mov     x2, x13
     bl      _emit_ldr_x
     str     x0, [sp, #272]
-.L513:
+.L632:
     ldr     x9, [sp, #16]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -14760,7 +17996,7 @@ _emit_i_store_local:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L514
+    cbz     w11, .L633
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     mov     x0, x9
@@ -14784,8 +18020,8 @@ _emit_i_store_local:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #432]
-    b       .L515
-.L514:
+    b       .L634
+.L633:
     ldr     x9, [sp, #16]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -14793,7 +18029,7 @@ _emit_i_store_local:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L516
+    cbz     w11, .L635
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -14817,8 +18053,8 @@ _emit_i_store_local:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #592]
-    b       .L517
-.L516:
+    b       .L636
+.L635:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #40]
     ldr     x11, [sp, #16]
@@ -14832,9 +18068,9 @@ _emit_i_store_local:
     mov     x2, x13
     bl      _emit_str_x
     str     x0, [sp, #664]
-.L517:
-.L515:
-.L1031:
+.L636:
+.L634:
+.L1210:
     add     sp, sp, #672
     ldp     x29, x30, [sp], #16
     ret
@@ -14843,7 +18079,7 @@ _emit_i_store_local:
 _emit_i_load_mem:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #528
+    sub     sp, sp, #624
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -14878,7 +18114,7 @@ _emit_i_load_mem:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L518
+    cbz     w11, .L637
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
@@ -14897,8 +18133,8 @@ _emit_i_load_mem:
     mov     x1, x10
     bl      _out_mem_tail
     str     x0, [sp, #264]
-    b       .L519
-.L518:
+    b       .L638
+.L637:
     ldr     x9, [sp, #16]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -14906,7 +18142,7 @@ _emit_i_load_mem:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L520
+    cbz     w11, .L639
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -14925,8 +18161,8 @@ _emit_i_load_mem:
     mov     x1, x10
     bl      _out_mem_tail
     str     x0, [sp, #384]
-    b       .L521
-.L520:
+    b       .L640
+.L639:
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -14945,8 +18181,24 @@ _emit_i_load_mem:
     mov     x1, x10
     bl      _out_mem_tail
     str     x0, [sp, #456]
-.L521:
-.L519:
+.L640:
+.L638:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0028
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    ldr     x12, [sp, #16]
+    movz    x13, #0x0070
+    add     x14, x12, x13
+    ldr     x12, [x14]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _emit_normalize
+    str     x0, [sp, #544]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -14959,9 +18211,89 @@ _emit_i_load_mem:
     mov     x2, x11
     mov     x3, x12
     bl      _emit_spill_x
-    str     x0, [sp, #520]
-.L1032:
-    add     sp, sp, #528
+    str     x0, [sp, #608]
+.L1211:
+    add     sp, sp, #624
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _emit_i_cast
+_emit_i_cast:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #368
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0010
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    movz    x12, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _ensure_src_x
+    mov     x13, x0
+    str     x13, [sp, #24]
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _dst_x_reg
+    mov     x11, x0
+    str     x11, [sp, #32]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #24]
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L641
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _emit_mov_x_x
+    str     x0, [sp, #200]
+.L641:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0028
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    ldr     x12, [sp, #16]
+    movz    x13, #0x0070
+    add     x14, x12, x13
+    ldr     x12, [x14]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _emit_normalize
+    str     x0, [sp, #288]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0008
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    ldr     x12, [sp, #32]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _emit_spill_x
+    str     x0, [sp, #352]
+.L1212:
+    add     sp, sp, #368
     ldp     x29, x30, [sp], #16
     ret
 
@@ -15008,13 +18340,13 @@ _emit_i_store_mem:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L522
+    cbz     w11, .L642
     ldr     x9, [sp, #40]
     movz    x10, #0x0009
     add     x11, x9, x10
     str     x11, [sp, #48]
-    b       .L523
-.L522:
+    b       .L643
+.L642:
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
     ldr     x11, [sp, #16]
@@ -15028,7 +18360,7 @@ _emit_i_store_mem:
     mov     x2, x13
     bl      _emit_ldr_x
     str     x0, [sp, #344]
-.L523:
+.L643:
     ldr     x9, [sp, #16]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -15036,7 +18368,7 @@ _emit_i_store_mem:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L524
+    cbz     w11, .L644
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     mov     x0, x9
@@ -15055,8 +18387,8 @@ _emit_i_store_mem:
     mov     x1, x10
     bl      _out_mem_tail
     str     x0, [sp, #464]
-    b       .L525
-.L524:
+    b       .L645
+.L644:
     ldr     x9, [sp, #16]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -15064,7 +18396,7 @@ _emit_i_store_mem:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L526
+    cbz     w11, .L646
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -15083,8 +18415,8 @@ _emit_i_store_mem:
     mov     x1, x10
     bl      _out_mem_tail
     str     x0, [sp, #584]
-    b       .L527
-.L526:
+    b       .L647
+.L646:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -15103,9 +18435,9 @@ _emit_i_store_mem:
     mov     x1, x10
     bl      _out_mem_tail
     str     x0, [sp, #656]
-.L527:
-.L525:
-.L1033:
+.L647:
+.L645:
+.L1213:
     add     sp, sp, #672
     ldp     x29, x30, [sp], #16
     ret
@@ -15114,7 +18446,7 @@ _emit_i_store_mem:
 _emit_i_binop:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #928
+    sub     sp, sp, #960
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -15127,10 +18459,10 @@ _emit_i_binop:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L528
+    cbz     w11, .L648
     movz    x9, #0x0001
     str     x9, [sp, #24]
-.L528:
+.L648:
     mov     x9, #0
     str     x9, [sp, #32]
     mov     x9, #0
@@ -15139,7 +18471,7 @@ _emit_i_binop:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L529
+    cbz     w11, .L649
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -15168,8 +18500,8 @@ _emit_i_binop:
     bl      _ensure_src_x
     mov     x13, x0
     str     x13, [sp, #40]
-    b       .L530
-.L529:
+    b       .L650
+.L649:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -15198,7 +18530,7 @@ _emit_i_binop:
     bl      _ensure_src_w
     mov     x13, x0
     str     x13, [sp, #40]
-.L530:
+.L650:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     movz    x11, #0x0008
@@ -15209,8 +18541,8 @@ _emit_i_binop:
     bl      _dst_x_reg
     mov     x11, x0
     str     x11, [sp, #48]
-    adrp    x9, L_str102@PAGE
-    add     x9, x9, L_str102@PAGEOFF
+    adrp    x9, L_str132@PAGE
+    add     x9, x9, L_str132@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0004
     str     x9, [sp, #64]
@@ -15227,12 +18559,17 @@ _emit_i_binop:
     movz    x11, #0x0048
     add     x12, x10, x11
     ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0070
+    add     x13, x11, x12
+    ldr     x11, [x13]
     mov     x0, x9
     mov     x1, x10
+    mov     x2, x11
     bl      _out_binop_mnemonic
-    str     x0, [sp, #600]
-    adrp    x9, L_str103@PAGE
-    add     x9, x9, L_str103@PAGEOFF
+    str     x0, [sp, #632]
+    adrp    x9, L_str133@PAGE
+    add     x9, x9, L_str133@PAGEOFF
     str     x9, [sp, #72]
     movz    x9, #0x0005
     str     x9, [sp, #80]
@@ -15243,7 +18580,7 @@ _emit_i_binop:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #648]
+    str     x0, [sp, #680]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #48]
     ldr     x11, [sp, #24]
@@ -15251,9 +18588,9 @@ _emit_i_binop:
     mov     x1, x10
     mov     x2, x11
     bl      _out_reg_wx
-    str     x0, [sp, #680]
-    adrp    x9, L_str104@PAGE
-    add     x9, x9, L_str104@PAGEOFF
+    str     x0, [sp, #712]
+    adrp    x9, L_str134@PAGE
+    add     x9, x9, L_str134@PAGEOFF
     str     x9, [sp, #88]
     movz    x9, #0x0002
     str     x9, [sp, #96]
@@ -15264,7 +18601,7 @@ _emit_i_binop:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #728]
+    str     x0, [sp, #760]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     ldr     x11, [sp, #24]
@@ -15272,7 +18609,7 @@ _emit_i_binop:
     mov     x1, x10
     mov     x2, x11
     bl      _out_reg_wx
-    str     x0, [sp, #760]
+    str     x0, [sp, #792]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #88]
     ldr     x11, [sp, #96]
@@ -15280,7 +18617,7 @@ _emit_i_binop:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #792]
+    str     x0, [sp, #824]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #40]
     ldr     x11, [sp, #24]
@@ -15288,13 +18625,13 @@ _emit_i_binop:
     mov     x1, x10
     mov     x2, x11
     bl      _out_reg_wx
-    str     x0, [sp, #824]
+    str     x0, [sp, #856]
     ldr     x9, [sp, #0]
     movz    x10, #0x000a
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
-    str     x0, [sp, #848]
+    str     x0, [sp, #880]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -15307,9 +18644,9 @@ _emit_i_binop:
     mov     x2, x11
     mov     x3, x12
     bl      _emit_spill_x
-    str     x0, [sp, #912]
-.L1034:
-    add     sp, sp, #928
+    str     x0, [sp, #944]
+.L1214:
+    add     sp, sp, #960
     ldp     x29, x30, [sp], #16
     ret
 
@@ -15317,16 +18654,16 @@ _emit_i_binop:
 _out_cc:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #544
+    sub     sp, sp, #896
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #8]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L531
-    adrp    x9, L_str105@PAGE
-    add     x9, x9, L_str105@PAGEOFF
+    cbz     w11, .L651
+    adrp    x9, L_str135@PAGE
+    add     x9, x9, L_str135@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x0002
     str     x9, [sp, #24]
@@ -15337,16 +18674,16 @@ _out_cc:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #176]
-    b       .L1035
-.L531:
+    str     x0, [sp, #240]
+    b       .L1215
+.L651:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L532
-    adrp    x9, L_str106@PAGE
-    add     x9, x9, L_str106@PAGEOFF
+    cbz     w11, .L652
+    adrp    x9, L_str136@PAGE
+    add     x9, x9, L_str136@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x0002
     str     x9, [sp, #40]
@@ -15357,16 +18694,16 @@ _out_cc:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #248]
-    b       .L1035
-.L532:
+    str     x0, [sp, #312]
+    b       .L1215
+.L652:
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L533
-    adrp    x9, L_str107@PAGE
-    add     x9, x9, L_str107@PAGEOFF
+    cbz     w11, .L653
+    adrp    x9, L_str137@PAGE
+    add     x9, x9, L_str137@PAGEOFF
     str     x9, [sp, #48]
     movz    x9, #0x0002
     str     x9, [sp, #56]
@@ -15377,16 +18714,16 @@ _out_cc:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #320]
-    b       .L1035
-.L533:
+    str     x0, [sp, #384]
+    b       .L1215
+.L653:
     ldr     x9, [sp, #8]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L534
-    adrp    x9, L_str108@PAGE
-    add     x9, x9, L_str108@PAGEOFF
+    cbz     w11, .L654
+    adrp    x9, L_str138@PAGE
+    add     x9, x9, L_str138@PAGEOFF
     str     x9, [sp, #64]
     movz    x9, #0x0002
     str     x9, [sp, #72]
@@ -15397,16 +18734,16 @@ _out_cc:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #392]
-    b       .L1035
-.L534:
+    str     x0, [sp, #456]
+    b       .L1215
+.L654:
     ldr     x9, [sp, #8]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L535
-    adrp    x9, L_str109@PAGE
-    add     x9, x9, L_str109@PAGEOFF
+    cbz     w11, .L655
+    adrp    x9, L_str139@PAGE
+    add     x9, x9, L_str139@PAGEOFF
     str     x9, [sp, #80]
     movz    x9, #0x0002
     str     x9, [sp, #88]
@@ -15417,16 +18754,16 @@ _out_cc:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #464]
-    b       .L1035
-.L535:
+    str     x0, [sp, #528]
+    b       .L1215
+.L655:
     ldr     x9, [sp, #8]
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L536
-    adrp    x9, L_str110@PAGE
-    add     x9, x9, L_str110@PAGEOFF
+    cbz     w11, .L656
+    adrp    x9, L_str140@PAGE
+    add     x9, x9, L_str140@PAGEOFF
     str     x9, [sp, #96]
     movz    x9, #0x0002
     str     x9, [sp, #104]
@@ -15437,11 +18774,91 @@ _out_cc:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #536]
-    b       .L1035
-.L536:
-.L1035:
-    add     sp, sp, #544
+    str     x0, [sp, #600]
+    b       .L1215
+.L656:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L657
+    adrp    x9, L_str141@PAGE
+    add     x9, x9, L_str141@PAGEOFF
+    str     x9, [sp, #112]
+    movz    x9, #0x0002
+    str     x9, [sp, #120]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #112]
+    ldr     x11, [sp, #120]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #672]
+    b       .L1215
+.L657:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L658
+    adrp    x9, L_str142@PAGE
+    add     x9, x9, L_str142@PAGEOFF
+    str     x9, [sp, #128]
+    movz    x9, #0x0002
+    str     x9, [sp, #136]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #128]
+    ldr     x11, [sp, #136]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #744]
+    b       .L1215
+.L658:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L659
+    adrp    x9, L_str143@PAGE
+    add     x9, x9, L_str143@PAGEOFF
+    str     x9, [sp, #144]
+    movz    x9, #0x0002
+    str     x9, [sp, #152]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #144]
+    ldr     x11, [sp, #152]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #816]
+    b       .L1215
+.L659:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0009
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L660
+    adrp    x9, L_str144@PAGE
+    add     x9, x9, L_str144@PAGEOFF
+    str     x9, [sp, #160]
+    movz    x9, #0x0002
+    str     x9, [sp, #168]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #160]
+    ldr     x11, [sp, #168]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #888]
+    b       .L1215
+.L660:
+.L1215:
+    add     sp, sp, #896
     ldp     x29, x30, [sp], #16
     ret
 
@@ -15449,11 +18866,52 @@ _out_cc:
 _emit_i_cmp:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #928
+    sub     sp, sp, #1104
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
     str     x3, [sp, #24]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0070
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L661
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L662
+    movz    x9, #0x0006
+    str     x9, [sp, #24]
+.L662:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L663
+    movz    x9, #0x0007
+    str     x9, [sp, #24]
+.L663:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L664
+    movz    x9, #0x0008
+    str     x9, [sp, #24]
+.L664:
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L665
+    movz    x9, #0x0009
+    str     x9, [sp, #24]
+.L665:
+.L661:
     mov     x9, #0
     str     x9, [sp, #32]
     ldr     x9, [sp, #16]
@@ -15463,10 +18921,10 @@ _emit_i_cmp:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L537
+    cbz     w11, .L666
     movz    x9, #0x0001
     str     x9, [sp, #32]
-.L537:
+.L666:
     mov     x9, #0
     str     x9, [sp, #40]
     mov     x9, #0
@@ -15475,7 +18933,7 @@ _emit_i_cmp:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L538
+    cbz     w11, .L667
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -15504,8 +18962,8 @@ _emit_i_cmp:
     bl      _ensure_src_x
     mov     x13, x0
     str     x13, [sp, #48]
-    b       .L539
-.L538:
+    b       .L668
+.L667:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -15534,7 +18992,7 @@ _emit_i_cmp:
     bl      _ensure_src_w
     mov     x13, x0
     str     x13, [sp, #48]
-.L539:
+.L668:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     movz    x11, #0x0008
@@ -15545,8 +19003,8 @@ _emit_i_cmp:
     bl      _dst_x_reg
     mov     x11, x0
     str     x11, [sp, #56]
-    adrp    x9, L_str111@PAGE
-    add     x9, x9, L_str111@PAGEOFF
+    adrp    x9, L_str145@PAGE
+    add     x9, x9, L_str145@PAGEOFF
     str     x9, [sp, #64]
     movz    x9, #0x000c
     str     x9, [sp, #72]
@@ -15557,7 +19015,7 @@ _emit_i_cmp:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #560]
+    str     x0, [sp, #736]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #40]
     ldr     x11, [sp, #32]
@@ -15565,9 +19023,9 @@ _emit_i_cmp:
     mov     x1, x10
     mov     x2, x11
     bl      _out_reg_wx
-    str     x0, [sp, #592]
-    adrp    x9, L_str112@PAGE
-    add     x9, x9, L_str112@PAGEOFF
+    str     x0, [sp, #768]
+    adrp    x9, L_str146@PAGE
+    add     x9, x9, L_str146@PAGEOFF
     str     x9, [sp, #80]
     movz    x9, #0x0002
     str     x9, [sp, #88]
@@ -15578,7 +19036,7 @@ _emit_i_cmp:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #640]
+    str     x0, [sp, #816]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #48]
     ldr     x11, [sp, #32]
@@ -15586,15 +19044,15 @@ _emit_i_cmp:
     mov     x1, x10
     mov     x2, x11
     bl      _out_reg_wx
-    str     x0, [sp, #672]
+    str     x0, [sp, #848]
     ldr     x9, [sp, #0]
     movz    x10, #0x000a
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
-    str     x0, [sp, #696]
-    adrp    x9, L_str113@PAGE
-    add     x9, x9, L_str113@PAGEOFF
+    str     x0, [sp, #872]
+    adrp    x9, L_str147@PAGE
+    add     x9, x9, L_str147@PAGEOFF
     str     x9, [sp, #96]
     movz    x9, #0x000c
     str     x9, [sp, #104]
@@ -15605,13 +19063,13 @@ _emit_i_cmp:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #744]
+    str     x0, [sp, #920]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #56]
     mov     x0, x9
     mov     x1, x10
     bl      _out_w_n
-    str     x0, [sp, #768]
+    str     x0, [sp, #944]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #80]
     ldr     x11, [sp, #88]
@@ -15619,19 +19077,19 @@ _emit_i_cmp:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #800]
+    str     x0, [sp, #976]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     mov     x0, x9
     mov     x1, x10
     bl      _out_cc
-    str     x0, [sp, #824]
+    str     x0, [sp, #1000]
     ldr     x9, [sp, #0]
     movz    x10, #0x000a
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
-    str     x0, [sp, #848]
+    str     x0, [sp, #1024]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -15644,9 +19102,9 @@ _emit_i_cmp:
     mov     x2, x11
     mov     x3, x12
     bl      _emit_spill_x
-    str     x0, [sp, #912]
-.L1036:
-    add     sp, sp, #928
+    str     x0, [sp, #1088]
+.L1216:
+    add     sp, sp, #1104
     ldp     x29, x30, [sp], #16
     ret
 
@@ -15654,7 +19112,7 @@ _emit_i_cmp:
 _emit_i_syscall:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #816
+    sub     sp, sp, #896
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -15686,7 +19144,7 @@ _emit_i_syscall:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L540
+    cbz     w11, .L669
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
     ldr     x11, [sp, #48]
@@ -15696,9 +19154,9 @@ _emit_i_syscall:
     mov     x1, x10
     mov     x2, x13
     bl      _emit_mov_x_x
-    str     x0, [sp, #312]
-    b       .L541
-.L540:
+    str     x0, [sp, #328]
+    b       .L670
+.L669:
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
     ldr     x11, [sp, #40]
@@ -15708,11 +19166,11 @@ _emit_i_syscall:
     mov     x1, x10
     mov     x2, x13
     bl      _emit_ldr_x
-    str     x0, [sp, #360]
-.L541:
+    str     x0, [sp, #376]
+.L670:
     movz    x9, #0x0001
     str     x9, [sp, #56]
-.L542:
+.L671:
     ldr     x9, [sp, #56]
     ldr     x10, [sp, #16]
     movz    x11, #0x0068
@@ -15720,7 +19178,7 @@ _emit_i_syscall:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L543
+    cbz     w11, .L672
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
@@ -15737,17 +19195,23 @@ _emit_i_syscall:
     mov     x2, x11
     mov     x3, x14
     bl      _emit_load_slot_to_x
-    str     x0, [sp, #512]
+    str     x0, [sp, #528]
     ldr     x9, [sp, #56]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #56]
-    b       .L542
-.L543:
-    adrp    x9, L_str114@PAGE
-    add     x9, x9, L_str114@PAGEOFF
+    b       .L671
+.L672:
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L673
+    adrp    x9, L_str148@PAGE
+    add     x9, x9, L_str148@PAGEOFF
     str     x9, [sp, #64]
-    movz    x9, #0x0012
+    movz    x9, #0x0013
     str     x9, [sp, #72]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #64]
@@ -15756,7 +19220,23 @@ _emit_i_syscall:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #584]
+    str     x0, [sp, #624]
+    b       .L674
+.L673:
+    adrp    x9, L_str149@PAGE
+    add     x9, x9, L_str149@PAGEOFF
+    str     x9, [sp, #80]
+    movz    x9, #0x0012
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #80]
+    ldr     x11, [sp, #88]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #672]
+.L674:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #16]
     movz    x11, #0x0008
@@ -15766,14 +19246,14 @@ _emit_i_syscall:
     mul     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [x10]
-    str     x9, [sp, #80]
-    ldr     x9, [sp, #80]
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #96]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L544
+    cbz     w11, .L675
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #80]
+    ldr     x10, [sp, #96]
     movz    x11, #0x0009
     add     x12, x10, x11
     mov     x10, #0
@@ -15781,9 +19261,9 @@ _emit_i_syscall:
     mov     x1, x12
     mov     x2, x10
     bl      _emit_mov_x_x
-    str     x0, [sp, #728]
-    b       .L1037
-.L544:
+    str     x0, [sp, #816]
+    b       .L1217
+.L675:
     ldr     x9, [sp, #0]
     mov     x10, #0
     ldr     x11, [sp, #16]
@@ -15796,9 +19276,9 @@ _emit_i_syscall:
     mov     x1, x10
     mov     x2, x13
     bl      _emit_str_x
-    str     x0, [sp, #800]
-.L1037:
-    add     sp, sp, #816
+    str     x0, [sp, #888]
+.L1217:
+    add     sp, sp, #896
     ldp     x29, x30, [sp], #16
     ret
 
@@ -15810,8 +19290,8 @@ _emit_i_call:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str115@PAGE
-    add     x9, x9, L_str115@PAGEOFF
+    adrp    x9, L_str150@PAGE
+    add     x9, x9, L_str150@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x0007
     str     x9, [sp, #32]
@@ -15834,7 +19314,7 @@ _emit_i_call:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L545
+    cbz     w10, .L676
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -15843,8 +19323,8 @@ _emit_i_call:
     mov     x2, x11
     bl      _emit_i_syscall
     str     x0, [sp, #232]
-    b       .L1038
-.L545:
+    b       .L1218
+.L676:
     ldr     x9, [sp, #16]
     movz    x10, #0x0060
     add     x11, x9, x10
@@ -15852,7 +19332,7 @@ _emit_i_call:
     str     x9, [sp, #40]
     mov     x9, #0
     str     x9, [sp, #48]
-.L546:
+.L677:
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #16]
     movz    x11, #0x0068
@@ -15860,7 +19340,7 @@ _emit_i_call:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L547
+    cbz     w11, .L678
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #40]
@@ -15880,10 +19360,10 @@ _emit_i_call:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #48]
-    b       .L546
-.L547:
-    adrp    x9, L_str116@PAGE
-    add     x9, x9, L_str116@PAGEOFF
+    b       .L677
+.L678:
+    adrp    x9, L_str151@PAGE
+    add     x9, x9, L_str151@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x000c
     str     x9, [sp, #64]
@@ -15934,7 +19414,7 @@ _emit_i_call:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L548
+    cbz     w11, .L679
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #80]
     movz    x11, #0x0009
@@ -15945,8 +19425,8 @@ _emit_i_call:
     mov     x2, x10
     bl      _emit_mov_x_x
     str     x0, [sp, #752]
-    b       .L1038
-.L548:
+    b       .L1218
+.L679:
     ldr     x9, [sp, #0]
     mov     x10, #0
     ldr     x11, [sp, #16]
@@ -15960,7 +19440,7 @@ _emit_i_call:
     mov     x2, x13
     bl      _emit_str_x
     str     x0, [sp, #824]
-.L1038:
+.L1218:
     add     sp, sp, #832
     ldp     x29, x30, [sp], #16
     ret
@@ -15981,7 +19461,7 @@ _emit_i_ret:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L549
+    cbz     w11, .L680
     mov     x9, #0
     str     x9, [sp, #32]
     ldr     x9, [sp, #8]
@@ -15993,19 +19473,19 @@ _emit_i_ret:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L550
+    cbz     w11, .L681
     ldr     x9, [sp, #40]
     mov     x0, x9
     bl      _type_width
     mov     x10, x0
     movz    x9, #0x0008
-    cmp     w10, w9
+    cmp     x10, x9
     cset    w11, eq
-    cbz     w11, .L551
+    cbz     w11, .L682
     movz    x9, #0x0001
     str     x9, [sp, #32]
-.L551:
-.L550:
+.L682:
+.L681:
     ldr     x9, [sp, #8]
     movz    x10, #0x0048
     add     x11, x9, x10
@@ -16025,12 +19505,12 @@ _emit_i_ret:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L552
+    cbz     w11, .L683
     ldr     x9, [sp, #56]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L553
+    cbz     w11, .L684
     ldr     x9, [sp, #0]
     mov     x10, #0
     ldr     x11, [sp, #56]
@@ -16041,8 +19521,8 @@ _emit_i_ret:
     mov     x2, x13
     bl      _emit_mov_x_x
     str     x0, [sp, #424]
-    b       .L554
-.L553:
+    b       .L685
+.L684:
     ldr     x9, [sp, #0]
     mov     x10, #0
     ldr     x11, [sp, #16]
@@ -16056,14 +19536,14 @@ _emit_i_ret:
     mov     x2, x13
     bl      _emit_ldr_x
     str     x0, [sp, #496]
-.L554:
-    b       .L555
-.L552:
+.L685:
+    b       .L686
+.L683:
     ldr     x9, [sp, #56]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L556
+    cbz     w11, .L687
     ldr     x9, [sp, #0]
     mov     x10, #0
     ldr     x11, [sp, #56]
@@ -16074,8 +19554,8 @@ _emit_i_ret:
     mov     x2, x13
     bl      _emit_mov_w_w
     str     x0, [sp, #568]
-    b       .L557
-.L556:
+    b       .L688
+.L687:
     ldr     x9, [sp, #0]
     mov     x10, #0
     ldr     x11, [sp, #16]
@@ -16089,11 +19569,11 @@ _emit_i_ret:
     mov     x2, x13
     bl      _emit_ldr_w
     str     x0, [sp, #640]
-.L557:
-.L555:
-.L549:
-    adrp    x9, L_str117@PAGE
-    add     x9, x9, L_str117@PAGEOFF
+.L688:
+.L686:
+.L680:
+    adrp    x9, L_str152@PAGE
+    add     x9, x9, L_str152@PAGEOFF
     str     x9, [sp, #64]
     movz    x9, #0x000e
     str     x9, [sp, #72]
@@ -16117,7 +19597,7 @@ _emit_i_ret:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #736]
-.L1039:
+.L1219:
     add     sp, sp, #752
     ldp     x29, x30, [sp], #16
     ret
@@ -16129,8 +19609,8 @@ _emit_i_jmp:
     sub     sp, sp, #160
     str     x0, [sp, #0]
     str     x1, [sp, #8]
-    adrp    x9, L_str118@PAGE
-    add     x9, x9, L_str118@PAGEOFF
+    adrp    x9, L_str153@PAGE
+    add     x9, x9, L_str153@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x000e
     str     x9, [sp, #24]
@@ -16157,7 +19637,7 @@ _emit_i_jmp:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #144]
-.L1040:
+.L1220:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -16166,10 +19646,59 @@ _emit_i_jmp:
 _emit_i_jz:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #320
+    sub     sp, sp, #592
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
+    mov     x9, #0
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #32]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    movz    x9, #0x0008
+    cmp     x10, x9
+    cset    w11, eq
+    cbz     w11, .L689
+    movz    x9, #0x0001
+    str     x9, [sp, #24]
+.L689:
+    mov     x9, #0
+    str     x9, [sp, #40]
+    ldr     x9, [sp, #24]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L690
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    movz    x12, #0x0010
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    movz    x12, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    mov     x3, x12
+    bl      _ensure_src_x
+    mov     x13, x0
+    str     x13, [sp, #40]
+    b       .L691
+.L690:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16183,30 +19712,12 @@ _emit_i_jz:
     mov     x3, x12
     bl      _ensure_src_w
     mov     x13, x0
-    str     x13, [sp, #24]
-    adrp    x9, L_str119@PAGE
-    add     x9, x9, L_str119@PAGEOFF
-    str     x9, [sp, #32]
-    movz    x9, #0x000c
-    str     x9, [sp, #40]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #32]
-    ldr     x11, [sp, #40]
-    mov     x0, x9
-    mov     x1, x10
-    mov     x2, x11
-    bl      _out_bytes
-    str     x0, [sp, #168]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #24]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _out_w_n
-    str     x0, [sp, #192]
-    adrp    x9, L_str120@PAGE
-    add     x9, x9, L_str120@PAGEOFF
+    str     x13, [sp, #40]
+.L691:
+    adrp    x9, L_str154@PAGE
+    add     x9, x9, L_str154@PAGEOFF
     str     x9, [sp, #48]
-    movz    x9, #0x0004
+    movz    x9, #0x000c
     str     x9, [sp, #56]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #48]
@@ -16215,7 +19726,28 @@ _emit_i_jz:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #240]
+    str     x0, [sp, #424]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_reg_wx
+    str     x0, [sp, #456]
+    adrp    x9, L_str155@PAGE
+    add     x9, x9, L_str155@PAGEOFF
+    str     x9, [sp, #64]
+    movz    x9, #0x0004
+    str     x9, [sp, #72]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #64]
+    ldr     x11, [sp, #72]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #504]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     movz    x11, #0x0038
@@ -16224,15 +19756,15 @@ _emit_i_jz:
     mov     x0, x9
     mov     x1, x10
     bl      _out_u64
-    str     x0, [sp, #288]
+    str     x0, [sp, #552]
     ldr     x9, [sp, #0]
     movz    x10, #0x000a
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
-    str     x0, [sp, #312]
-.L1041:
-    add     sp, sp, #320
+    str     x0, [sp, #576]
+.L1221:
+    add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
 
@@ -16243,8 +19775,8 @@ _emit_i_label:
     sub     sp, sp, #192
     str     x0, [sp, #0]
     str     x1, [sp, #8]
-    adrp    x9, L_str121@PAGE
-    add     x9, x9, L_str121@PAGEOFF
+    adrp    x9, L_str156@PAGE
+    add     x9, x9, L_str156@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x0002
     str     x9, [sp, #24]
@@ -16265,8 +19797,8 @@ _emit_i_label:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #136]
-    adrp    x9, L_str122@PAGE
-    add     x9, x9, L_str122@PAGEOFF
+    adrp    x9, L_str157@PAGE
+    add     x9, x9, L_str157@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x0002
     str     x9, [sp, #40]
@@ -16278,7 +19810,7 @@ _emit_i_label:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #184]
-.L1042:
+.L1222:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -16287,7 +19819,7 @@ _emit_i_label:
 _emit_instr:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1184
+    sub     sp, sp, #1232
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -16301,7 +19833,7 @@ _emit_instr:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L558
+    cbz     w11, .L692
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16310,13 +19842,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_movi
     str     x0, [sp, #120]
-    b       .L1043
-.L558:
+    b       .L1223
+.L692:
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L559
+    cbz     w11, .L693
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16325,13 +19857,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_label_addr
     str     x0, [sp, #176]
-    b       .L1043
-.L559:
+    b       .L1223
+.L693:
     ldr     x9, [sp, #32]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L560
+    cbz     w11, .L694
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16340,13 +19872,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_addr_local
     str     x0, [sp, #232]
-    b       .L1043
-.L560:
+    b       .L1223
+.L694:
     ldr     x9, [sp, #32]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L561
+    cbz     w11, .L695
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16355,13 +19887,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_load_local
     str     x0, [sp, #288]
-    b       .L1043
-.L561:
+    b       .L1223
+.L695:
     ldr     x9, [sp, #32]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L562
+    cbz     w11, .L696
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16370,13 +19902,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_store_local
     str     x0, [sp, #344]
-    b       .L1043
-.L562:
+    b       .L1223
+.L696:
     ldr     x9, [sp, #32]
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L563
+    cbz     w11, .L697
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16385,13 +19917,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_load_mem
     str     x0, [sp, #400]
-    b       .L1043
-.L563:
+    b       .L1223
+.L697:
     ldr     x9, [sp, #32]
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L564
+    cbz     w11, .L698
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16400,13 +19932,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_store_mem
     str     x0, [sp, #456]
-    b       .L1043
-.L564:
+    b       .L1223
+.L698:
     ldr     x9, [sp, #32]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L565
+    cbz     w11, .L699
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16415,13 +19947,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_binop
     str     x0, [sp, #512]
-    b       .L1043
-.L565:
+    b       .L1223
+.L699:
     ldr     x9, [sp, #32]
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L566
+    cbz     w11, .L700
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16432,13 +19964,13 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #576]
-    b       .L1043
-.L566:
+    b       .L1223
+.L700:
     ldr     x9, [sp, #32]
     movz    x10, #0x0009
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L567
+    cbz     w11, .L701
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16449,13 +19981,13 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #640]
-    b       .L1043
-.L567:
+    b       .L1223
+.L701:
     ldr     x9, [sp, #32]
     movz    x10, #0x000a
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L568
+    cbz     w11, .L702
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16466,13 +19998,13 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #704]
-    b       .L1043
-.L568:
+    b       .L1223
+.L702:
     ldr     x9, [sp, #32]
     movz    x10, #0x000b
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L569
+    cbz     w11, .L703
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16483,13 +20015,13 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #768]
-    b       .L1043
-.L569:
+    b       .L1223
+.L703:
     ldr     x9, [sp, #32]
     movz    x10, #0x000c
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L570
+    cbz     w11, .L704
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16500,13 +20032,13 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #832]
-    b       .L1043
-.L570:
+    b       .L1223
+.L704:
     ldr     x9, [sp, #32]
     movz    x10, #0x000d
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L571
+    cbz     w11, .L705
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16517,13 +20049,13 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_cmp
     str     x0, [sp, #896]
-    b       .L1043
-.L571:
+    b       .L1223
+.L705:
     ldr     x9, [sp, #32]
     movz    x10, #0x000e
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L572
+    cbz     w11, .L706
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16532,13 +20064,13 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_call
     str     x0, [sp, #952]
-    b       .L1043
-.L572:
+    b       .L1223
+.L706:
     ldr     x9, [sp, #32]
     movz    x10, #0x000f
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L573
+    cbz     w11, .L707
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16549,26 +20081,26 @@ _emit_instr:
     mov     x3, x12
     bl      _emit_i_ret
     str     x0, [sp, #1016]
-    b       .L1043
-.L573:
+    b       .L1223
+.L707:
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L574
+    cbz     w11, .L708
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     mov     x0, x9
     mov     x1, x10
     bl      _emit_i_jmp
     str     x0, [sp, #1064]
-    b       .L1043
-.L574:
+    b       .L1223
+.L708:
     ldr     x9, [sp, #32]
     movz    x10, #0x0011
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L575
+    cbz     w11, .L709
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -16577,23 +20109,38 @@ _emit_instr:
     mov     x2, x11
     bl      _emit_i_jz
     str     x0, [sp, #1120]
-    b       .L1043
-.L575:
+    b       .L1223
+.L709:
     ldr     x9, [sp, #32]
     movz    x10, #0x0012
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L576
+    cbz     w11, .L710
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     mov     x0, x9
     mov     x1, x10
     bl      _emit_i_label
     str     x0, [sp, #1168]
-    b       .L1043
-.L576:
-.L1043:
-    add     sp, sp, #1184
+    b       .L1223
+.L710:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0013
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L711
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    ldr     x11, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _emit_i_cast
+    str     x0, [sp, #1224]
+    b       .L1223
+.L711:
+.L1223:
+    add     sp, sp, #1232
     ldp     x29, x30, [sp], #16
     ret
 
@@ -16608,16 +20155,16 @@ _emit_sym:
     bl      _get_target
     mov     x9, x0
     movz    x10, #0x0001
-    cmp     w9, w10
+    cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L577
+    cbz     w11, .L712
     ldr     x9, [sp, #0]
     movz    x10, #0x005f
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #72]
-.L577:
+.L712:
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
     str     x9, [sp, #24]
@@ -16634,7 +20181,7 @@ _emit_sym:
     mov     x2, x10
     bl      _out_bytes
     str     x0, [sp, #152]
-.L1044:
+.L1224:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -16646,8 +20193,8 @@ _emit_prologue:
     sub     sp, sp, #688
     str     x0, [sp, #0]
     str     x1, [sp, #8]
-    adrp    x9, L_str123@PAGE
-    add     x9, x9, L_str123@PAGEOFF
+    adrp    x9, L_str158@PAGE
+    add     x9, x9, L_str158@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x000e
     str     x9, [sp, #24]
@@ -16693,8 +20240,8 @@ _emit_prologue:
     mov     x2, x11
     bl      _emit_sym
     str     x0, [sp, #304]
-    adrp    x9, L_str124@PAGE
-    add     x9, x9, L_str124@PAGEOFF
+    adrp    x9, L_str159@PAGE
+    add     x9, x9, L_str159@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x0038
     str     x9, [sp, #40]
@@ -16713,7 +20260,7 @@ _emit_prologue:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L578
+    cbz     w11, .L713
     ldr     x9, [sp, #8]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -16721,9 +20268,9 @@ _emit_prologue:
     movz    x10, #0x0fff
     cmp     x9, x10
     cset    w11, ls
-    cbz     w11, .L579
-    adrp    x9, L_str125@PAGE
-    add     x9, x9, L_str125@PAGEOFF
+    cbz     w11, .L714
+    adrp    x9, L_str160@PAGE
+    add     x9, x9, L_str160@PAGEOFF
     str     x9, [sp, #48]
     movz    x9, #0x0015
     str     x9, [sp, #56]
@@ -16750,8 +20297,8 @@ _emit_prologue:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #568]
-    b       .L580
-.L579:
+    b       .L715
+.L714:
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
     ldr     x11, [sp, #8]
@@ -16763,8 +20310,8 @@ _emit_prologue:
     mov     x2, x11
     bl      _emit_movi
     str     x0, [sp, #624]
-    adrp    x9, L_str126@PAGE
-    add     x9, x9, L_str126@PAGEOFF
+    adrp    x9, L_str161@PAGE
+    add     x9, x9, L_str161@PAGEOFF
     str     x9, [sp, #64]
     movz    x9, #0x0018
     str     x9, [sp, #72]
@@ -16776,9 +20323,9 @@ _emit_prologue:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #672]
-.L580:
-.L578:
-.L1045:
+.L715:
+.L713:
+.L1225:
     add     sp, sp, #688
     ldp     x29, x30, [sp], #16
     ret
@@ -16791,8 +20338,8 @@ _emit_epilogue:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str127@PAGE
-    add     x9, x9, L_str127@PAGEOFF
+    adrp    x9, L_str162@PAGE
+    add     x9, x9, L_str162@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x0002
     str     x9, [sp, #32]
@@ -16810,8 +20357,8 @@ _emit_epilogue:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #168]
-    adrp    x9, L_str128@PAGE
-    add     x9, x9, L_str128@PAGEOFF
+    adrp    x9, L_str163@PAGE
+    add     x9, x9, L_str163@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0002
     str     x9, [sp, #48]
@@ -16830,7 +20377,7 @@ _emit_epilogue:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L581
+    cbz     w11, .L716
     ldr     x9, [sp, #8]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -16838,9 +20385,9 @@ _emit_epilogue:
     movz    x10, #0x0fff
     cmp     x9, x10
     cset    w11, ls
-    cbz     w11, .L582
-    adrp    x9, L_str129@PAGE
-    add     x9, x9, L_str129@PAGEOFF
+    cbz     w11, .L717
+    adrp    x9, L_str164@PAGE
+    add     x9, x9, L_str164@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0015
     str     x9, [sp, #64]
@@ -16867,8 +20414,8 @@ _emit_epilogue:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #432]
-    b       .L583
-.L582:
+    b       .L718
+.L717:
     ldr     x9, [sp, #0]
     movz    x10, #0x0010
     ldr     x11, [sp, #8]
@@ -16880,8 +20427,8 @@ _emit_epilogue:
     mov     x2, x11
     bl      _emit_movi
     str     x0, [sp, #488]
-    adrp    x9, L_str130@PAGE
-    add     x9, x9, L_str130@PAGEOFF
+    adrp    x9, L_str165@PAGE
+    add     x9, x9, L_str165@PAGEOFF
     str     x9, [sp, #72]
     movz    x9, #0x0018
     str     x9, [sp, #80]
@@ -16893,10 +20440,10 @@ _emit_epilogue:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #536]
-.L583:
-.L581:
-    adrp    x9, L_str131@PAGE
-    add     x9, x9, L_str131@PAGEOFF
+.L718:
+.L716:
+    adrp    x9, L_str166@PAGE
+    add     x9, x9, L_str166@PAGEOFF
     str     x9, [sp, #88]
     movz    x9, #0x0028
     str     x9, [sp, #96]
@@ -16908,7 +20455,7 @@ _emit_epilogue:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #584]
-.L1046:
+.L1226:
     add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
@@ -16917,16 +20464,16 @@ _emit_epilogue:
 _emit_text_section:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #160
+    sub     sp, sp, #256
     str     x0, [sp, #0]
     bl      _get_target
     mov     x9, x0
     movz    x10, #0x0001
-    cmp     w9, w10
+    cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L584
-    adrp    x9, L_str132@PAGE
-    add     x9, x9, L_str132@PAGEOFF
+    cbz     w11, .L719
+    adrp    x9, L_str167@PAGE
+    add     x9, x9, L_str167@PAGEOFF
     str     x9, [sp, #8]
     movz    x9, #0x001b
     str     x9, [sp, #16]
@@ -16937,13 +20484,19 @@ _emit_text_section:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #104]
-    b       .L1047
-.L584:
-    adrp    x9, L_str133@PAGE
-    add     x9, x9, L_str133@PAGEOFF
+    str     x0, [sp, #120]
+    b       .L1227
+.L719:
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L720
+    adrp    x9, L_str168@PAGE
+    add     x9, x9, L_str168@PAGEOFF
     str     x9, [sp, #24]
-    movz    x9, #0x0018
+    movz    x9, #0x000a
     str     x9, [sp, #32]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
@@ -16952,9 +20505,24 @@ _emit_text_section:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #152]
-.L1047:
-    add     sp, sp, #160
+    str     x0, [sp, #192]
+    b       .L1227
+.L720:
+    adrp    x9, L_str169@PAGE
+    add     x9, x9, L_str169@PAGEOFF
+    str     x9, [sp, #40]
+    movz    x9, #0x0018
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #40]
+    ldr     x11, [sp, #48]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #240]
+.L1227:
+    add     sp, sp, #256
     ldp     x29, x30, [sp], #16
     ret
 
@@ -16977,7 +20545,7 @@ _emit_param_spill:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L585
+    cbz     w11, .L721
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #16]
     movz    x11, #0x0008
@@ -16989,7 +20557,7 @@ _emit_param_spill:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L586
+    cbz     w11, .L722
     ldr     x9, [sp, #40]
     mov     x0, x9
     bl      _type_width
@@ -16999,25 +20567,25 @@ _emit_param_spill:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L587
+    cbz     w11, .L723
     movz    x9, #0x0001
     str     x9, [sp, #24]
-.L587:
+.L723:
     ldr     x9, [sp, #48]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L588
+    cbz     w11, .L724
     movz    x9, #0x0004
     str     x9, [sp, #24]
-.L588:
-.L586:
-.L585:
+.L724:
+.L722:
+.L721:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L589
+    cbz     w11, .L725
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     mov     x0, x9
@@ -17038,13 +20606,13 @@ _emit_param_spill:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #376]
-    b       .L1048
-.L589:
+    b       .L1228
+.L725:
     ldr     x9, [sp, #24]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L590
+    cbz     w11, .L726
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -17065,8 +20633,8 @@ _emit_param_spill:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #488]
-    b       .L1048
-.L590:
+    b       .L1228
+.L726:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     mov     x0, x9
@@ -17087,7 +20655,7 @@ _emit_param_spill:
     mov     x1, x12
     bl      _out_sp_tail
     str     x0, [sp, #576]
-.L1048:
+.L1228:
     add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
@@ -17108,7 +20676,7 @@ _emit_fn:
     str     x0, [sp, #56]
     mov     x9, #0
     str     x9, [sp, #24]
-.L591:
+.L727:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -17116,7 +20684,7 @@ _emit_fn:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L592
+    cbz     w11, .L728
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
@@ -17129,19 +20697,19 @@ _emit_fn:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L591
-.L592:
+    b       .L727
+.L728:
     ldr     x9, [sp, #8]
     movz    x10, #0x0058
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #32]
-.L593:
+.L729:
     ldr     x9, [sp, #32]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L594
+    cbz     w11, .L730
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #32]
@@ -17153,12 +20721,12 @@ _emit_fn:
     bl      _emit_instr
     str     x0, [sp, #264]
     ldr     x9, [sp, #32]
-    movz    x10, #0x0070
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #32]
-    b       .L593
-.L594:
+    b       .L729
+.L730:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -17167,7 +20735,7 @@ _emit_fn:
     mov     x2, x11
     bl      _emit_epilogue
     str     x0, [sp, #328]
-.L1049:
+.L1229:
     add     sp, sp, #336
     ldp     x29, x30, [sp], #16
     ret
@@ -17179,8 +20747,8 @@ _emit_string_byte:
     sub     sp, sp, #240
     str     x0, [sp, #0]
     str     x1, [sp, #8]
-    adrp    x9, L_str134@PAGE
-    add     x9, x9, L_str134@PAGEOFF
+    adrp    x9, L_str170@PAGE
+    add     x9, x9, L_str170@PAGEOFF
     str     x9, [sp, #16]
     movz    x9, #0x000e
     str     x9, [sp, #24]
@@ -17220,7 +20788,7 @@ _emit_string_byte:
     mov     x1, x10
     bl      _out_byte
     str     x0, [sp, #224]
-.L1050:
+.L1230:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -17229,7 +20797,7 @@ _emit_string_byte:
 _emit_strings:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #592
+    sub     sp, sp, #672
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #8]
@@ -17239,13 +20807,19 @@ _emit_strings:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L595
-    b       .L1051
-.L595:
-    adrp    x9, L_str135@PAGE
-    add     x9, x9, L_str135@PAGEOFF
+    cbz     w11, .L731
+    b       .L1231
+.L731:
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L732
+    adrp    x9, L_str171@PAGE
+    add     x9, x9, L_str171@PAGEOFF
     str     x9, [sp, #16]
-    movz    x9, #0x001f
+    movz    x9, #0x0016
     str     x9, [sp, #24]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
@@ -17254,44 +20828,38 @@ _emit_strings:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #168]
-    ldr     x9, [sp, #8]
-    movz    x10, #0x0020
-    add     x11, x9, x10
-    ldr     x9, [x11]
+    str     x0, [sp, #208]
+    b       .L733
+.L732:
+    adrp    x9, L_str172@PAGE
+    add     x9, x9, L_str172@PAGEOFF
     str     x9, [sp, #32]
-.L596:
-    ldr     x9, [sp, #32]
-    mov     x10, #0
-    cmp     x9, x10
-    cset    w11, ne
-    cbz     w11, .L597
-    adrp    x9, L_str136@PAGE
-    add     x9, x9, L_str136@PAGEOFF
+    movz    x9, #0x001f
     str     x9, [sp, #40]
-    movz    x9, #0x0014
-    str     x9, [sp, #48]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #40]
-    ldr     x11, [sp, #48]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #40]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #272]
-    ldr     x9, [sp, #0]
-    ldr     x10, [sp, #32]
-    mov     x11, #0
-    add     x12, x10, x11
-    ldr     x10, [x12]
-    mov     x0, x9
-    mov     x1, x10
-    bl      _out_u64
-    str     x0, [sp, #320]
-    adrp    x9, L_str137@PAGE
-    add     x9, x9, L_str137@PAGEOFF
+    str     x0, [sp, #256]
+.L733:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0020
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #48]
+.L734:
+    ldr     x9, [sp, #48]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L735
+    adrp    x9, L_str173@PAGE
+    add     x9, x9, L_str173@PAGEOFF
     str     x9, [sp, #56]
-    movz    x9, #0x0002
+    movz    x9, #0x0014
     str     x9, [sp, #64]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #56]
@@ -17300,51 +20868,74 @@ _emit_strings:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #368]
-    mov     x9, #0
+    str     x0, [sp, #360]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #48]
+    mov     x11, #0
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_u64
+    str     x0, [sp, #408]
+    adrp    x9, L_str174@PAGE
+    add     x9, x9, L_str174@PAGEOFF
     str     x9, [sp, #72]
-.L598:
-    ldr     x9, [sp, #72]
-    ldr     x10, [sp, #32]
+    movz    x9, #0x0002
+    str     x9, [sp, #80]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #72]
+    ldr     x11, [sp, #80]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #456]
+    mov     x9, #0
+    str     x9, [sp, #88]
+.L736:
+    ldr     x9, [sp, #88]
+    ldr     x10, [sp, #48]
     movz    x11, #0x0010
     add     x12, x10, x11
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L599
+    cbz     w11, .L737
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #48]
     movz    x11, #0x0008
     add     x12, x10, x11
     ldr     x10, [x12]
-    ldr     x11, [sp, #72]
+    ldr     x11, [sp, #88]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _emit_string_byte
-    str     x0, [sp, #496]
-    ldr     x9, [sp, #72]
+    str     x0, [sp, #584]
+    ldr     x9, [sp, #88]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #72]
-    b       .L598
-.L599:
+    str     x11, [sp, #88]
+    b       .L736
+.L737:
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
     mov     x1, x10
     bl      _emit_string_byte
-    str     x0, [sp, #544]
-    ldr     x9, [sp, #32]
+    str     x0, [sp, #632]
+    ldr     x9, [sp, #48]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #32]
-    b       .L596
-.L597:
-.L1051:
-    add     sp, sp, #592
+    str     x9, [sp, #48]
+    b       .L734
+.L735:
+.L1231:
+    add     sp, sp, #672
     ldp     x29, x30, [sp], #16
     ret
 
@@ -17354,8 +20945,8 @@ _emit_macos_start:
     mov     x29, sp
     sub     sp, sp, #80
     str     x0, [sp, #0]
-    adrp    x9, L_str138@PAGE
-    add     x9, x9, L_str138@PAGEOFF
+    adrp    x9, L_str175@PAGE
+    add     x9, x9, L_str175@PAGEOFF
     str     x9, [sp, #8]
     movz    x9, #0x005a
     str     x9, [sp, #16]
@@ -17367,7 +20958,7 @@ _emit_macos_start:
     mov     x2, x11
     bl      _out_bytes
     str     x0, [sp, #64]
-.L1052:
+.L1232:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -17376,7 +20967,7 @@ _emit_macos_start:
 _emit_bsses:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #560
+    sub     sp, sp, #992
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #8]
@@ -17386,30 +20977,36 @@ _emit_bsses:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L600
-    b       .L1053
-.L600:
+    cbz     w11, .L738
+    b       .L1233
+.L738:
     ldr     x9, [sp, #0]
     movz    x10, #0x000a
     mov     x0, x9
     mov     x1, x10
     bl      _out_byte
-    str     x0, [sp, #144]
+    str     x0, [sp, #200]
     ldr     x9, [sp, #8]
     movz    x10, #0x0010
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #16]
-.L601:
+.L739:
     ldr     x9, [sp, #16]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L602
-    adrp    x9, L_str139@PAGE
-    add     x9, x9, L_str139@PAGEOFF
+    cbz     w11, .L740
+    bl      _get_target
+    mov     x9, x0
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L741
+    adrp    x9, L_str176@PAGE
+    add     x9, x9, L_str176@PAGEOFF
     str     x9, [sp, #24]
-    movz    x9, #0x001c
+    movz    x9, #0x000a
     str     x9, [sp, #32]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
@@ -17418,7 +21015,7 @@ _emit_bsses:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #248]
+    str     x0, [sp, #328]
     adrp    x9, _LX_STATE@PAGE
     add     x9, x9, _LX_STATE@PAGEOFF
     str     x9, [sp, #40]
@@ -17440,9 +21037,9 @@ _emit_bsses:
     mov     x1, x12
     mov     x2, x10
     bl      _out_bytes
-    str     x0, [sp, #376]
-    adrp    x9, L_str140@PAGE
-    add     x9, x9, L_str140@PAGEOFF
+    str     x0, [sp, #456]
+    adrp    x9, L_str177@PAGE
+    add     x9, x9, L_str177@PAGEOFF
     str     x9, [sp, #48]
     movz    x9, #0x0001
     str     x9, [sp, #56]
@@ -17453,7 +21050,7 @@ _emit_bsses:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #424]
+    str     x0, [sp, #504]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     movz    x11, #0x0010
@@ -17462,9 +21059,9 @@ _emit_bsses:
     mov     x0, x9
     mov     x1, x10
     bl      _out_u64
-    str     x0, [sp, #472]
-    adrp    x9, L_str141@PAGE
-    add     x9, x9, L_str141@PAGEOFF
+    str     x0, [sp, #552]
+    adrp    x9, L_str178@PAGE
+    add     x9, x9, L_str178@PAGEOFF
     str     x9, [sp, #64]
     movz    x9, #0x0003
     str     x9, [sp, #72]
@@ -17475,16 +21072,93 @@ _emit_bsses:
     mov     x1, x10
     mov     x2, x11
     bl      _out_bytes
-    str     x0, [sp, #520]
+    str     x0, [sp, #600]
     ldr     x9, [sp, #16]
     movz    x10, #0x0018
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #16]
-    b       .L601
-.L602:
-.L1053:
-    add     sp, sp, #560
+    b       .L739
+.L741:
+    adrp    x9, L_str179@PAGE
+    add     x9, x9, L_str179@PAGEOFF
+    str     x9, [sp, #80]
+    movz    x9, #0x001c
+    str     x9, [sp, #88]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #80]
+    ldr     x11, [sp, #88]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #680]
+    adrp    x9, _LX_STATE@PAGE
+    add     x9, x9, _LX_STATE@PAGEOFF
+    str     x9, [sp, #96]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #96]
+    mov     x11, #0
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #16]
+    mov     x12, #0
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    add     x12, x10, x11
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0008
+    add     x13, x10, x11
+    ldr     x10, [x13]
+    mov     x0, x9
+    mov     x1, x12
+    mov     x2, x10
+    bl      _out_bytes
+    str     x0, [sp, #808]
+    adrp    x9, L_str180@PAGE
+    add     x9, x9, L_str180@PAGEOFF
+    str     x9, [sp, #104]
+    movz    x9, #0x0001
+    str     x9, [sp, #112]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #104]
+    ldr     x11, [sp, #112]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #856]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #16]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _out_u64
+    str     x0, [sp, #904]
+    adrp    x9, L_str181@PAGE
+    add     x9, x9, L_str181@PAGEOFF
+    str     x9, [sp, #120]
+    movz    x9, #0x0003
+    str     x9, [sp, #128]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #120]
+    ldr     x11, [sp, #128]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _out_bytes
+    str     x0, [sp, #952]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0018
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #16]
+    b       .L739
+.L740:
+.L1233:
+    add     sp, sp, #992
     ldp     x29, x30, [sp], #16
     ret
 
@@ -17492,186 +21166,193 @@ _emit_bsses:
 _codegen:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #928
+    sub     sp, sp, #960
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
     str     x3, [sp, #24]
+    str     x4, [sp, #32]
     ldr     x9, [sp, #8]
     mov     x0, x9
     bl      _set_target
-    str     x0, [sp, #80]
+    str     x0, [sp, #88]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _emit_text_section
-    str     x0, [sp, #96]
+    str     x0, [sp, #104]
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L603
+    cbz     w11, .L742
+    ldr     x9, [sp, #16]
+    mov     x10, #0
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L743
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _emit_macos_start
-    str     x0, [sp, #136]
-.L603:
+    str     x0, [sp, #168]
+.L743:
+.L742:
     mov     x9, #0
-    str     x9, [sp, #32]
-    ldr     x9, [sp, #24]
     str     x9, [sp, #40]
-.L604:
-    ldr     x9, [sp, #40]
+    ldr     x9, [sp, #32]
+    str     x9, [sp, #48]
+.L744:
+    ldr     x9, [sp, #48]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L605
-    ldr     x9, [sp, #40]
+    cbz     w11, .L745
+    ldr     x9, [sp, #48]
     movz    x10, #0x0058
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #48]
-.L606:
-    ldr     x9, [sp, #48]
+    str     x9, [sp, #56]
+.L746:
+    ldr     x9, [sp, #56]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L607
-    ldr     x9, [sp, #48]
+    cbz     w11, .L747
+    ldr     x9, [sp, #56]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0012
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L608
-    ldr     x9, [sp, #48]
+    cbz     w11, .L748
+    ldr     x9, [sp, #56]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #40]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L609
-    ldr     x9, [sp, #48]
+    cbz     w11, .L749
+    ldr     x9, [sp, #56]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #32]
-.L609:
-.L608:
-    ldr     x9, [sp, #48]
+    str     x11, [sp, #40]
+.L749:
+.L748:
+    ldr     x9, [sp, #56]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L610
-    ldr     x9, [sp, #48]
+    cbz     w11, .L750
+    ldr     x9, [sp, #56]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #40]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L611
-    ldr     x9, [sp, #48]
+    cbz     w11, .L751
+    ldr     x9, [sp, #56]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #32]
-.L611:
-.L610:
-    ldr     x9, [sp, #48]
+    str     x11, [sp, #40]
+.L751:
+.L750:
+    ldr     x9, [sp, #56]
     mov     x10, #0
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0011
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L612
-    ldr     x9, [sp, #48]
+    cbz     w11, .L752
+    ldr     x9, [sp, #56]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
-    ldr     x10, [sp, #32]
+    ldr     x10, [sp, #40]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L613
-    ldr     x9, [sp, #48]
+    cbz     w11, .L753
+    ldr     x9, [sp, #56]
     movz    x10, #0x0038
     add     x11, x9, x10
     ldr     x9, [x11]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #32]
-.L613:
-.L612:
-    ldr     x9, [sp, #48]
-    movz    x10, #0x0070
+    str     x11, [sp, #40]
+.L753:
+.L752:
+    ldr     x9, [sp, #56]
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #48]
-    b       .L606
-.L607:
-    ldr     x9, [sp, #40]
+    str     x9, [sp, #56]
+    b       .L746
+.L747:
+    ldr     x9, [sp, #48]
     movz    x10, #0x0068
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #40]
-    b       .L604
-.L605:
-    ldr     x9, [sp, #32]
-    str     x9, [sp, #56]
-    ldr     x9, [sp, #24]
+    str     x9, [sp, #48]
+    b       .L744
+.L745:
+    ldr     x9, [sp, #40]
     str     x9, [sp, #64]
-.L614:
-    ldr     x9, [sp, #64]
+    ldr     x9, [sp, #32]
+    str     x9, [sp, #72]
+.L754:
+    ldr     x9, [sp, #72]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L615
+    cbz     w11, .L755
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #64]
-    ldr     x11, [sp, #56]
+    ldr     x10, [sp, #72]
+    ldr     x11, [sp, #64]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _emit_fn
-    str     x0, [sp, #800]
-    ldr     x9, [sp, #56]
+    str     x0, [sp, #832]
+    ldr     x9, [sp, #64]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #56]
-    ldr     x9, [sp, #64]
+    str     x11, [sp, #64]
+    ldr     x9, [sp, #72]
     movz    x10, #0x0068
     add     x11, x9, x10
     ldr     x9, [x11]
-    str     x9, [sp, #64]
-    b       .L614
-.L615:
+    str     x9, [sp, #72]
+    b       .L754
+.L755:
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #16]
+    ldr     x10, [sp, #24]
     mov     x0, x9
     mov     x1, x10
     bl      _emit_strings
-    str     x0, [sp, #880]
+    str     x0, [sp, #912]
     ldr     x9, [sp, #0]
-    ldr     x10, [sp, #16]
+    ldr     x10, [sp, #24]
     mov     x0, x9
     mov     x1, x10
     bl      _emit_bsses
-    str     x0, [sp, #904]
+    str     x0, [sp, #936]
     ldr     x9, [sp, #0]
     mov     x0, x9
     bl      _out_flush
-    str     x0, [sp, #920]
-.L1054:
-    add     sp, sp, #928
+    str     x0, [sp, #952]
+.L1234:
+    add     sp, sp, #960
     ldp     x29, x30, [sp], #16
     ret
 
@@ -17695,8 +21376,8 @@ _sha_rotr:
     movk    x10, #0xffff, lsl #16
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1055
-.L1055:
+    b       .L1235
+.L1235:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -18221,7 +21902,7 @@ _sha_k_init:
     movz    x9, #0x78f2
     movk    x9, #0xc671, lsl #16
     str     x9, [x10]
-.L1056:
+.L1236:
     add     sp, sp, #3088
     ldp     x29, x30, [sp], #16
     ret
@@ -18298,7 +21979,7 @@ _sha_h_init:
     movz    x9, #0xcd19
     movk    x9, #0x5be0, lsl #16
     str     x9, [x10]
-.L1057:
+.L1237:
     add     sp, sp, #400
     ldp     x29, x30, [sp], #16
     ret
@@ -18313,21 +21994,25 @@ _sha_w32be:
     mov     x10, #0
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     str     x9, [sp, #8]
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     str     x9, [sp, #16]
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     str     x9, [sp, #24]
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     str     x9, [sp, #32]
     ldr     x9, [sp, #8]
     movz    x10, #0x0018
@@ -18343,8 +22028,8 @@ _sha_w32be:
     ldr     x9, [sp, #32]
     orr     x11, x10, x9
     mov     x0, x11
-    b       .L1058
-.L1058:
+    b       .L1238
+.L1238:
     add     sp, sp, #272
     ldp     x29, x30, [sp], #16
     ret
@@ -18443,7 +22128,7 @@ _sha_put_be64:
     movz    x11, #0x00ff
     and     x12, x9, x11
     strb    w12, [x10]
-.L1059:
+.L1239:
     add     sp, sp, #656
     ldp     x29, x30, [sp], #16
     ret
@@ -18465,12 +22150,12 @@ _sha256_block:
     str     x9, [sp, #24]
     mov     x9, #0
     str     x9, [sp, #32]
-.L616:
+.L756:
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L617
+    cbz     w11, .L757
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #32]
     movz    x11, #0x0008
@@ -18491,16 +22176,16 @@ _sha256_block:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L616
-.L617:
+    b       .L756
+.L757:
     movz    x9, #0x0010
     str     x9, [sp, #32]
-.L618:
+.L758:
     ldr     x9, [sp, #32]
     movz    x10, #0x0040
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L619
+    cbz     w11, .L759
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #32]
     movz    x11, #0x000f
@@ -18597,8 +22282,8 @@ _sha256_block:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L618
-.L619:
+    b       .L758
+.L759:
     ldr     x9, [sp, #24]
     mov     x10, #0
     movz    x11, #0x0008
@@ -18657,12 +22342,12 @@ _sha256_block:
     str     x9, [sp, #128]
     mov     x9, #0
     str     x9, [sp, #32]
-.L620:
+.L760:
     ldr     x9, [sp, #32]
     movz    x10, #0x0040
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L621
+    cbz     w11, .L761
     ldr     x9, [sp, #104]
     movz    x10, #0x0006
     mov     x0, x9
@@ -18806,8 +22491,8 @@ _sha256_block:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L620
-.L621:
+    b       .L760
+.L761:
     ldr     x9, [sp, #24]
     mov     x10, #0
     movz    x11, #0x0008
@@ -18944,7 +22629,7 @@ _sha256_block:
     movk    x9, #0xffff, lsl #16
     and     x11, x12, x9
     str     x11, [x10]
-.L1060:
+.L1240:
     add     sp, sp, #3104
     ldp     x29, x30, [sp], #16
     ret
@@ -18967,12 +22652,12 @@ _sha256:
     str     x11, [sp, #24]
     mov     x9, #0
     str     x9, [sp, #32]
-.L622:
+.L762:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L623
+    cbz     w11, .L763
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     movz    x11, #0x0040
@@ -18985,8 +22670,8 @@ _sha256:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L622
-.L623:
+    b       .L762
+.L763:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #24]
     movz    x11, #0x0040
@@ -18998,12 +22683,12 @@ _sha256:
     str     x9, [sp, #48]
     mov     x9, #0
     str     x9, [sp, #56]
-.L624:
+.L764:
     ldr     x9, [sp, #56]
     ldr     x10, [sp, #40]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L625
+    cbz     w11, .L765
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #56]
     add     x11, x9, x10
@@ -19015,13 +22700,14 @@ _sha256:
     add     x12, x13, x10
     add     x10, x9, x12
     ldrb    w9, [x10]
+    uxtb    w9, w9
     strb    w9, [x11]
     ldr     x9, [sp, #56]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #56]
-    b       .L624
-.L625:
+    b       .L764
+.L765:
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #40]
     add     x11, x9, x10
@@ -19031,12 +22717,12 @@ _sha256:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #56]
-.L626:
+.L766:
     ldr     x9, [sp, #56]
     movz    x10, #0x0040
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L627
+    cbz     w11, .L767
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #56]
     add     x11, x9, x10
@@ -19046,8 +22732,8 @@ _sha256:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #56]
-    b       .L626
-.L627:
+    b       .L766
+.L767:
     ldr     x9, [sp, #8]
     movz    x10, #0x0008
     mul     x11, x9, x10
@@ -19056,19 +22742,19 @@ _sha256:
     movz    x10, #0x0038
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L628
+    cbz     w11, .L768
     ldr     x9, [sp, #48]
     mov     x0, x9
     bl      _sha256_block
     str     x0, [sp, #624]
     mov     x9, #0
     str     x9, [sp, #56]
-.L629:
+.L769:
     ldr     x9, [sp, #56]
     movz    x10, #0x0040
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L630
+    cbz     w11, .L770
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #56]
     add     x11, x9, x10
@@ -19078,9 +22764,9 @@ _sha256:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #56]
-    b       .L629
-.L630:
-.L628:
+    b       .L769
+.L770:
+.L768:
     ldr     x9, [sp, #48]
     movz    x10, #0x0038
     ldr     x11, [sp, #64]
@@ -19098,12 +22784,12 @@ _sha256:
     str     x9, [sp, #72]
     mov     x9, #0
     str     x9, [sp, #80]
-.L631:
+.L771:
     ldr     x9, [sp, #80]
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L632
+    cbz     w11, .L772
     ldr     x9, [sp, #72]
     ldr     x10, [sp, #80]
     movz    x11, #0x0008
@@ -19165,9 +22851,9 @@ _sha256:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #80]
-    b       .L631
-.L632:
-.L1061:
+    b       .L771
+.L772:
+.L1241:
     add     sp, sp, #1248
     ldp     x29, x30, [sp], #16
     ret
@@ -19182,8 +22868,8 @@ _m5:
     movz    x10, #0x001f
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1062
-.L1062:
+    b       .L1242
+.L1242:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -19198,8 +22884,8 @@ _m7:
     movz    x10, #0x007f
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1063
-.L1063:
+    b       .L1243
+.L1243:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -19214,8 +22900,8 @@ _m12:
     movz    x10, #0x0fff
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1064
-.L1064:
+    b       .L1244
+.L1244:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -19230,8 +22916,8 @@ _m16:
     movz    x10, #0xffff
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1065
-.L1065:
+    b       .L1245
+.L1245:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -19247,8 +22933,8 @@ _m19:
     movk    x10, #0x0007, lsl #16
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1066
-.L1066:
+    b       .L1246
+.L1246:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -19264,8 +22950,8 @@ _m21:
     movk    x10, #0x001f, lsl #16
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1067
-.L1067:
+    b       .L1247
+.L1247:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -19281,8 +22967,8 @@ _m26:
     movk    x10, #0x03ff, lsl #16
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1068
-.L1068:
+    b       .L1248
+.L1248:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -19322,8 +23008,8 @@ _enc_movz:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1069
-.L1069:
+    b       .L1249
+.L1249:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19363,8 +23049,8 @@ _enc_movk:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1070
-.L1070:
+    b       .L1250
+.L1250:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19398,8 +23084,8 @@ _enc_mov_reg:
     ldr     x16, [sp, #88]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1071
-.L1071:
+    b       .L1251
+.L1251:
     add     sp, sp, #128
     ldp     x29, x30, [sp], #16
     ret
@@ -19449,8 +23135,8 @@ _enc_stp_pre:
     ldr     x16, [sp, #152]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1072
-.L1072:
+    b       .L1252
+.L1252:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -19500,8 +23186,8 @@ _enc_ldp_post:
     ldr     x16, [sp, #152]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1073
-.L1073:
+    b       .L1253
+.L1253:
     add     sp, sp, #192
     ldp     x29, x30, [sp], #16
     ret
@@ -19541,8 +23227,8 @@ _enc_add_imm:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1074
-.L1074:
+    b       .L1254
+.L1254:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19582,8 +23268,8 @@ _enc_sub_imm:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1075
-.L1075:
+    b       .L1255
+.L1255:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19623,8 +23309,8 @@ _enc_add_reg:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1076
-.L1076:
+    b       .L1256
+.L1256:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19664,8 +23350,8 @@ _enc_sub_reg:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1077
-.L1077:
+    b       .L1257
+.L1257:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19688,8 +23374,8 @@ _enc_sub_ext_sp:
     ldr     x16, [sp, #8]
     orr     x9, x16, x11
     mov     x0, x9
-    b       .L1078
-.L1078:
+    b       .L1258
+.L1258:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -19712,8 +23398,8 @@ _enc_add_ext_sp:
     ldr     x16, [sp, #8]
     orr     x9, x16, x11
     mov     x0, x9
-    b       .L1079
-.L1079:
+    b       .L1259
+.L1259:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -19758,8 +23444,8 @@ _enc_mul:
     ldr     x16, [sp, #136]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1080
-.L1080:
+    b       .L1260
+.L1260:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -19800,8 +23486,50 @@ _enc_udiv:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1081
-.L1081:
+    b       .L1261
+.L1261:
+    add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_sdiv
+_enc_sdiv:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #144
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    movz    x16, #0x0c00
+    movk    x16, #0x9ac0, lsl #16
+    str     x16, [sp, #24]
+    ldr     x9, [sp, #16]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0010
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #24]
+    orr     x16, x16, x11
+    str     x16, [sp, #64]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #64]
+    orr     x16, x16, x11
+    str     x16, [sp, #104]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #104]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1262
+.L1262:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19841,8 +23569,8 @@ _enc_and:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1082
-.L1082:
+    b       .L1263
+.L1263:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19882,8 +23610,8 @@ _enc_orr:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1083
-.L1083:
+    b       .L1264
+.L1264:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19923,8 +23651,8 @@ _enc_eor:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1084
-.L1084:
+    b       .L1265
+.L1265:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -19965,8 +23693,8 @@ _enc_lslv:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1085
-.L1085:
+    b       .L1266
+.L1266:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20007,8 +23735,8 @@ _enc_lsrv:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1086
-.L1086:
+    b       .L1267
+.L1267:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20048,8 +23776,8 @@ _enc_ldr_x:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1087
-.L1087:
+    b       .L1268
+.L1268:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20089,8 +23817,8 @@ _enc_ldr_w:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1088
-.L1088:
+    b       .L1269
+.L1269:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20130,8 +23858,8 @@ _enc_ldrb:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1089
-.L1089:
+    b       .L1270
+.L1270:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20171,8 +23899,8 @@ _enc_str_x:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1090
-.L1090:
+    b       .L1271
+.L1271:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20212,8 +23940,8 @@ _enc_str_w:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1091
-.L1091:
+    b       .L1272
+.L1272:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20253,9 +23981,128 @@ _enc_strb:
     ldr     x16, [sp, #104]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1092
-.L1092:
+    b       .L1273
+.L1273:
     add     sp, sp, #144
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_sxtb
+_enc_sxtb:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #96
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x16, #0x1c00
+    movk    x16, #0x9340, lsl #16
+    str     x16, [sp, #16]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #16]
+    orr     x16, x16, x11
+    str     x16, [sp, #56]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #56]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1274
+.L1274:
+    add     sp, sp, #96
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_sxtw
+_enc_sxtw:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #96
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x16, #0x7c00
+    movk    x16, #0x9340, lsl #16
+    str     x16, [sp, #16]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #16]
+    orr     x16, x16, x11
+    str     x16, [sp, #56]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #56]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1275
+.L1275:
+    add     sp, sp, #96
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_uxtb
+_enc_uxtb:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #96
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x16, #0x1c00
+    movk    x16, #0x5300, lsl #16
+    str     x16, [sp, #16]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #16]
+    orr     x16, x16, x11
+    str     x16, [sp, #56]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #56]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1276
+.L1276:
+    add     sp, sp, #96
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_uxtw
+_enc_uxtw:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #64
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_mov_reg
+    mov     x11, x0
+    movz    x9, #0xffff
+    movk    x9, #0x7fff, lsl #16
+    and     w10, w11, w9
+    mov     x0, x10
+    b       .L1277
+.L1277:
+    add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
 
@@ -20296,8 +24143,8 @@ _enc_adrp:
     ldr     x16, [sp, #168]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1093
-.L1093:
+    b       .L1278
+.L1278:
     add     sp, sp, #208
     ldp     x29, x30, [sp], #16
     ret
@@ -20319,8 +24166,8 @@ _enc_add_pageoff:
     bl      _enc_add_imm
     mov     x12, x0
     mov     x0, x12
-    b       .L1094
-.L1094:
+    b       .L1279
+.L1279:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -20340,8 +24187,8 @@ _enc_bl:
     ldr     x16, [sp, #8]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1095
-.L1095:
+    b       .L1280
+.L1280:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -20361,8 +24208,8 @@ _enc_b:
     ldr     x16, [sp, #8]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1096
-.L1096:
+    b       .L1281
+.L1281:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -20392,8 +24239,39 @@ _enc_cbz_w:
     ldr     x16, [sp, #56]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1097
-.L1097:
+    b       .L1282
+.L1282:
+    add     sp, sp, #96
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _enc_cbz_x
+_enc_cbz_x:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #96
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    movz    x16, #0xb400, lsl #16
+    str     x16, [sp, #16]
+    ldr     x9, [sp, #8]
+    mov     x0, x9
+    bl      _m19
+    mov     x10, x0
+    movz    x9, #0x0005
+    lsl     w11, w10, w9
+    ldr     x16, [sp, #16]
+    orr     x16, x16, x11
+    str     x16, [sp, #56]
+    ldr     x9, [sp, #0]
+    mov     x0, x9
+    bl      _m5
+    mov     x10, x0
+    ldr     x16, [sp, #56]
+    orr     x9, x16, x10
+    mov     x0, x9
+    b       .L1283
+.L1283:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -20427,8 +24305,8 @@ _enc_cmp_reg:
     movz    x10, #0x001f
     orr     x11, x9, x10
     mov     x0, x11
-    b       .L1098
-.L1098:
+    b       .L1284
+.L1284:
     add     sp, sp, #128
     ldp     x29, x30, [sp], #16
     ret
@@ -20456,8 +24334,8 @@ _enc_cset:
     ldr     x16, [sp, #64]
     orr     x9, x16, x10
     mov     x0, x9
-    b       .L1099
-.L1099:
+    b       .L1285
+.L1285:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -20480,8 +24358,8 @@ _enc_svc:
     ldr     x16, [sp, #8]
     orr     x9, x16, x11
     mov     x0, x9
-    b       .L1100
-.L1100:
+    b       .L1286
+.L1286:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -20498,8 +24376,8 @@ _enc_ret:
     lsl     x12, x10, x11
     orr     x10, x9, x12
     mov     x0, x10
-    b       .L1101
-.L1101:
+    b       .L1287
+.L1287:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -20511,8 +24389,8 @@ _mo_img_cap:
     sub     sp, sp, #16
     movz    x9, #0x0010, lsl #16
     mov     x0, x9
-    b       .L1102
-.L1102:
+    b       .L1288
+.L1288:
     add     sp, sp, #16
     ldp     x29, x30, [sp], #16
     ret
@@ -20540,12 +24418,12 @@ _mo_uuid_from_code:
     str     x9, [sp, #24]
     mov     x9, #0
     str     x9, [sp, #32]
-.L633:
+.L773:
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L634
+    cbz     w11, .L774
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #32]
     add     x11, x9, x10
@@ -20553,13 +24431,14 @@ _mo_uuid_from_code:
     ldr     x10, [sp, #32]
     add     x12, x9, x10
     ldrb    w9, [x12]
+    uxtb    w9, w9
     strb    w9, [x11]
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L633
-.L634:
+    b       .L773
+.L774:
     ldr     x9, [sp, #24]
     movz    x10, #0x0006
     add     x11, x9, x10
@@ -20567,6 +24446,7 @@ _mo_uuid_from_code:
     movz    x10, #0x0006
     add     x12, x9, x10
     ldrb    w9, [x12]
+    uxtb    w9, w9
     movz    x10, #0x000f
     and     w12, w9, w10
     movz    x9, #0x0040
@@ -20579,12 +24459,13 @@ _mo_uuid_from_code:
     movz    x10, #0x0008
     add     x12, x9, x10
     ldrb    w9, [x12]
+    uxtb    w9, w9
     movz    x10, #0x003f
     and     w12, w9, w10
     movz    x9, #0x0080
     orr     w10, w12, w9
     strb    w10, [x11]
-.L1103:
+.L1289:
     add     sp, sp, #384
     ldp     x29, x30, [sp], #16
     ret
@@ -20600,17 +24481,18 @@ _mo_emit_uuid:
     str     x9, [sp, #8]
     mov     x9, #0
     str     x9, [sp, #16]
-.L635:
+.L775:
     ldr     x9, [sp, #16]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L636
+    cbz     w11, .L776
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -20619,9 +24501,9 @@ _mo_emit_uuid:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #16]
-    b       .L635
-.L636:
-.L1104:
+    b       .L775
+.L776:
+.L1290:
     add     sp, sp, #144
     ldp     x29, x30, [sp], #16
     ret
@@ -20641,8 +24523,8 @@ _mc_get:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1105
-.L1105:
+    b       .L1291
+.L1291:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -20663,7 +24545,7 @@ _mc_set:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L1106:
+.L1292:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -20691,7 +24573,7 @@ _e8:
     mov     x0, x11
     bl      _mc_set
     str     x0, [sp, #104]
-.L1107:
+.L1293:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -20733,7 +24615,7 @@ _e32:
     mov     x1, x12
     bl      _e8
     str     x0, [sp, #152]
-.L1108:
+.L1294:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -20759,7 +24641,7 @@ _e64:
     mov     x1, x12
     bl      _e32
     str     x0, [sp, #72]
-.L1109:
+.L1295:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -20801,7 +24683,7 @@ _eb32:
     mov     x1, x10
     bl      _e8
     str     x0, [sp, #152]
-.L1110:
+.L1296:
     add     sp, sp, #160
     ldp     x29, x30, [sp], #16
     ret
@@ -20827,7 +24709,7 @@ _eb64:
     mov     x1, x10
     bl      _eb32
     str     x0, [sp, #72]
-.L1111:
+.L1297:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -20841,12 +24723,12 @@ _ezeros:
     str     x1, [sp, #8]
     mov     x9, #0
     str     x9, [sp, #16]
-.L637:
+.L777:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L638
+    cbz     w11, .L778
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -20857,9 +24739,9 @@ _ezeros:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #16]
-    b       .L637
-.L638:
-.L1112:
+    b       .L777
+.L778:
+.L1298:
     add     sp, sp, #112
     ldp     x29, x30, [sp], #16
     ret
@@ -20874,17 +24756,18 @@ _ename16:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L639:
+.L779:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L640
+    cbz     w11, .L780
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -20893,14 +24776,14 @@ _ename16:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L639
-.L640:
-.L641:
+    b       .L779
+.L780:
+.L781:
     ldr     x9, [sp, #24]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L642
+    cbz     w11, .L782
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -20911,9 +24794,9 @@ _ename16:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L641
-.L642:
-.L1113:
+    b       .L781
+.L782:
+.L1299:
     add     sp, sp, #208
     ldp     x29, x30, [sp], #16
     ret
@@ -20989,8 +24872,8 @@ _mo_emit_headers:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #344]
-    adrp    x9, L_str142@PAGE
-    add     x9, x9, L_str142@PAGEOFF
+    adrp    x9, L_str182@PAGE
+    add     x9, x9, L_str182@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x000a
     str     x9, [sp, #32]
@@ -21062,8 +24945,8 @@ _mo_emit_headers:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #632]
-    adrp    x9, L_str143@PAGE
-    add     x9, x9, L_str143@PAGEOFF
+    adrp    x9, L_str183@PAGE
+    add     x9, x9, L_str183@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0006
     str     x9, [sp, #48]
@@ -21123,8 +25006,8 @@ _mo_emit_headers:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #872]
-    adrp    x9, L_str144@PAGE
-    add     x9, x9, L_str144@PAGEOFF
+    adrp    x9, L_str184@PAGE
+    add     x9, x9, L_str184@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0006
     str     x9, [sp, #64]
@@ -21218,8 +25101,8 @@ _mo_emit_headers:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #1240]
-    adrp    x9, L_str145@PAGE
-    add     x9, x9, L_str145@PAGEOFF
+    adrp    x9, L_str185@PAGE
+    add     x9, x9, L_str185@PAGEOFF
     str     x9, [sp, #72]
     movz    x9, #0x000a
     str     x9, [sp, #80]
@@ -21298,24 +25181,25 @@ _mo_emit_headers:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #1552]
-    adrp    x9, L_str146@PAGE
-    add     x9, x9, L_str146@PAGEOFF
+    adrp    x9, L_str186@PAGE
+    add     x9, x9, L_str186@PAGEOFF
     str     x9, [sp, #88]
     movz    x9, #0x000d
     str     x9, [sp, #96]
     mov     x9, #0
     str     x9, [sp, #104]
-.L643:
+.L783:
     ldr     x9, [sp, #104]
     ldr     x10, [sp, #96]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L644
+    cbz     w11, .L784
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #88]
     ldr     x11, [sp, #104]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -21324,14 +25208,14 @@ _mo_emit_headers:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #104]
-    b       .L643
-.L644:
-.L645:
+    b       .L783
+.L784:
+.L785:
     ldr     x9, [sp, #104]
     movz    x10, #0x0014
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L646
+    cbz     w11, .L786
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -21342,8 +25226,8 @@ _mo_emit_headers:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #104]
-    b       .L645
-.L646:
+    b       .L785
+.L786:
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
@@ -21501,7 +25385,7 @@ _mo_emit_headers:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #2376]
-.L1114:
+.L1300:
     add     sp, sp, #2384
     ldp     x29, x30, [sp], #16
     ret
@@ -21524,12 +25408,12 @@ _emit_macho_image:
     movz    x9, #0x4000
     cmp     x11, x9
     cset    w10, hi
-    cbz     w10, .L647
+    cbz     w10, .L787
     movz    x9, #0x0048
     mov     x0, x9
     bl      _io_exit
     str     x0, [sp, #112]
-.L647:
+.L787:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     mov     x0, x9
@@ -21550,17 +25434,18 @@ _emit_macho_image:
     str     x0, [sp, #184]
     mov     x9, #0
     str     x9, [sp, #40]
-.L648:
+.L788:
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L649
+    cbz     w11, .L789
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #40]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -21569,8 +25454,8 @@ _emit_macho_image:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #40]
-    b       .L648
-.L649:
+    b       .L788
+.L789:
     bl      _mc_get
     mov     x9, x0
     str     x9, [sp, #48]
@@ -21588,7 +25473,7 @@ _emit_macho_image:
     mov     x1, x10
     bl      _mo_sign_and_write
     str     x0, [sp, #360]
-.L1115:
+.L1301:
     add     sp, sp, #368
     ldp     x29, x30, [sp], #16
     ret
@@ -21608,7 +25493,7 @@ _mo_sign_and_write:
     mov     x2, x11
     bl      _mo_sign_and_write_n
     str     x0, [sp, #40]
-.L1116:
+.L1302:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -21650,12 +25535,12 @@ _mo_sign_and_write_n:
     ldr     x16, [sp, #216]
     cmp     x16, x9
     cset    w10, hi
-    cbz     w10, .L650
+    cbz     w10, .L790
     movz    x9, #0x0047
     mov     x0, x9
     bl      _io_exit
     str     x0, [sp, #248]
-.L650:
+.L790:
     ldr     x9, [sp, #8]
     movz    x10, #0x0cc0
     movk    x10, #0xfade, lsl #16
@@ -21841,12 +25726,12 @@ _mo_sign_and_write_n:
     str     x11, [sp, #56]
     mov     x9, #0
     str     x9, [sp, #64]
-.L651:
+.L791:
     ldr     x9, [sp, #64]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L652
+    cbz     w11, .L792
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #64]
     movz    x11, #0x1000
@@ -21869,8 +25754,8 @@ _mo_sign_and_write_n:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #64]
-    b       .L651
-.L652:
+    b       .L791
+.L792:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #48]
@@ -21881,7 +25766,7 @@ _mo_sign_and_write_n:
     mov     x2, x13
     bl      _io_write
     str     x0, [sp, #1200]
-.L1117:
+.L1303:
     add     sp, sp, #1216
     ldp     x29, x30, [sp], #16
     ret
@@ -22031,7 +25916,7 @@ _emit_macho_signed:
     mov     x3, x12
     bl      _emit_macho_image
     str     x0, [sp, #888]
-.L1118:
+.L1304:
     add     sp, sp, #896
     ldp     x29, x30, [sp], #16
     ret
@@ -22127,8 +26012,8 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #536]
-    adrp    x9, L_str147@PAGE
-    add     x9, x9, L_str147@PAGEOFF
+    adrp    x9, L_str187@PAGE
+    add     x9, x9, L_str187@PAGEOFF
     str     x9, [sp, #72]
     movz    x9, #0x000a
     str     x9, [sp, #80]
@@ -22200,8 +26085,8 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #824]
-    adrp    x9, L_str148@PAGE
-    add     x9, x9, L_str148@PAGEOFF
+    adrp    x9, L_str188@PAGE
+    add     x9, x9, L_str188@PAGEOFF
     str     x9, [sp, #88]
     movz    x9, #0x0006
     str     x9, [sp, #96]
@@ -22261,8 +26146,8 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #1064]
-    adrp    x9, L_str149@PAGE
-    add     x9, x9, L_str149@PAGEOFF
+    adrp    x9, L_str189@PAGE
+    add     x9, x9, L_str189@PAGEOFF
     str     x9, [sp, #104]
     movz    x9, #0x0006
     str     x9, [sp, #112]
@@ -22356,8 +26241,8 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #1432]
-    adrp    x9, L_str150@PAGE
-    add     x9, x9, L_str150@PAGEOFF
+    adrp    x9, L_str190@PAGE
+    add     x9, x9, L_str190@PAGEOFF
     str     x9, [sp, #120]
     movz    x9, #0x0006
     str     x9, [sp, #128]
@@ -22417,8 +26302,8 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #1672]
-    adrp    x9, L_str151@PAGE
-    add     x9, x9, L_str151@PAGEOFF
+    adrp    x9, L_str191@PAGE
+    add     x9, x9, L_str191@PAGEOFF
     str     x9, [sp, #136]
     movz    x9, #0x0005
     str     x9, [sp, #144]
@@ -22510,8 +26395,8 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #2040]
-    adrp    x9, L_str152@PAGE
-    add     x9, x9, L_str152@PAGEOFF
+    adrp    x9, L_str192@PAGE
+    add     x9, x9, L_str192@PAGEOFF
     str     x9, [sp, #152]
     movz    x9, #0x000a
     str     x9, [sp, #160]
@@ -22589,24 +26474,25 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #2352]
-    adrp    x9, L_str153@PAGE
-    add     x9, x9, L_str153@PAGEOFF
+    adrp    x9, L_str193@PAGE
+    add     x9, x9, L_str193@PAGEOFF
     str     x9, [sp, #168]
     movz    x9, #0x000d
     str     x9, [sp, #176]
     mov     x9, #0
     str     x9, [sp, #184]
-.L653:
+.L793:
     ldr     x9, [sp, #184]
     ldr     x10, [sp, #176]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L654
+    cbz     w11, .L794
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #168]
     ldr     x11, [sp, #184]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -22615,14 +26501,14 @@ _mo_emit_headers_bss:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #184]
-    b       .L653
-.L654:
-.L655:
+    b       .L793
+.L794:
+.L795:
     ldr     x9, [sp, #184]
     movz    x10, #0x0014
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L656
+    cbz     w11, .L796
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x0, x9
@@ -22633,8 +26519,8 @@ _mo_emit_headers_bss:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #184]
-    b       .L655
-.L656:
+    b       .L795
+.L796:
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     mov     x0, x9
@@ -22792,7 +26678,7 @@ _mo_emit_headers_bss:
     mov     x1, x10
     bl      _e32
     str     x0, [sp, #3176]
-.L1119:
+.L1305:
     add     sp, sp, #3184
     ldp     x29, x30, [sp], #16
     ret
@@ -22812,8 +26698,8 @@ _cb_pos:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1120
-.L1120:
+    b       .L1306
+.L1306:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -22834,7 +26720,7 @@ _cb_set:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L1121:
+.L1307:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -22899,7 +26785,7 @@ _cb_word:
     mov     x0, x11
     bl      _cb_set
     str     x0, [sp, #368]
-.L1122:
+.L1308:
     add     sp, sp, #384
     ldp     x29, x30, [sp], #16
     ret
@@ -22921,7 +26807,7 @@ _lbl_set:
     add     x10, x9, x12
     ldr     x9, [sp, #8]
     str     x9, [x10]
-.L1123:
+.L1309:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -22942,8 +26828,8 @@ _lbl_get:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1124
-.L1124:
+    b       .L1310
+.L1310:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -22965,7 +26851,7 @@ _fnoff_set:
     add     x10, x9, x12
     ldr     x9, [sp, #8]
     str     x9, [x10]
-.L1125:
+.L1311:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -22986,8 +26872,8 @@ _fnoff_get:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1126
-.L1126:
+    b       .L1312
+.L1312:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -23055,7 +26941,7 @@ _fix_add:
     movz    x11, #0x0001
     add     x12, x9, x11
     str     x12, [x10]
-.L1127:
+.L1313:
     add     sp, sp, #416
     ldp     x29, x30, [sp], #16
     ret
@@ -23071,8 +26957,8 @@ _w32:
     movk    x10, #0x7fff, lsl #16
     and     x11, x9, x10
     mov     x0, x11
-    b       .L1128
-.L1128:
+    b       .L1314
+.L1314:
     add     sp, sp, #32
     ldp     x29, x30, [sp], #16
     ret
@@ -23088,7 +26974,7 @@ _b_movi:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L657
+    cbz     w11, .L797
     ldr     x9, [sp, #0]
     mov     x10, #0
     mov     x11, #0
@@ -23100,8 +26986,8 @@ _b_movi:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #112]
-    b       .L1129
-.L657:
+    b       .L1315
+.L797:
     ldr     x9, [sp, #8]
     movz    x10, #0xffff
     and     x11, x9, x10
@@ -23130,7 +27016,7 @@ _b_movi:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L658
+    cbz     w11, .L798
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     mov     x11, #0
@@ -23144,17 +27030,17 @@ _b_movi:
     str     x0, [sp, #328]
     mov     x9, #0
     str     x9, [sp, #48]
-.L658:
+.L798:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L659
+    cbz     w11, .L799
     ldr     x9, [sp, #48]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L660
+    cbz     w11, .L800
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     movz    x11, #0x0001
@@ -23168,8 +27054,8 @@ _b_movi:
     str     x0, [sp, #424]
     mov     x9, #0
     str     x9, [sp, #48]
-    b       .L661
-.L660:
+    b       .L801
+.L800:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     movz    x11, #0x0001
@@ -23181,18 +27067,18 @@ _b_movi:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #472]
-.L661:
-.L659:
+.L801:
+.L799:
     ldr     x9, [sp, #32]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L662
+    cbz     w11, .L802
     ldr     x9, [sp, #48]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L663
+    cbz     w11, .L803
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     movz    x11, #0x0002
@@ -23206,8 +27092,8 @@ _b_movi:
     str     x0, [sp, #560]
     mov     x9, #0
     str     x9, [sp, #48]
-    b       .L664
-.L663:
+    b       .L804
+.L803:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     movz    x11, #0x0002
@@ -23219,18 +27105,18 @@ _b_movi:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #608]
-.L664:
-.L662:
+.L804:
+.L802:
     ldr     x9, [sp, #40]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L665
+    cbz     w11, .L805
     ldr     x9, [sp, #48]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L666
+    cbz     w11, .L806
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #40]
     movz    x11, #0x0003
@@ -23244,8 +27130,8 @@ _b_movi:
     str     x0, [sp, #696]
     mov     x9, #0
     str     x9, [sp, #48]
-    b       .L667
-.L666:
+    b       .L807
+.L806:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #40]
     movz    x11, #0x0003
@@ -23257,9 +27143,9 @@ _b_movi:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #744]
-.L667:
-.L665:
-.L1129:
+.L807:
+.L805:
+.L1315:
     add     sp, sp, #752
     ldp     x29, x30, [sp], #16
     ret
@@ -23280,7 +27166,7 @@ _b_mov_x:
     mov     x0, x11
     bl      _cb_word
     str     x0, [sp, #40]
-.L1130:
+.L1316:
     add     sp, sp, #48
     ldp     x29, x30, [sp], #16
     ret
@@ -23304,7 +27190,7 @@ _b_mov_w:
     mov     x0, x9
     bl      _cb_word
     str     x0, [sp, #48]
-.L1131:
+.L1317:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -23329,7 +27215,7 @@ _b_ldr_x:
     mov     x0, x11
     bl      _cb_word
     str     x0, [sp, #64]
-.L1132:
+.L1318:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -23354,7 +27240,7 @@ _b_str_x:
     mov     x0, x11
     bl      _cb_word
     str     x0, [sp, #64]
-.L1133:
+.L1319:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -23379,7 +27265,7 @@ _b_ldr_w:
     mov     x0, x11
     bl      _cb_word
     str     x0, [sp, #64]
-.L1134:
+.L1320:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -23404,7 +27290,7 @@ _b_str_w:
     mov     x0, x11
     bl      _cb_word
     str     x0, [sp, #64]
-.L1135:
+.L1321:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -23427,7 +27313,7 @@ _b_ldrb:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #48]
-.L1136:
+.L1322:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -23450,8 +27336,86 @@ _b_strb:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #48]
-.L1137:
+.L1323:
     add     sp, sp, #64
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_normalize
+_cgb_normalize:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #256
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    str     x2, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L808
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L809
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #0]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_sxtb
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #96]
+    b       .L810
+.L809:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #0]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_uxtb
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #128]
+.L810:
+    b       .L1324
+.L808:
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L811
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L812
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #0]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_sxtw
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #208]
+    b       .L813
+.L812:
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #0]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_uxtw
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #240]
+.L813:
+.L811:
+.L1324:
+    add     sp, sp, #256
     ldp     x29, x30, [sp], #16
     ret
 
@@ -23478,17 +27442,17 @@ _cgb_dst_x:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L668
+    cbz     w11, .L814
     ldr     x9, [sp, #24]
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L1138
-.L668:
+    b       .L1325
+.L814:
     movz    x9, #0x0010
     mov     x0, x9
-    b       .L1138
-.L1138:
+    b       .L1325
+.L1325:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -23515,9 +27479,9 @@ _cgb_spill:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L669
-    b       .L1139
-.L669:
+    cbz     w11, .L815
+    b       .L1326
+.L815:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -23526,7 +27490,7 @@ _cgb_spill:
     mov     x1, x12
     bl      _b_str_x
     str     x0, [sp, #160]
-.L1139:
+.L1326:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -23555,13 +27519,13 @@ _cgb_src_x:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L670
+    cbz     w11, .L816
     ldr     x9, [sp, #32]
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L1140
-.L670:
+    b       .L1327
+.L816:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -23572,8 +27536,8 @@ _cgb_src_x:
     str     x0, [sp, #200]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L1140
-.L1140:
+    b       .L1327
+.L1327:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -23602,13 +27566,13 @@ _cgb_src_w:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L671
+    cbz     w11, .L817
     ldr     x9, [sp, #32]
     movz    x10, #0x0009
     add     x11, x9, x10
     mov     x0, x11
-    b       .L1141
-.L671:
+    b       .L1328
+.L817:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -23619,8 +27583,8 @@ _cgb_src_w:
     str     x0, [sp, #200]
     ldr     x9, [sp, #16]
     mov     x0, x9
-    b       .L1141
-.L1141:
+    b       .L1328
+.L1328:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -23649,7 +27613,7 @@ _cgb_load_slot_x:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L672
+    cbz     w11, .L818
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #32]
     movz    x11, #0x0009
@@ -23658,8 +27622,8 @@ _cgb_load_slot_x:
     mov     x1, x12
     bl      _b_mov_x
     str     x0, [sp, #176]
-    b       .L1142
-.L672:
+    b       .L1329
+.L818:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -23668,7 +27632,7 @@ _cgb_load_slot_x:
     mov     x1, x12
     bl      _b_ldr_x
     str     x0, [sp, #216]
-.L1142:
+.L1329:
     add     sp, sp, #224
     ldp     x29, x30, [sp], #16
     ret
@@ -23677,19 +27641,20 @@ _cgb_load_slot_x:
 _cgb_alu:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #624
+    sub     sp, sp, #688
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
     str     x3, [sp, #24]
     str     x4, [sp, #32]
+    str     x5, [sp, #40]
     mov     x9, #0
-    str     x9, [sp, #40]
+    str     x9, [sp, #48]
     ldr     x9, [sp, #0]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L673
+    cbz     w11, .L819
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23698,13 +27663,13 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_add_reg
     mov     x12, x0
-    str     x12, [sp, #40]
-.L673:
+    str     x12, [sp, #48]
+.L819:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L674
+    cbz     w11, .L820
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23713,13 +27678,13 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_sub_reg
     mov     x12, x0
-    str     x12, [sp, #40]
-.L674:
+    str     x12, [sp, #48]
+.L820:
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L675
+    cbz     w11, .L821
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23728,13 +27693,29 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_mul
     mov     x12, x0
-    str     x12, [sp, #40]
-.L675:
+    str     x12, [sp, #48]
+.L821:
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L676
+    cbz     w11, .L822
+    ldr     x9, [sp, #40]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L823
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #16]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _enc_sdiv
+    mov     x12, x0
+    str     x12, [sp, #48]
+    b       .L824
+.L823:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23743,13 +27724,14 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_udiv
     mov     x12, x0
-    str     x12, [sp, #40]
-.L676:
+    str     x12, [sp, #48]
+.L824:
+.L822:
     ldr     x9, [sp, #0]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L677
+    cbz     w11, .L825
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23758,13 +27740,13 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_and
     mov     x12, x0
-    str     x12, [sp, #40]
-.L677:
+    str     x12, [sp, #48]
+.L825:
     ldr     x9, [sp, #0]
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L678
+    cbz     w11, .L826
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23773,13 +27755,13 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_orr
     mov     x12, x0
-    str     x12, [sp, #40]
-.L678:
+    str     x12, [sp, #48]
+.L826:
     ldr     x9, [sp, #0]
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L679
+    cbz     w11, .L827
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23788,13 +27770,13 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_eor
     mov     x12, x0
-    str     x12, [sp, #40]
-.L679:
+    str     x12, [sp, #48]
+.L827:
     ldr     x9, [sp, #0]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L680
+    cbz     w11, .L828
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23803,13 +27785,13 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_lslv
     mov     x12, x0
-    str     x12, [sp, #40]
-.L680:
+    str     x12, [sp, #48]
+.L828:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L681
+    cbz     w11, .L829
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #24]
@@ -23818,29 +27800,29 @@ _cgb_alu:
     mov     x2, x11
     bl      _enc_lsrv
     mov     x12, x0
-    str     x12, [sp, #40]
-.L681:
+    str     x12, [sp, #48]
+.L829:
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L682
-    ldr     x9, [sp, #40]
+    cbz     w11, .L830
+    ldr     x9, [sp, #48]
     mov     x0, x9
     bl      _cb_word
-    str     x0, [sp, #592]
-    b       .L683
-.L682:
-    ldr     x9, [sp, #40]
+    str     x0, [sp, #656]
+    b       .L831
+.L830:
+    ldr     x9, [sp, #48]
     mov     x0, x9
     bl      _w32
     mov     x10, x0
     mov     x0, x10
     bl      _cb_word
-    str     x0, [sp, #616]
-.L683:
-.L1143:
-    add     sp, sp, #624
+    str     x0, [sp, #680]
+.L831:
+.L1330:
+    add     sp, sp, #688
     ldp     x29, x30, [sp], #16
     ret
 
@@ -23848,58 +27830,94 @@ _cgb_alu:
 _cgb_invcond:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #176
+    sub     sp, sp, #304
     str     x0, [sp, #0]
     ldr     x9, [sp, #0]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L684
+    cbz     w11, .L832
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L1144
-.L684:
+    b       .L1331
+.L832:
     ldr     x9, [sp, #0]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L685
+    cbz     w11, .L833
     mov     x9, #0
     mov     x0, x9
-    b       .L1144
-.L685:
+    b       .L1331
+.L833:
     ldr     x9, [sp, #0]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L686
+    cbz     w11, .L834
     movz    x9, #0x0002
     mov     x0, x9
-    b       .L1144
-.L686:
+    b       .L1331
+.L834:
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L687
+    cbz     w11, .L835
     movz    x9, #0x0008
     mov     x0, x9
-    b       .L1144
-.L687:
+    b       .L1331
+.L835:
     ldr     x9, [sp, #0]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L688
+    cbz     w11, .L836
     movz    x9, #0x0009
     mov     x0, x9
-    b       .L1144
-.L688:
+    b       .L1331
+.L836:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L837
     movz    x9, #0x0003
     mov     x0, x9
-    b       .L1144
-.L1144:
-    add     sp, sp, #176
+    b       .L1331
+.L837:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0006
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L838
+    movz    x9, #0x000a
+    mov     x0, x9
+    b       .L1331
+.L838:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0007
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L839
+    movz    x9, #0x000c
+    mov     x0, x9
+    b       .L1331
+.L839:
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0008
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L840
+    movz    x9, #0x000d
+    mov     x0, x9
+    b       .L1331
+.L840:
+    movz    x9, #0x000b
+    mov     x0, x9
+    b       .L1331
+.L1331:
+    add     sp, sp, #304
     ldp     x29, x30, [sp], #16
     ret
 
@@ -23940,7 +27958,7 @@ _cgb_i_movi:
     mov     x2, x11
     bl      _cgb_spill
     str     x0, [sp, #168]
-.L1145:
+.L1332:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -23989,7 +28007,7 @@ _cgb_i_addr_local:
     mov     x2, x11
     bl      _cgb_spill
     str     x0, [sp, #200]
-.L1146:
+.L1333:
     add     sp, sp, #208
     ldp     x29, x30, [sp], #16
     ret
@@ -23998,7 +28016,7 @@ _cgb_i_addr_local:
 _cgb_i_load_local:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #416
+    sub     sp, sp, #496
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
@@ -24018,7 +28036,7 @@ _cgb_i_load_local:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L689
+    cbz     w11, .L841
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -24030,8 +28048,8 @@ _cgb_i_load_local:
     mov     x1, x12
     bl      _b_ldrb
     str     x0, [sp, #176]
-    b       .L690
-.L689:
+    b       .L842
+.L841:
     ldr     x9, [sp, #8]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -24039,7 +28057,7 @@ _cgb_i_load_local:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L691
+    cbz     w11, .L843
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -24051,8 +28069,8 @@ _cgb_i_load_local:
     mov     x1, x12
     bl      _b_ldr_w
     str     x0, [sp, #288]
-    b       .L692
-.L691:
+    b       .L844
+.L843:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -24064,8 +28082,22 @@ _cgb_i_load_local:
     mov     x1, x12
     bl      _b_ldr_x
     str     x0, [sp, #352]
-.L692:
-.L690:
+.L844:
+.L842:
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0070
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_normalize
+    str     x0, [sp, #432]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24076,9 +28108,9 @@ _cgb_i_load_local:
     mov     x1, x10
     mov     x2, x11
     bl      _cgb_spill
-    str     x0, [sp, #408]
-.L1147:
-    add     sp, sp, #416
+    str     x0, [sp, #488]
+.L1334:
+    add     sp, sp, #496
     ldp     x29, x30, [sp], #16
     ret
 
@@ -24110,13 +28142,13 @@ _cgb_i_store_local:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L693
+    cbz     w11, .L845
     ldr     x9, [sp, #24]
     movz    x10, #0x0009
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L694
-.L693:
+    b       .L846
+.L845:
     movz    x9, #0x0010
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -24128,7 +28160,7 @@ _cgb_i_store_local:
     mov     x1, x12
     bl      _b_ldr_x
     str     x0, [sp, #256]
-.L694:
+.L846:
     ldr     x9, [sp, #8]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -24136,7 +28168,7 @@ _cgb_i_store_local:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L695
+    cbz     w11, .L847
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -24148,8 +28180,8 @@ _cgb_i_store_local:
     mov     x1, x12
     bl      _b_strb
     str     x0, [sp, #368]
-    b       .L696
-.L695:
+    b       .L848
+.L847:
     ldr     x9, [sp, #8]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -24157,7 +28189,7 @@ _cgb_i_store_local:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L697
+    cbz     w11, .L849
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -24169,8 +28201,8 @@ _cgb_i_store_local:
     mov     x1, x12
     bl      _b_str_w
     str     x0, [sp, #480]
-    b       .L698
-.L697:
+    b       .L850
+.L849:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #8]
     movz    x11, #0x0020
@@ -24182,9 +28214,9 @@ _cgb_i_store_local:
     mov     x1, x12
     bl      _b_str_x
     str     x0, [sp, #544]
-.L698:
-.L696:
-.L1148:
+.L850:
+.L848:
+.L1335:
     add     sp, sp, #560
     ldp     x29, x30, [sp], #16
     ret
@@ -24193,7 +28225,7 @@ _cgb_i_store_local:
 _cgb_i_load_mem:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #416
+    sub     sp, sp, #496
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
@@ -24225,7 +28257,7 @@ _cgb_i_load_mem:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L699
+    cbz     w11, .L851
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     mov     x11, #0
@@ -24237,8 +28269,8 @@ _cgb_i_load_mem:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #216]
-    b       .L700
-.L699:
+    b       .L852
+.L851:
     ldr     x9, [sp, #8]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -24246,7 +28278,7 @@ _cgb_i_load_mem:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L701
+    cbz     w11, .L853
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     mov     x11, #0
@@ -24258,8 +28290,8 @@ _cgb_i_load_mem:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #304]
-    b       .L702
-.L701:
+    b       .L854
+.L853:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     mov     x11, #0
@@ -24271,8 +28303,22 @@ _cgb_i_load_mem:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #344]
-.L702:
-.L700:
+.L854:
+.L852:
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0070
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_normalize
+    str     x0, [sp, #424]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24283,9 +28329,80 @@ _cgb_i_load_mem:
     mov     x1, x10
     mov     x2, x11
     bl      _cgb_spill
-    str     x0, [sp, #400]
-.L1149:
-    add     sp, sp, #416
+    str     x0, [sp, #480]
+.L1336:
+    add     sp, sp, #496
+    ldp     x29, x30, [sp], #16
+    ret
+
+    .globl   _cgb_i_cast
+_cgb_i_cast:
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+    sub     sp, sp, #320
+    str     x0, [sp, #0]
+    str     x1, [sp, #8]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #16]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_dst_x
+    mov     x11, x0
+    str     x11, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    cmp     x9, x10
+    cset    w11, ne
+    cbz     w11, .L855
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #16]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _b_mov_x
+    str     x0, [sp, #176]
+.L855:
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0028
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #8]
+    movz    x12, #0x0070
+    add     x13, x11, x12
+    ldr     x11, [x13]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_normalize
+    str     x0, [sp, #256]
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0008
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    ldr     x11, [sp, #24]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_spill
+    str     x0, [sp, #312]
+.L1337:
+    add     sp, sp, #320
     ldp     x29, x30, [sp], #16
     ret
 
@@ -24329,13 +28446,13 @@ _cgb_i_store_mem:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L703
+    cbz     w11, .L856
     ldr     x9, [sp, #32]
     movz    x10, #0x0009
     add     x11, x9, x10
     str     x11, [sp, #40]
-    b       .L704
-.L703:
+    b       .L857
+.L856:
     movz    x9, #0x0010
     ldr     x10, [sp, #8]
     movz    x11, #0x0018
@@ -24347,7 +28464,7 @@ _cgb_i_store_mem:
     mov     x1, x12
     bl      _b_ldr_x
     str     x0, [sp, #320]
-.L704:
+.L857:
     ldr     x9, [sp, #8]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -24355,7 +28472,7 @@ _cgb_i_store_mem:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L705
+    cbz     w11, .L858
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #16]
     mov     x11, #0
@@ -24367,8 +28484,8 @@ _cgb_i_store_mem:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #408]
-    b       .L706
-.L705:
+    b       .L859
+.L858:
     ldr     x9, [sp, #8]
     movz    x10, #0x0028
     add     x11, x9, x10
@@ -24376,7 +28493,7 @@ _cgb_i_store_mem:
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L707
+    cbz     w11, .L860
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #16]
     mov     x11, #0
@@ -24388,8 +28505,8 @@ _cgb_i_store_mem:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #496]
-    b       .L708
-.L707:
+    b       .L861
+.L860:
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #16]
     mov     x11, #0
@@ -24401,9 +28518,9 @@ _cgb_i_store_mem:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #536]
-.L708:
-.L706:
-.L1150:
+.L861:
+.L859:
+.L1338:
     add     sp, sp, #544
     ldp     x29, x30, [sp], #16
     ret
@@ -24412,7 +28529,7 @@ _cgb_i_store_mem:
 _cgb_i_binop:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #560
+    sub     sp, sp, #592
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     mov     x9, #0
@@ -24424,10 +28541,10 @@ _cgb_i_binop:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L709
+    cbz     w11, .L862
     movz    x9, #0x0001
     str     x9, [sp, #16]
-.L709:
+.L862:
     mov     x9, #0
     str     x9, [sp, #24]
     mov     x9, #0
@@ -24436,7 +28553,7 @@ _cgb_i_binop:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L710
+    cbz     w11, .L863
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -24461,8 +28578,8 @@ _cgb_i_binop:
     bl      _cgb_src_x
     mov     x12, x0
     str     x12, [sp, #32]
-    b       .L711
-.L710:
+    b       .L864
+.L863:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -24487,7 +28604,7 @@ _cgb_i_binop:
     bl      _cgb_src_w
     mov     x12, x0
     str     x12, [sp, #32]
-.L711:
+.L864:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24506,13 +28623,20 @@ _cgb_i_binop:
     ldr     x11, [sp, #24]
     ldr     x12, [sp, #32]
     ldr     x13, [sp, #16]
+    ldr     x14, [sp, #8]
+    movz    x15, #0x0070
+    add     x16, x14, x15
+    str     x16, [sp, #504]
+    ldr     x17, [sp, #504]
+    ldr     x14, [x17]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     mov     x3, x12
     mov     x4, x13
+    mov     x5, x14
     bl      _cgb_alu
-    str     x0, [sp, #488]
+    str     x0, [sp, #520]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24523,9 +28647,9 @@ _cgb_i_binop:
     mov     x1, x10
     mov     x2, x11
     bl      _cgb_spill
-    str     x0, [sp, #544]
-.L1151:
-    add     sp, sp, #560
+    str     x0, [sp, #576]
+.L1339:
+    add     sp, sp, #592
     ldp     x29, x30, [sp], #16
     ret
 
@@ -24533,10 +28657,51 @@ _cgb_i_binop:
 _cgb_i_cmp:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #624
+    sub     sp, sp, #800
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
+    ldr     x9, [sp, #8]
+    movz    x10, #0x0070
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L865
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0002
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L866
+    movz    x9, #0x0006
+    str     x9, [sp, #16]
+.L866:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0003
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L867
+    movz    x9, #0x0007
+    str     x9, [sp, #16]
+.L867:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0004
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L868
+    movz    x9, #0x0008
+    str     x9, [sp, #16]
+.L868:
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0005
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L869
+    movz    x9, #0x0009
+    str     x9, [sp, #16]
+.L869:
+.L865:
     mov     x9, #0
     str     x9, [sp, #24]
     ldr     x9, [sp, #8]
@@ -24546,10 +28711,10 @@ _cgb_i_cmp:
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L712
+    cbz     w11, .L870
     movz    x9, #0x0001
     str     x9, [sp, #24]
-.L712:
+.L870:
     mov     x9, #0
     str     x9, [sp, #32]
     mov     x9, #0
@@ -24558,7 +28723,7 @@ _cgb_i_cmp:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L713
+    cbz     w11, .L871
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -24583,8 +28748,8 @@ _cgb_i_cmp:
     bl      _cgb_src_x
     mov     x12, x0
     str     x12, [sp, #40]
-    b       .L714
-.L713:
+    b       .L872
+.L871:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -24609,7 +28774,7 @@ _cgb_i_cmp:
     bl      _cgb_src_w
     mov     x12, x0
     str     x12, [sp, #40]
-.L714:
+.L872:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24624,7 +28789,7 @@ _cgb_i_cmp:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L715
+    cbz     w11, .L873
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #40]
     mov     x0, x9
@@ -24633,9 +28798,9 @@ _cgb_i_cmp:
     mov     x11, x0
     mov     x0, x11
     bl      _cb_word
-    str     x0, [sp, #480]
-    b       .L716
-.L715:
+    str     x0, [sp, #656]
+    b       .L874
+.L873:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #40]
     mov     x0, x9
@@ -24647,21 +28812,21 @@ _cgb_i_cmp:
     mov     x9, x0
     mov     x0, x9
     bl      _cb_word
-    str     x0, [sp, #520]
-.L716:
+    str     x0, [sp, #696]
+.L874:
     ldr     x16, [sp, #48]
-    str     x16, [sp, #528]
+    str     x16, [sp, #704]
     ldr     x9, [sp, #16]
     mov     x0, x9
     bl      _cgb_invcond
     mov     x10, x0
-    ldr     x0, [sp, #528]
+    ldr     x0, [sp, #704]
     mov     x1, x10
     bl      _enc_cset
     mov     x9, x0
     mov     x0, x9
     bl      _cb_word
-    str     x0, [sp, #560]
+    str     x0, [sp, #736]
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24672,9 +28837,9 @@ _cgb_i_cmp:
     mov     x1, x10
     mov     x2, x11
     bl      _cgb_spill
-    str     x0, [sp, #616]
-.L1152:
-    add     sp, sp, #624
+    str     x0, [sp, #792]
+.L1340:
+    add     sp, sp, #800
     ldp     x29, x30, [sp], #16
     ret
 
@@ -24713,7 +28878,7 @@ _cgb_i_syscall:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L717
+    cbz     w11, .L875
     movz    x9, #0x0010
     ldr     x10, [sp, #40]
     movz    x11, #0x0009
@@ -24722,8 +28887,8 @@ _cgb_i_syscall:
     mov     x1, x12
     bl      _b_mov_x
     str     x0, [sp, #280]
-    b       .L718
-.L717:
+    b       .L876
+.L875:
     movz    x9, #0x0010
     ldr     x10, [sp, #32]
     movz    x11, #0x0008
@@ -24732,10 +28897,10 @@ _cgb_i_syscall:
     mov     x1, x12
     bl      _b_ldr_x
     str     x0, [sp, #320]
-.L718:
+.L876:
     movz    x9, #0x0001
     str     x9, [sp, #48]
-.L719:
+.L877:
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #8]
     movz    x11, #0x0068
@@ -24743,7 +28908,7 @@ _cgb_i_syscall:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L720
+    cbz     w11, .L878
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #48]
@@ -24763,8 +28928,8 @@ _cgb_i_syscall:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #48]
-    b       .L719
-.L720:
+    b       .L877
+.L878:
     movz    x9, #0x0080
     mov     x0, x9
     bl      _enc_svc
@@ -24786,7 +28951,7 @@ _cgb_i_syscall:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L721
+    cbz     w11, .L879
     ldr     x9, [sp, #56]
     movz    x10, #0x0009
     add     x11, x9, x10
@@ -24795,8 +28960,8 @@ _cgb_i_syscall:
     mov     x1, x9
     bl      _b_mov_x
     str     x0, [sp, #648]
-    b       .L1153
-.L721:
+    b       .L1341
+.L879:
     mov     x9, #0
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24808,7 +28973,7 @@ _cgb_i_syscall:
     mov     x1, x12
     bl      _b_str_x
     str     x0, [sp, #712]
-.L1153:
+.L1341:
     add     sp, sp, #720
     ldp     x29, x30, [sp], #16
     ret
@@ -24821,8 +28986,8 @@ _cgb_i_call:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str154@PAGE
-    add     x9, x9, L_str154@PAGEOFF
+    adrp    x9, L_str194@PAGE
+    add     x9, x9, L_str194@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x0007
     str     x9, [sp, #32]
@@ -24845,15 +29010,15 @@ _cgb_i_call:
     movz    x9, #0x0001
     cmp     w13, w9
     cset    w10, eq
-    cbz     w10, .L722
+    cbz     w10, .L880
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_syscall
     str     x0, [sp, #216]
-    b       .L1154
-.L722:
+    b       .L1342
+.L880:
     ldr     x9, [sp, #8]
     movz    x10, #0x0060
     add     x11, x9, x10
@@ -24861,7 +29026,7 @@ _cgb_i_call:
     str     x9, [sp, #40]
     mov     x9, #0
     str     x9, [sp, #48]
-.L723:
+.L881:
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #8]
     movz    x11, #0x0068
@@ -24869,7 +29034,7 @@ _cgb_i_call:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L724
+    cbz     w11, .L882
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #40]
     ldr     x11, [sp, #48]
@@ -24887,8 +29052,8 @@ _cgb_i_call:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #48]
-    b       .L723
-.L724:
+    b       .L881
+.L882:
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #8]
     movz    x11, #0x0050
@@ -24939,7 +29104,7 @@ _cgb_i_call:
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L725
+    cbz     w11, .L883
     ldr     x9, [sp, #72]
     movz    x10, #0x0009
     add     x11, x9, x10
@@ -24948,8 +29113,8 @@ _cgb_i_call:
     mov     x1, x9
     bl      _b_mov_x
     str     x0, [sp, #704]
-    b       .L1154
-.L725:
+    b       .L1342
+.L883:
     mov     x9, #0
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -24961,7 +29126,7 @@ _cgb_i_call:
     mov     x1, x12
     bl      _b_str_x
     str     x0, [sp, #768]
-.L1154:
+.L1342:
     add     sp, sp, #784
     ldp     x29, x30, [sp], #16
     ret
@@ -24990,7 +29155,7 @@ _cgb_i_label_addr:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L726
+    cbz     w11, .L884
     bl      _cgb_prog_get
     mov     x9, x0
     ldr     x10, [sp, #8]
@@ -25056,8 +29221,8 @@ _cgb_i_label_addr:
     mov     x2, x11
     bl      _cgb_spill
     str     x0, [sp, #392]
-    b       .L1155
-.L726:
+    b       .L1343
+.L884:
     bl      _cb_pos
     mov     x9, x0
     movz    x10, #0x0003
@@ -25113,7 +29278,7 @@ _cgb_i_label_addr:
     mov     x2, x11
     bl      _cgb_spill
     str     x0, [sp, #632]
-.L1155:
+.L1343:
     add     sp, sp, #640
     ldp     x29, x30, [sp], #16
     ret
@@ -25133,7 +29298,7 @@ _cgb_i_ret:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L727
+    cbz     w11, .L885
     mov     x9, #0
     str     x9, [sp, #24]
     ldr     x9, [sp, #0]
@@ -25145,19 +29310,19 @@ _cgb_i_ret:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L728
+    cbz     w11, .L886
     ldr     x9, [sp, #32]
     mov     x0, x9
     bl      _type_width
     mov     x10, x0
     movz    x9, #0x0008
-    cmp     w10, w9
+    cmp     x10, x9
     cset    w11, eq
-    cbz     w11, .L729
+    cbz     w11, .L887
     movz    x9, #0x0001
     str     x9, [sp, #24]
-.L729:
-.L728:
+.L887:
+.L886:
     ldr     x9, [sp, #0]
     movz    x10, #0x0048
     add     x11, x9, x10
@@ -25177,12 +29342,12 @@ _cgb_i_ret:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L730
+    cbz     w11, .L888
     ldr     x9, [sp, #48]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L731
+    cbz     w11, .L889
     mov     x9, #0
     ldr     x10, [sp, #48]
     movz    x11, #0x0009
@@ -25191,8 +29356,8 @@ _cgb_i_ret:
     mov     x1, x12
     bl      _b_mov_x
     str     x0, [sp, #392]
-    b       .L732
-.L731:
+    b       .L890
+.L889:
     mov     x9, #0
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -25204,14 +29369,14 @@ _cgb_i_ret:
     mov     x1, x12
     bl      _b_ldr_x
     str     x0, [sp, #456]
-.L732:
-    b       .L733
-.L730:
+.L890:
+    b       .L891
+.L888:
     ldr     x9, [sp, #48]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L734
+    cbz     w11, .L892
     mov     x9, #0
     ldr     x10, [sp, #48]
     movz    x11, #0x0009
@@ -25220,8 +29385,8 @@ _cgb_i_ret:
     mov     x1, x12
     bl      _b_mov_w
     str     x0, [sp, #520]
-    b       .L735
-.L734:
+    b       .L893
+.L892:
     mov     x9, #0
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -25233,9 +29398,9 @@ _cgb_i_ret:
     mov     x1, x12
     bl      _b_ldr_w
     str     x0, [sp, #584]
-.L735:
-.L733:
-.L727:
+.L893:
+.L891:
+.L885:
     bl      _cb_pos
     mov     x9, x0
     mov     x10, #0
@@ -25252,7 +29417,7 @@ _cgb_i_ret:
     mov     x0, x10
     bl      _cb_word
     str     x0, [sp, #640]
-.L1156:
+.L1344:
     add     sp, sp, #656
     ldp     x29, x30, [sp], #16
     ret
@@ -25282,7 +29447,7 @@ _cgb_i_jmp:
     mov     x0, x10
     bl      _cb_word
     str     x0, [sp, #80]
-.L1157:
+.L1345:
     add     sp, sp, #96
     ldp     x29, x30, [sp], #16
     ret
@@ -25291,9 +29456,56 @@ _cgb_i_jmp:
 _cgb_i_jz:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #176
+    sub     sp, sp, #480
     str     x0, [sp, #0]
     str     x1, [sp, #8]
+    mov     x9, #0
+    str     x9, [sp, #16]
+    ldr     x9, [sp, #0]
+    movz    x10, #0x0030
+    add     x11, x9, x10
+    ldr     x9, [x11]
+    str     x9, [sp, #24]
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0008
+    mul     x12, x10, x11
+    add     x10, x9, x12
+    ldr     x9, [x10]
+    mov     x0, x9
+    bl      _type_width
+    mov     x10, x0
+    movz    x9, #0x0008
+    cmp     x10, x9
+    cset    w11, eq
+    cbz     w11, .L894
+    movz    x9, #0x0001
+    str     x9, [sp, #16]
+.L894:
+    mov     x9, #0
+    str     x9, [sp, #32]
+    ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L895
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    movz    x11, #0x0010
+    add     x12, x10, x11
+    ldr     x10, [x12]
+    movz    x11, #0x0010
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cgb_src_x
+    mov     x12, x0
+    str     x12, [sp, #32]
+    b       .L896
+.L895:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0010
@@ -25305,7 +29517,8 @@ _cgb_i_jz:
     mov     x2, x11
     bl      _cgb_src_w
     mov     x12, x0
-    str     x12, [sp, #16]
+    str     x12, [sp, #32]
+.L896:
     bl      _cb_pos
     mov     x9, x0
     movz    x10, #0x0001
@@ -25317,8 +29530,24 @@ _cgb_i_jz:
     mov     x1, x10
     mov     x2, x11
     bl      _fix_add
-    str     x0, [sp, #128]
+    str     x0, [sp, #376]
     ldr     x9, [sp, #16]
+    movz    x10, #0x0001
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L897
+    ldr     x9, [sp, #32]
+    mov     x10, #0
+    mov     x0, x9
+    mov     x1, x10
+    bl      _enc_cbz_x
+    mov     x11, x0
+    mov     x0, x11
+    bl      _cb_word
+    str     x0, [sp, #432]
+    b       .L898
+.L897:
+    ldr     x9, [sp, #32]
     mov     x10, #0
     mov     x0, x9
     mov     x1, x10
@@ -25326,9 +29555,10 @@ _cgb_i_jz:
     mov     x11, x0
     mov     x0, x11
     bl      _cb_word
-    str     x0, [sp, #160]
-.L1158:
-    add     sp, sp, #176
+    str     x0, [sp, #464]
+.L898:
+.L1346:
+    add     sp, sp, #480
     ldp     x29, x30, [sp], #16
     ret
 
@@ -25336,7 +29566,7 @@ _cgb_i_jz:
 _cgb_instr:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1072
+    sub     sp, sp, #1120
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
@@ -25350,111 +29580,111 @@ _cgb_instr:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L736
+    cbz     w11, .L899
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_movi
     str     x0, [sp, #112]
-    b       .L1159
-.L736:
+    b       .L1347
+.L899:
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L737
+    cbz     w11, .L900
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_label_addr
     str     x0, [sp, #160]
-    b       .L1159
-.L737:
+    b       .L1347
+.L900:
     ldr     x9, [sp, #32]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L738
+    cbz     w11, .L901
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_addr_local
     str     x0, [sp, #208]
-    b       .L1159
-.L738:
+    b       .L1347
+.L901:
     ldr     x9, [sp, #32]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L739
+    cbz     w11, .L902
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_load_local
     str     x0, [sp, #256]
-    b       .L1159
-.L739:
+    b       .L1347
+.L902:
     ldr     x9, [sp, #32]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L740
+    cbz     w11, .L903
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_store_local
     str     x0, [sp, #304]
-    b       .L1159
-.L740:
+    b       .L1347
+.L903:
     ldr     x9, [sp, #32]
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L741
+    cbz     w11, .L904
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_load_mem
     str     x0, [sp, #352]
-    b       .L1159
-.L741:
+    b       .L1347
+.L904:
     ldr     x9, [sp, #32]
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L742
+    cbz     w11, .L905
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_store_mem
     str     x0, [sp, #400]
-    b       .L1159
-.L742:
+    b       .L1347
+.L905:
     ldr     x9, [sp, #32]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L743
+    cbz     w11, .L906
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_binop
     str     x0, [sp, #448]
-    b       .L1159
-.L743:
+    b       .L1347
+.L906:
     ldr     x9, [sp, #32]
     movz    x10, #0x0008
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L744
+    cbz     w11, .L907
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x11, #0
@@ -25463,13 +29693,13 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_cmp
     str     x0, [sp, #504]
-    b       .L1159
-.L744:
+    b       .L1347
+.L907:
     ldr     x9, [sp, #32]
     movz    x10, #0x0009
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L745
+    cbz     w11, .L908
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0001
@@ -25478,13 +29708,13 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_cmp
     str     x0, [sp, #560]
-    b       .L1159
-.L745:
+    b       .L1347
+.L908:
     ldr     x9, [sp, #32]
     movz    x10, #0x000a
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L746
+    cbz     w11, .L909
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0002
@@ -25493,13 +29723,13 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_cmp
     str     x0, [sp, #616]
-    b       .L1159
-.L746:
+    b       .L1347
+.L909:
     ldr     x9, [sp, #32]
     movz    x10, #0x000b
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L747
+    cbz     w11, .L910
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0003
@@ -25508,13 +29738,13 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_cmp
     str     x0, [sp, #672]
-    b       .L1159
-.L747:
+    b       .L1347
+.L910:
     ldr     x9, [sp, #32]
     movz    x10, #0x000c
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L748
+    cbz     w11, .L911
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0004
@@ -25523,13 +29753,13 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_cmp
     str     x0, [sp, #728]
-    b       .L1159
-.L748:
+    b       .L1347
+.L911:
     ldr     x9, [sp, #32]
     movz    x10, #0x000d
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L749
+    cbz     w11, .L912
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     movz    x11, #0x0005
@@ -25538,13 +29768,13 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_cmp
     str     x0, [sp, #784]
-    b       .L1159
-.L749:
+    b       .L1347
+.L912:
     ldr     x9, [sp, #32]
     movz    x10, #0x000e
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L750
+    cbz     w11, .L913
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
@@ -25553,13 +29783,13 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_call
     str     x0, [sp, #840]
-    b       .L1159
-.L750:
+    b       .L1347
+.L913:
     ldr     x9, [sp, #32]
     movz    x10, #0x000f
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L751
+    cbz     w11, .L914
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #16]
@@ -25568,37 +29798,37 @@ _cgb_instr:
     mov     x2, x11
     bl      _cgb_i_ret
     str     x0, [sp, #896]
-    b       .L1159
-.L751:
+    b       .L1347
+.L914:
     ldr     x9, [sp, #32]
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L752
+    cbz     w11, .L915
     ldr     x9, [sp, #8]
     mov     x0, x9
     bl      _cgb_i_jmp
     str     x0, [sp, #936]
-    b       .L1159
-.L752:
+    b       .L1347
+.L915:
     ldr     x9, [sp, #32]
     movz    x10, #0x0011
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L753
+    cbz     w11, .L916
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_i_jz
     str     x0, [sp, #984]
-    b       .L1159
-.L753:
+    b       .L1347
+.L916:
     ldr     x9, [sp, #32]
     movz    x10, #0x0012
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L754
+    cbz     w11, .L917
     ldr     x9, [sp, #8]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -25610,10 +29840,23 @@ _cgb_instr:
     mov     x1, x9
     bl      _lbl_set
     str     x0, [sp, #1056]
-    b       .L1159
-.L754:
-.L1159:
-    add     sp, sp, #1072
+    b       .L1347
+.L917:
+    ldr     x9, [sp, #32]
+    movz    x10, #0x0013
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L918
+    ldr     x9, [sp, #0]
+    ldr     x10, [sp, #8]
+    mov     x0, x9
+    mov     x1, x10
+    bl      _cgb_i_cast
+    str     x0, [sp, #1104]
+    b       .L1347
+.L918:
+.L1347:
+    add     sp, sp, #1120
     ldp     x29, x30, [sp], #16
     ret
 
@@ -25654,7 +29897,7 @@ _cgb_prologue:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L755
+    cbz     w11, .L919
     ldr     x9, [sp, #0]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -25662,7 +29905,7 @@ _cgb_prologue:
     movz    x10, #0x0fff
     cmp     x9, x10
     cset    w11, ls
-    cbz     w11, .L756
+    cbz     w11, .L920
     movz    x9, #0x001f
     movz    x10, #0x001f
     ldr     x11, [sp, #0]
@@ -25677,8 +29920,8 @@ _cgb_prologue:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #248]
-    b       .L757
-.L756:
+    b       .L921
+.L920:
     movz    x9, #0x0010
     ldr     x10, [sp, #0]
     movz    x11, #0x0038
@@ -25695,9 +29938,9 @@ _cgb_prologue:
     mov     x0, x10
     bl      _cb_word
     str     x0, [sp, #320]
-.L757:
-.L755:
-.L1160:
+.L921:
+.L919:
+.L1348:
     add     sp, sp, #336
     ldp     x29, x30, [sp], #16
     ret
@@ -25724,7 +29967,7 @@ _cgb_epilogue:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, hi
-    cbz     w11, .L758
+    cbz     w11, .L922
     ldr     x9, [sp, #0]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -25732,7 +29975,7 @@ _cgb_epilogue:
     movz    x10, #0x0fff
     cmp     x9, x10
     cset    w11, ls
-    cbz     w11, .L759
+    cbz     w11, .L923
     movz    x9, #0x001f
     movz    x10, #0x001f
     ldr     x11, [sp, #0]
@@ -25747,8 +29990,8 @@ _cgb_epilogue:
     mov     x0, x12
     bl      _cb_word
     str     x0, [sp, #192]
-    b       .L760
-.L759:
+    b       .L924
+.L923:
     movz    x9, #0x0010
     ldr     x10, [sp, #0]
     movz    x11, #0x0038
@@ -25765,8 +30008,8 @@ _cgb_epilogue:
     mov     x0, x10
     bl      _cb_word
     str     x0, [sp, #264]
-.L760:
-.L758:
+.L924:
+.L922:
     movz    x9, #0x001d
     movz    x10, #0x001e
     movz    x11, #0x001f
@@ -25785,7 +30028,7 @@ _cgb_epilogue:
     mov     x0, x9
     bl      _cb_word
     str     x0, [sp, #328]
-.L1161:
+.L1349:
     add     sp, sp, #336
     ldp     x29, x30, [sp], #16
     ret
@@ -25808,7 +30051,7 @@ _cgb_param_spill:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L761
+    cbz     w11, .L925
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -25820,7 +30063,7 @@ _cgb_param_spill:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L762
+    cbz     w11, .L926
     ldr     x9, [sp, #32]
     mov     x0, x9
     bl      _type_width
@@ -25830,25 +30073,25 @@ _cgb_param_spill:
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L763
+    cbz     w11, .L927
     movz    x9, #0x0001
     str     x9, [sp, #16]
-.L763:
+.L927:
     ldr     x9, [sp, #40]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L764
+    cbz     w11, .L928
     movz    x9, #0x0004
     str     x9, [sp, #16]
-.L764:
-.L762:
-.L761:
+.L928:
+.L926:
+.L925:
     ldr     x9, [sp, #16]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L765
+    cbz     w11, .L929
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -25857,13 +30100,13 @@ _cgb_param_spill:
     mov     x1, x12
     bl      _b_strb
     str     x0, [sp, #320]
-    b       .L1162
-.L765:
+    b       .L1350
+.L929:
     ldr     x9, [sp, #16]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L766
+    cbz     w11, .L930
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -25872,8 +30115,8 @@ _cgb_param_spill:
     mov     x1, x12
     bl      _b_str_w
     str     x0, [sp, #384]
-    b       .L1162
-.L766:
+    b       .L1350
+.L930:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #8]
     movz    x11, #0x0008
@@ -25882,7 +30125,7 @@ _cgb_param_spill:
     mov     x1, x12
     bl      _b_str_x
     str     x0, [sp, #424]
-.L1162:
+.L1350:
     add     sp, sp, #432
     ldp     x29, x30, [sp], #16
     ret
@@ -25901,7 +30144,7 @@ _cgb_fn:
     str     x0, [sp, #48]
     mov     x9, #0
     str     x9, [sp, #24]
-.L767:
+.L931:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #0]
     movz    x11, #0x0010
@@ -25909,7 +30152,7 @@ _cgb_fn:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L768
+    cbz     w11, .L932
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     mov     x0, x9
@@ -25920,19 +30163,19 @@ _cgb_fn:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L767
-.L768:
+    b       .L931
+.L932:
     ldr     x9, [sp, #0]
     movz    x10, #0x0058
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #32]
-.L769:
+.L933:
     ldr     x9, [sp, #32]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L770
+    cbz     w11, .L934
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #32]
     ldr     x11, [sp, #8]
@@ -25944,19 +30187,19 @@ _cgb_fn:
     bl      _cgb_instr
     str     x0, [sp, #248]
     ldr     x9, [sp, #32]
-    movz    x10, #0x0070
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #32]
-    b       .L769
-.L770:
+    b       .L933
+.L934:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     mov     x0, x9
     mov     x1, x10
     bl      _cgb_epilogue
     str     x0, [sp, #304]
-.L1163:
+.L1351:
     add     sp, sp, #320
     ldp     x29, x30, [sp], #16
     ret
@@ -25983,12 +30226,12 @@ _find_fn_index:
     str     x9, [sp, #40]
     ldr     x9, [sp, #0]
     str     x9, [sp, #48]
-.L771:
+.L935:
     ldr     x9, [sp, #48]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L772
+    cbz     w11, .L936
     ldr     x9, [sp, #48]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -25996,7 +30239,7 @@ _find_fn_index:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L773
+    cbz     w11, .L937
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -26016,12 +30259,12 @@ _find_fn_index:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L774
+    cbz     w10, .L938
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L1164
-.L774:
-.L773:
+    b       .L1352
+.L938:
+.L937:
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
     add     x11, x9, x10
@@ -26031,12 +30274,12 @@ _find_fn_index:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #48]
-    b       .L771
-.L772:
+    b       .L935
+.L936:
     mov     x9, #0
     mov     x0, x9
-    b       .L1164
-.L1164:
+    b       .L1352
+.L1352:
     add     sp, sp, #384
     ldp     x29, x30, [sp], #16
     ret
@@ -26055,12 +30298,14 @@ _cb_patch_or:
     ldr     x10, [sp, #0]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #0]
     movz    x12, #0x0001
     add     x13, x11, x12
     add     x11, x10, x13
     ldrb    w10, [x11]
+    uxtb    w10, w10
     movz    x11, #0x0008
     lsl     w12, w10, w11
     orr     w10, w9, w12
@@ -26070,6 +30315,7 @@ _cb_patch_or:
     add     x13, x11, x12
     add     x11, x9, x13
     ldrb    w9, [x11]
+    uxtb    w9, w9
     movz    x11, #0x0010
     lsl     w12, w9, w11
     orr     w9, w10, w12
@@ -26079,6 +30325,7 @@ _cb_patch_or:
     add     x13, x11, x12
     add     x11, x10, x13
     ldrb    w10, [x11]
+    uxtb    w10, w10
     movz    x11, #0x0018
     lsl     w12, w10, w11
     orr     w10, w9, w12
@@ -26129,7 +30376,7 @@ _cb_patch_or:
     movz    x9, #0x00ff
     and     x11, x12, x9
     strb    w11, [x10]
-.L1165:
+.L1353:
     add     sp, sp, #624
     ldp     x29, x30, [sp], #16
     ret
@@ -26154,12 +30401,12 @@ _cgb_resolve_branches:
     str     x9, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L775:
+.L939:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L776
+    cbz     w11, .L940
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #24]
     movz    x11, #0x0003
@@ -26197,7 +30444,7 @@ _cgb_resolve_branches:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L777
+    cbz     w11, .L941
     ldr     x9, [sp, #48]
     mov     x0, x9
     bl      _lbl_get
@@ -26216,12 +30463,12 @@ _cgb_resolve_branches:
     mov     x1, x12
     bl      _cb_patch_or
     str     x0, [sp, #520]
-.L777:
+.L941:
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L778
+    cbz     w11, .L942
     ldr     x9, [sp, #48]
     mov     x0, x9
     bl      _lbl_get
@@ -26242,12 +30489,12 @@ _cgb_resolve_branches:
     mov     x1, x11
     bl      _cb_patch_or
     str     x0, [sp, #648]
-.L778:
+.L942:
     ldr     x9, [sp, #40]
     movz    x10, #0x0002
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L779
+    cbz     w11, .L943
     ldr     x9, [sp, #48]
     mov     x0, x9
     bl      _fnoff_get
@@ -26266,14 +30513,14 @@ _cgb_resolve_branches:
     mov     x1, x12
     bl      _cb_patch_or
     str     x0, [sp, #760]
-.L779:
+.L943:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L775
-.L776:
-.L1166:
+    b       .L939
+.L940:
+.L1354:
     add     sp, sp, #800
     ldp     x29, x30, [sp], #16
     ret
@@ -26288,23 +30535,23 @@ _cgb_max_label:
     str     x9, [sp, #8]
     ldr     x9, [sp, #0]
     str     x9, [sp, #16]
-.L780:
+.L944:
     ldr     x9, [sp, #16]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L781
+    cbz     w11, .L945
     ldr     x9, [sp, #16]
     movz    x10, #0x0058
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L782:
+.L946:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L783
+    cbz     w11, .L947
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -26312,7 +30559,7 @@ _cgb_max_label:
     movz    x10, #0x0012
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L784
+    cbz     w11, .L948
     ldr     x9, [sp, #24]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -26320,7 +30567,7 @@ _cgb_max_label:
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L785
+    cbz     w11, .L949
     ldr     x9, [sp, #24]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -26328,8 +30575,8 @@ _cgb_max_label:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #8]
-.L785:
-.L784:
+.L949:
+.L948:
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -26337,7 +30584,7 @@ _cgb_max_label:
     movz    x10, #0x0010
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L786
+    cbz     w11, .L950
     ldr     x9, [sp, #24]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -26345,7 +30592,7 @@ _cgb_max_label:
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L787
+    cbz     w11, .L951
     ldr     x9, [sp, #24]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -26353,8 +30600,8 @@ _cgb_max_label:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #8]
-.L787:
-.L786:
+.L951:
+.L950:
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -26362,7 +30609,7 @@ _cgb_max_label:
     movz    x10, #0x0011
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L788
+    cbz     w11, .L952
     ldr     x9, [sp, #24]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -26370,7 +30617,7 @@ _cgb_max_label:
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, hs
-    cbz     w11, .L789
+    cbz     w11, .L953
     ldr     x9, [sp, #24]
     movz    x10, #0x0038
     add     x11, x9, x10
@@ -26378,26 +30625,26 @@ _cgb_max_label:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #8]
-.L789:
-.L788:
+.L953:
+.L952:
     ldr     x9, [sp, #24]
-    movz    x10, #0x0070
+    movz    x10, #0x0078
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L782
-.L783:
+    b       .L946
+.L947:
     ldr     x9, [sp, #16]
     movz    x10, #0x0068
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #16]
-    b       .L780
-.L781:
+    b       .L944
+.L945:
     ldr     x9, [sp, #8]
     mov     x0, x9
-    b       .L1167
-.L1167:
+    b       .L1355
+.L1355:
     add     sp, sp, #640
     ldp     x29, x30, [sp], #16
     ret
@@ -26419,7 +30666,7 @@ _cgb_stroff_set:
     add     x10, x9, x12
     ldr     x9, [sp, #8]
     str     x9, [x10]
-.L1168:
+.L1356:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -26440,8 +30687,8 @@ _cgb_stroff_get:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1169
-.L1169:
+    b       .L1357
+.L1357:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -26493,8 +30740,8 @@ _codegen_bytes:
     mov     x9, x0
     ldr     x17, [sp, #248]
     str     x9, [x17]
-    adrp    x9, L_str155@PAGE
-    add     x9, x9, L_str155@PAGEOFF
+    adrp    x9, L_str195@PAGE
+    add     x9, x9, L_str195@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0004
     str     x9, [sp, #48]
@@ -26547,12 +30794,12 @@ _codegen_bytes:
     str     x9, [sp, #72]
     ldr     x9, [sp, #8]
     str     x9, [sp, #80]
-.L790:
+.L954:
     ldr     x9, [sp, #80]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L791
+    cbz     w11, .L955
     ldr     x16, [sp, #72]
     str     x16, [sp, #480]
     bl      _cb_pos
@@ -26582,11 +30829,11 @@ _codegen_bytes:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #80]
-    b       .L790
-.L791:
+    b       .L954
+.L955:
     bl      _cgb_resolve_branches
     str     x0, [sp, #616]
-.L1170:
+.L1358:
     add     sp, sp, #624
     ldp     x29, x30, [sp], #16
     ret
@@ -26605,8 +30852,8 @@ _mo_align8:
     movz    x9, #0x0008
     mul     x11, x10, x9
     mov     x0, x11
-    b       .L1171
-.L1171:
+    b       .L1359
+.L1359:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -26625,12 +30872,14 @@ _img_or:
     ldr     x10, [sp, #0]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     ldr     x10, [sp, #16]
     ldr     x11, [sp, #0]
     movz    x12, #0x0001
     add     x13, x11, x12
     add     x11, x10, x13
     ldrb    w10, [x11]
+    uxtb    w10, w10
     movz    x11, #0x0008
     lsl     w12, w10, w11
     orr     w10, w9, w12
@@ -26640,6 +30889,7 @@ _img_or:
     add     x13, x11, x12
     add     x11, x9, x13
     ldrb    w9, [x11]
+    uxtb    w9, w9
     movz    x11, #0x0010
     lsl     w12, w9, w11
     orr     w9, w10, w12
@@ -26649,6 +30899,7 @@ _img_or:
     add     x13, x11, x12
     add     x11, x10, x13
     ldrb    w10, [x11]
+    uxtb    w10, w10
     movz    x11, #0x0018
     lsl     w12, w10, w11
     orr     w10, w9, w12
@@ -26699,7 +30950,7 @@ _img_or:
     movz    x9, #0x00ff
     and     x11, x12, x9
     strb    w11, [x10]
-.L1172:
+.L1360:
     add     sp, sp, #624
     ldp     x29, x30, [sp], #16
     ret
@@ -26720,12 +30971,12 @@ _mo_string_layout:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L792:
+.L956:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L793
+    cbz     w11, .L957
     ldr     x9, [sp, #16]
     mov     x0, x9
     bl      _mo_align8
@@ -26754,14 +31005,14 @@ _mo_string_layout:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L792
-.L793:
+    b       .L956
+.L957:
     ldr     x9, [sp, #16]
     movz    x10, #0x0228
     sub     x11, x9, x10
     mov     x0, x11
-    b       .L1173
-.L1173:
+    b       .L1361
+.L1361:
     add     sp, sp, #304
     ldp     x29, x30, [sp], #16
     ret
@@ -26786,12 +31037,12 @@ _mo_resolve_strings:
     str     x9, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L794:
+.L958:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L795
+    cbz     w11, .L959
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #24]
     movz    x11, #0x0003
@@ -26829,7 +31080,7 @@ _mo_resolve_strings:
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L796
+    cbz     w11, .L960
     movz    x9, #0x0228
     ldr     x10, [sp, #32]
     add     x11, x9, x10
@@ -26873,12 +31124,12 @@ _mo_resolve_strings:
     mov     x1, x10
     bl      _img_or
     str     x0, [sp, #712]
-.L796:
+.L960:
     ldr     x9, [sp, #40]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L797
+    cbz     w11, .L961
     movz    x9, #0x0228
     ldr     x10, [sp, #32]
     add     x11, x9, x10
@@ -26898,14 +31149,14 @@ _mo_resolve_strings:
     mov     x1, x11
     bl      _img_or
     str     x0, [sp, #832]
-.L797:
+.L961:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L794
-.L795:
-.L1174:
+    b       .L958
+.L959:
+.L1362:
     add     sp, sp, #864
     ldp     x29, x30, [sp], #16
     ret
@@ -26935,12 +31186,12 @@ _emit_macho_code:
     movz    x9, #0x4000
     cmp     x11, x9
     cset    w10, hi
-    cbz     w10, .L798
+    cbz     w10, .L962
     movz    x9, #0x0048
     mov     x0, x9
     bl      _io_exit
     str     x0, [sp, #176]
-.L798:
+.L962:
     adrp    x9, _CB@PAGE
     add     x9, x9, _CB@PAGEOFF
     ldr     x10, [sp, #16]
@@ -26965,17 +31216,18 @@ _emit_macho_code:
     str     x9, [sp, #48]
     mov     x9, #0
     str     x9, [sp, #56]
-.L799:
+.L963:
     ldr     x9, [sp, #56]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L800
+    cbz     w11, .L964
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #48]
     ldr     x11, [sp, #56]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -26984,19 +31236,19 @@ _emit_macho_code:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #56]
-    b       .L799
-.L800:
+    b       .L963
+.L964:
     ldr     x9, [sp, #8]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #64]
-.L801:
+.L965:
     ldr     x9, [sp, #64]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L802
+    cbz     w11, .L966
     ldr     x9, [sp, #64]
     mov     x10, #0
     add     x11, x9, x10
@@ -27005,24 +31257,24 @@ _emit_macho_code:
     bl      _cgb_stroff_get
     mov     x10, x0
     str     x10, [sp, #72]
-.L803:
+.L967:
     bl      _mc_get
     mov     x9, x0
     ldr     x10, [sp, #72]
-    cmp     w9, w10
+    cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L804
+    cbz     w11, .L968
     ldr     x9, [sp, #32]
     mov     x10, #0
     mov     x0, x9
     mov     x1, x10
     bl      _e8
     str     x0, [sp, #504]
-    b       .L803
-.L804:
+    b       .L967
+.L968:
     mov     x9, #0
     str     x9, [sp, #80]
-.L805:
+.L969:
     ldr     x9, [sp, #80]
     ldr     x10, [sp, #64]
     movz    x11, #0x0010
@@ -27030,7 +31282,7 @@ _emit_macho_code:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L806
+    cbz     w11, .L970
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #64]
     movz    x11, #0x0008
@@ -27039,6 +31291,7 @@ _emit_macho_code:
     ldr     x11, [sp, #80]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -27047,8 +31300,8 @@ _emit_macho_code:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #80]
-    b       .L805
-.L806:
+    b       .L969
+.L970:
     ldr     x9, [sp, #32]
     mov     x10, #0
     mov     x0, x9
@@ -27060,8 +31313,8 @@ _emit_macho_code:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #64]
-    b       .L801
-.L802:
+    b       .L965
+.L966:
     bl      _mo_resolve_strings
     str     x0, [sp, #720]
     bl      _mc_get
@@ -27081,7 +31334,7 @@ _emit_macho_code:
     mov     x1, x10
     bl      _mo_sign_and_write
     str     x0, [sp, #792]
-.L1175:
+.L1363:
     add     sp, sp, #800
     ldp     x29, x30, [sp], #16
     ret
@@ -27101,12 +31354,12 @@ _fn_index_by_name:
     str     x9, [sp, #32]
     ldr     x9, [sp, #0]
     str     x9, [sp, #40]
-.L807:
+.L971:
     ldr     x9, [sp, #40]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L808
+    cbz     w11, .L972
     ldr     x9, [sp, #40]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -27114,7 +31367,7 @@ _fn_index_by_name:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L809
+    cbz     w11, .L973
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -27134,12 +31387,12 @@ _fn_index_by_name:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L810
+    cbz     w10, .L974
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L1176
-.L810:
-.L809:
+    b       .L1364
+.L974:
+.L973:
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     add     x11, x9, x10
@@ -27149,12 +31402,12 @@ _fn_index_by_name:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #40]
-    b       .L807
-.L808:
+    b       .L971
+.L972:
     mov     x9, #0
     mov     x0, x9
-    b       .L1176
-.L1176:
+    b       .L1364
+.L1364:
     add     sp, sp, #336
     ldp     x29, x30, [sp], #16
     ret
@@ -27175,7 +31428,7 @@ _cgb_prog_set:
     add     x10, x9, x12
     ldr     x9, [sp, #0]
     str     x9, [x10]
-.L1177:
+.L1365:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -27195,8 +31448,8 @@ _cgb_prog_get:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1178
-.L1178:
+    b       .L1366
+.L1366:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -27218,7 +31471,7 @@ _cgb_bss_off_set:
     add     x10, x9, x12
     ldr     x9, [sp, #8]
     str     x9, [x10]
-.L1179:
+.L1367:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -27239,8 +31492,8 @@ _cgb_bss_off_get:
     add     x10, x9, x12
     ldr     x9, [x10]
     mov     x0, x9
-    b       .L1180
-.L1180:
+    b       .L1368
+.L1368:
     add     sp, sp, #80
     ldp     x29, x30, [sp], #16
     ret
@@ -27260,12 +31513,12 @@ _cgb_bss_layout:
     str     x9, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L811:
+.L975:
     ldr     x9, [sp, #8]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L812
+    cbz     w11, .L976
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #24]
     mov     x0, x9
@@ -27294,17 +31547,17 @@ _cgb_bss_layout:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #8]
-    b       .L811
-.L812:
+    b       .L975
+.L976:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L813
+    cbz     w11, .L977
     mov     x9, #0
     mov     x0, x9
-    b       .L1181
-.L813:
+    b       .L1369
+.L977:
     ldr     x9, [sp, #24]
     movz    x10, #0x3fff
     add     x11, x9, x10
@@ -27313,8 +31566,8 @@ _cgb_bss_layout:
     movz    x9, #0x4000
     mul     x11, x10, x9
     mov     x0, x11
-    b       .L1181
-.L1181:
+    b       .L1369
+.L1369:
     add     sp, sp, #368
     ldp     x29, x30, [sp], #16
     ret
@@ -27337,12 +31590,12 @@ _cgb_bss_index_by_name:
     str     x9, [sp, #32]
     mov     x9, #0
     str     x9, [sp, #40]
-.L814:
+.L978:
     ldr     x9, [sp, #32]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L815
+    cbz     w11, .L979
     ldr     x9, [sp, #32]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -27350,7 +31603,7 @@ _cgb_bss_index_by_name:
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L816
+    cbz     w11, .L980
     ldr     x9, [sp, #24]
     mov     x10, #0
     add     x11, x9, x10
@@ -27375,12 +31628,12 @@ _cgb_bss_index_by_name:
     movz    x9, #0x0001
     cmp     w10, w9
     cset    w11, eq
-    cbz     w11, .L817
+    cbz     w11, .L981
     ldr     x9, [sp, #40]
     mov     x0, x9
-    b       .L1182
-.L817:
-.L816:
+    b       .L1370
+.L981:
+.L980:
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
     add     x11, x9, x10
@@ -27390,12 +31643,12 @@ _cgb_bss_index_by_name:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #32]
-    b       .L814
-.L815:
+    b       .L978
+.L979:
     mov     x9, #0
     mov     x0, x9
-    b       .L1182
-.L1182:
+    b       .L1370
+.L1370:
     add     sp, sp, #400
     ldp     x29, x30, [sp], #16
     ret
@@ -27416,12 +31669,12 @@ _mo_string_layout_bss:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-.L818:
+.L982:
     ldr     x9, [sp, #24]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L819
+    cbz     w11, .L983
     ldr     x9, [sp, #16]
     mov     x0, x9
     bl      _mo_align8
@@ -27450,14 +31703,14 @@ _mo_string_layout_bss:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #24]
-    b       .L818
-.L819:
+    b       .L982
+.L983:
     ldr     x9, [sp, #16]
     movz    x10, #0x02c0
     sub     x11, x9, x10
     mov     x0, x11
-    b       .L1183
-.L1183:
+    b       .L1371
+.L1371:
     add     sp, sp, #304
     ldp     x29, x30, [sp], #16
     ret
@@ -27487,12 +31740,12 @@ _mo_resolve_strings_bss:
     str     x9, [sp, #32]
     mov     x9, #0
     str     x9, [sp, #40]
-.L820:
+.L984:
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #32]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L821
+    cbz     w11, .L985
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #40]
     movz    x11, #0x0003
@@ -27530,7 +31783,7 @@ _mo_resolve_strings_bss:
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L822
+    cbz     w11, .L986
     movz    x9, #0x02c0
     ldr     x10, [sp, #48]
     add     x11, x9, x10
@@ -27574,12 +31827,12 @@ _mo_resolve_strings_bss:
     mov     x1, x10
     bl      _img_or
     str     x0, [sp, #816]
-.L822:
+.L986:
     ldr     x9, [sp, #56]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L823
+    cbz     w11, .L987
     movz    x9, #0x02c0
     ldr     x10, [sp, #48]
     add     x11, x9, x10
@@ -27599,12 +31852,12 @@ _mo_resolve_strings_bss:
     mov     x1, x11
     bl      _img_or
     str     x0, [sp, #936]
-.L823:
+.L987:
     ldr     x9, [sp, #56]
     movz    x10, #0x0005
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L824
+    cbz     w11, .L988
     movz    x9, #0x02c0
     ldr     x10, [sp, #48]
     add     x11, x9, x10
@@ -27654,12 +31907,12 @@ _mo_resolve_strings_bss:
     mov     x1, x10
     bl      _img_or
     str     x0, [sp, #1232]
-.L824:
+.L988:
     ldr     x9, [sp, #56]
     movz    x10, #0x0006
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L825
+    cbz     w11, .L989
     movz    x9, #0x02c0
     ldr     x10, [sp, #48]
     add     x11, x9, x10
@@ -27683,14 +31936,14 @@ _mo_resolve_strings_bss:
     mov     x1, x11
     bl      _img_or
     str     x0, [sp, #1368]
-.L825:
+.L989:
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #40]
-    b       .L820
-.L821:
-.L1184:
+    b       .L984
+.L985:
+.L1372:
     add     sp, sp, #1408
     ldp     x29, x30, [sp], #16
     ret
@@ -27729,10 +31982,10 @@ _emit_macho_code_bss:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L826
+    cbz     w11, .L990
     movz    x9, #0x4000
     str     x9, [sp, #64]
-.L826:
+.L990:
     adrp    x9, _CB@PAGE
     add     x9, x9, _CB@PAGEOFF
     ldr     x10, [sp, #16]
@@ -27761,17 +32014,18 @@ _emit_macho_code_bss:
     str     x9, [sp, #72]
     mov     x9, #0
     str     x9, [sp, #80]
-.L827:
+.L991:
     ldr     x9, [sp, #80]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L828
+    cbz     w11, .L992
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #72]
     ldr     x11, [sp, #80]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -27780,19 +32034,19 @@ _emit_macho_code_bss:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #80]
-    b       .L827
-.L828:
+    b       .L991
+.L992:
     ldr     x9, [sp, #8]
     movz    x10, #0x0020
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #88]
-.L829:
+.L993:
     ldr     x9, [sp, #88]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, ne
-    cbz     w11, .L830
+    cbz     w11, .L994
     ldr     x9, [sp, #88]
     mov     x10, #0
     add     x11, x9, x10
@@ -27801,24 +32055,24 @@ _emit_macho_code_bss:
     bl      _cgb_stroff_get
     mov     x10, x0
     str     x10, [sp, #96]
-.L831:
+.L995:
     bl      _mc_get
     mov     x9, x0
     ldr     x10, [sp, #96]
-    cmp     w9, w10
+    cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L832
+    cbz     w11, .L996
     ldr     x9, [sp, #40]
     mov     x10, #0
     mov     x0, x9
     mov     x1, x10
     bl      _e8
     str     x0, [sp, #592]
-    b       .L831
-.L832:
+    b       .L995
+.L996:
     mov     x9, #0
     str     x9, [sp, #104]
-.L833:
+.L997:
     ldr     x9, [sp, #104]
     ldr     x10, [sp, #88]
     movz    x11, #0x0010
@@ -27826,7 +32080,7 @@ _emit_macho_code_bss:
     ldr     x10, [x12]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L834
+    cbz     w11, .L998
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #88]
     movz    x11, #0x0008
@@ -27835,6 +32089,7 @@ _emit_macho_code_bss:
     ldr     x11, [sp, #104]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _e8
@@ -27843,8 +32098,8 @@ _emit_macho_code_bss:
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #104]
-    b       .L833
-.L834:
+    b       .L997
+.L998:
     ldr     x9, [sp, #40]
     mov     x10, #0
     mov     x0, x9
@@ -27856,8 +32111,8 @@ _emit_macho_code_bss:
     add     x11, x9, x10
     ldr     x9, [x11]
     str     x9, [sp, #88]
-    b       .L829
-.L830:
+    b       .L993
+.L994:
     ldr     x9, [sp, #56]
     mov     x0, x9
     bl      _mo_resolve_strings_bss
@@ -27885,7 +32140,7 @@ _emit_macho_code_bss:
     mov     x2, x11
     bl      _mo_sign_and_write_n
     str     x0, [sp, #920]
-.L1185:
+.L1373:
     add     sp, sp, #928
     ldp     x29, x30, [sp], #16
     ret
@@ -27909,8 +32164,8 @@ _pp_arena_init:
     str     x0, [sp, #40]
     ldr     x9, [sp, #0]
     mov     x0, x9
-    b       .L1186
-.L1186:
+    b       .L1374
+.L1374:
     add     sp, sp, #64
     ldp     x29, x30, [sp], #16
     ret
@@ -27922,8 +32177,8 @@ _pp_file_cap:
     sub     sp, sp, #16
     movz    x9, #0x0010, lsl #16
     mov     x0, x9
-    b       .L1187
-.L1187:
+    b       .L1375
+.L1375:
     add     sp, sp, #16
     ldp     x29, x30, [sp], #16
     ret
@@ -27935,8 +32190,8 @@ _pp_out_cap:
     sub     sp, sp, #16
     movz    x9, #0x0010, lsl #16
     mov     x0, x9
-    b       .L1188
-.L1188:
+    b       .L1376
+.L1376:
     add     sp, sp, #16
     ldp     x29, x30, [sp], #16
     ret
@@ -27966,12 +32221,12 @@ _pp_seen:
     str     x9, [sp, #40]
     mov     x9, #0
     str     x9, [sp, #48]
-.L835:
+.L999:
     ldr     x9, [sp, #48]
     ldr     x10, [sp, #24]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L836
+    cbz     w11, .L1000
     ldr     x9, [sp, #40]
     ldr     x10, [sp, #48]
     movz    x11, #0x0008
@@ -27981,7 +32236,7 @@ _pp_seen:
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L837
+    cbz     w11, .L1001
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #48]
     movz    x11, #0x0008
@@ -27998,22 +32253,22 @@ _pp_seen:
     movz    x9, #0x0001
     cmp     w12, w9
     cset    w10, eq
-    cbz     w10, .L838
+    cbz     w10, .L1002
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L1189
-.L838:
-.L837:
+    b       .L1377
+.L1002:
+.L1001:
     ldr     x9, [sp, #48]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #48]
-    b       .L835
-.L836:
+    b       .L999
+.L1000:
     mov     x9, #0
     mov     x0, x9
-    b       .L1189
-.L1189:
+    b       .L1377
+.L1377:
     add     sp, sp, #352
     ldp     x29, x30, [sp], #16
     ret
@@ -28039,9 +32294,9 @@ _pp_mark:
     movz    x10, #0x0020
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L839
-    adrp    x9, L_str156@PAGE
-    add     x9, x9, L_str156@PAGEOFF
+    cbz     w11, .L1003
+    adrp    x9, L_str196@PAGE
+    add     x9, x9, L_str196@PAGEOFF
     str     x9, [sp, #32]
     movz    x9, #0x001a
     str     x9, [sp, #40]
@@ -28053,7 +32308,7 @@ _pp_mark:
     mov     x2, x11
     bl      _die_line
     str     x0, [sp, #184]
-.L839:
+.L1003:
     adrp    x9, _PP_SEEN_PTRS@PAGE
     add     x9, x9, _PP_SEEN_PTRS@PAGEOFF
     str     x9, [sp, #48]
@@ -28083,7 +32338,7 @@ _pp_mark:
     movz    x11, #0x0001
     add     x12, x9, x11
     str     x12, [x10]
-.L1190:
+.L1378:
     add     sp, sp, #368
     ldp     x29, x30, [sp], #16
     ret
@@ -28092,7 +32347,7 @@ _pp_mark:
 _pp_out_append:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #416
+    sub     sp, sp, #512
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     adrp    x9, _PP_OUT_LEN@PAGE
@@ -28105,57 +32360,77 @@ _pp_out_append:
     add     x10, x9, x12
     ldr     x9, [x10]
     str     x9, [sp, #24]
-    ldr     x9, [sp, #24]
-    ldr     x10, [sp, #8]
-    add     x16, x9, x10
-    str     x16, [sp, #136]
     bl      _pp_out_cap
     mov     x9, x0
-    ldr     x16, [sp, #136]
-    cmp     x16, x9
-    cset    w10, hi
-    cbz     w10, .L840
-    adrp    x9, L_str157@PAGE
-    add     x9, x9, L_str157@PAGEOFF
     str     x9, [sp, #32]
-    movz    x9, #0x002a
+    ldr     x9, [sp, #24]
+    ldr     x10, [sp, #32]
+    cmp     x9, x10
+    cset    w11, hi
+    cbz     w11, .L1004
+    adrp    x9, L_str197@PAGE
+    add     x9, x9, L_str197@PAGEOFF
     str     x9, [sp, #40]
-    ldr     x9, [sp, #32]
-    ldr     x10, [sp, #40]
+    movz    x9, #0x002a
+    str     x9, [sp, #48]
+    ldr     x9, [sp, #40]
+    ldr     x10, [sp, #48]
     mov     x11, #0
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _die_line
-    str     x0, [sp, #200]
-.L840:
+    str     x0, [sp, #216]
+.L1004:
+    ldr     x9, [sp, #8]
+    ldr     x10, [sp, #32]
+    ldr     x11, [sp, #24]
+    sub     x12, x10, x11
+    cmp     x9, x12
+    cset    w10, hi
+    cbz     w10, .L1005
+    adrp    x9, L_str198@PAGE
+    add     x9, x9, L_str198@PAGEOFF
+    str     x9, [sp, #56]
+    movz    x9, #0x002a
+    str     x9, [sp, #64]
+    ldr     x9, [sp, #56]
+    ldr     x10, [sp, #64]
+    mov     x11, #0
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _die_line
+    str     x0, [sp, #304]
+.L1005:
     adrp    x9, _PP_OUT@PAGE
     add     x9, x9, _PP_OUT@PAGEOFF
-    str     x9, [sp, #48]
+    str     x9, [sp, #72]
     mov     x9, #0
-    str     x9, [sp, #56]
-.L841:
-    ldr     x9, [sp, #56]
+    str     x9, [sp, #80]
+.L1006:
+    ldr     x9, [sp, #80]
     ldr     x10, [sp, #8]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L842
-    ldr     x9, [sp, #48]
+    cbz     w11, .L1007
+    ldr     x9, [sp, #72]
     ldr     x10, [sp, #24]
-    ldr     x11, [sp, #56]
+    ldr     x11, [sp, #80]
     add     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [sp, #0]
-    ldr     x11, [sp, #56]
+    ldr     x11, [sp, #80]
     add     x12, x9, x11
     ldrb    w9, [x12]
+    uxtb    w9, w9
     strb    w9, [x10]
-    ldr     x9, [sp, #56]
+    ldr     x9, [sp, #80]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #56]
-    b       .L841
-.L842:
+    str     x11, [sp, #80]
+    b       .L1006
+.L1007:
     ldr     x9, [sp, #16]
     mov     x10, #0
     movz    x11, #0x0008
@@ -28165,8 +32440,8 @@ _pp_out_append:
     ldr     x11, [sp, #8]
     add     x12, x9, x11
     str     x12, [x10]
-.L1191:
-    add     sp, sp, #416
+.L1379:
+    add     sp, sp, #512
     ldp     x29, x30, [sp], #16
     ret
 
@@ -28178,8 +32453,8 @@ _is_import_line:
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     str     x2, [sp, #16]
-    adrp    x9, L_str158@PAGE
-    add     x9, x9, L_str158@PAGEOFF
+    adrp    x9, L_str199@PAGE
+    add     x9, x9, L_str199@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x0007
     str     x9, [sp, #32]
@@ -28189,46 +32464,48 @@ _is_import_line:
     ldr     x9, [sp, #16]
     cmp     x11, x9
     cset    w10, hi
-    cbz     w10, .L843
+    cbz     w10, .L1008
     mov     x9, #0
     mov     x0, x9
-    b       .L1192
-.L843:
+    b       .L1380
+.L1008:
     mov     x9, #0
     str     x9, [sp, #40]
-.L844:
+.L1009:
     ldr     x9, [sp, #40]
     movz    x10, #0x0007
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L845
+    cbz     w11, .L1010
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #40]
     add     x12, x10, x11
     add     x10, x9, x12
     ldrb    w9, [x10]
+    uxtb    w9, w9
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #40]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L846
+    cbz     w11, .L1011
     mov     x9, #0
     mov     x0, x9
-    b       .L1192
-.L846:
+    b       .L1380
+.L1011:
     ldr     x9, [sp, #40]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #40]
-    b       .L844
-.L845:
+    b       .L1009
+.L1010:
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L1192
-.L1192:
+    b       .L1380
+.L1380:
     add     sp, sp, #272
     ldp     x29, x30, [sp], #16
     ret
@@ -28248,11 +32525,11 @@ _pp_expand:
     bl      _pp_seen
     mov     x11, x0
     movz    x9, #0x0001
-    cmp     w11, w9
+    cmp     x11, x9
     cset    w10, eq
-    cbz     w10, .L847
-    b       .L1193
-.L847:
+    cbz     w10, .L1012
+    b       .L1381
+.L1012:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     movz    x11, #0x0001
@@ -28264,12 +32541,12 @@ _pp_expand:
     str     x10, [sp, #24]
     mov     x9, #0
     str     x9, [sp, #32]
-.L848:
+.L1013:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L849
+    cbz     w11, .L1014
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #32]
     add     x11, x9, x10
@@ -28277,13 +32554,14 @@ _pp_expand:
     ldr     x10, [sp, #32]
     add     x12, x9, x10
     ldrb    w9, [x12]
+    uxtb    w9, w9
     strb    w9, [x11]
     ldr     x9, [sp, #32]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L848
-.L849:
+    b       .L1013
+.L1014:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     add     x11, x9, x10
@@ -28319,12 +32597,12 @@ _pp_expand:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L850
-    b       .L1193
-.L850:
+    cbz     w11, .L1015
+    b       .L1381
+.L1015:
     mov     x9, #0
     str     x9, [sp, #72]
-.L851:
+.L1016:
     ldr     x9, [sp, #64]
     ldr     x10, [sp, #56]
     ldr     x11, [sp, #72]
@@ -28342,15 +32620,15 @@ _pp_expand:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L853
-    b       .L852
-.L853:
+    cbz     w11, .L1018
+    b       .L1017
+.L1018:
     ldr     x9, [sp, #72]
     ldr     x10, [sp, #80]
     add     x11, x9, x10
     str     x11, [sp, #72]
-    b       .L851
-.L852:
+    b       .L1016
+.L1017:
     ldr     x9, [sp, #64]
     mov     x0, x9
     bl      _io_close
@@ -28359,9 +32637,9 @@ _pp_expand:
     ldr     x10, [sp, #40]
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L854
-    adrp    x9, L_str159@PAGE
-    add     x9, x9, L_str159@PAGEOFF
+    cbz     w11, .L1019
+    adrp    x9, L_str200@PAGE
+    add     x9, x9, L_str200@PAGEOFF
     str     x9, [sp, #88]
     movz    x9, #0x002e
     str     x9, [sp, #96]
@@ -28373,7 +32651,7 @@ _pp_expand:
     mov     x2, x11
     bl      _die_line
     str     x0, [sp, #736]
-.L854:
+.L1019:
     ldr     x9, [sp, #0]
     movz    x10, #0x0008
     add     x11, x9, x10
@@ -28391,36 +32669,37 @@ _pp_expand:
     str     x9, [sp, #104]
     mov     x9, #0
     str     x9, [sp, #112]
-.L855:
+.L1020:
     ldr     x9, [sp, #112]
     ldr     x10, [sp, #72]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L856
+    cbz     w11, .L1021
     ldr     x9, [sp, #112]
     str     x9, [sp, #120]
-.L857:
+.L1022:
     ldr     x9, [sp, #112]
     ldr     x10, [sp, #72]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L858
+    cbz     w11, .L1023
     ldr     x9, [sp, #104]
     ldr     x10, [sp, #112]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     movz    x10, #0x000a
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L859
-    b       .L858
-.L859:
+    cbz     w11, .L1024
+    b       .L1023
+.L1024:
     ldr     x9, [sp, #112]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #112]
-    b       .L857
-.L858:
+    b       .L1022
+.L1023:
     ldr     x9, [sp, #112]
     str     x9, [sp, #128]
     ldr     x9, [sp, #104]
@@ -28432,71 +32711,73 @@ _pp_expand:
     bl      _is_import_line
     mov     x12, x0
     movz    x9, #0x0001
-    cmp     w12, w9
+    cmp     x12, x9
     cset    w10, eq
-    cbz     w10, .L860
+    cbz     w10, .L1025
     ldr     x9, [sp, #120]
     movz    x10, #0x0007
     add     x11, x9, x10
     str     x11, [sp, #136]
-.L861:
+.L1026:
     ldr     x9, [sp, #136]
     ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L862
+    cbz     w11, .L1027
     ldr     x9, [sp, #104]
     ldr     x10, [sp, #136]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     movz    x10, #0x0027
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L863
-    b       .L862
-.L863:
+    cbz     w11, .L1028
+    b       .L1027
+.L1028:
     ldr     x9, [sp, #136]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #136]
-    b       .L861
-.L862:
+    b       .L1026
+.L1027:
     ldr     x9, [sp, #136]
     ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L864
+    cbz     w11, .L1029
     ldr     x9, [sp, #136]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #144]
-.L865:
+.L1030:
     ldr     x9, [sp, #144]
     ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L866
+    cbz     w11, .L1031
     ldr     x9, [sp, #104]
     ldr     x10, [sp, #144]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     movz    x10, #0x0027
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L867
-    b       .L866
-.L867:
+    cbz     w11, .L1032
+    b       .L1031
+.L1032:
     ldr     x9, [sp, #144]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #144]
-    b       .L865
-.L866:
+    b       .L1030
+.L1031:
     ldr     x9, [sp, #144]
     ldr     x10, [sp, #128]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L868
+    cbz     w11, .L1033
     ldr     x9, [sp, #144]
     ldr     x10, [sp, #136]
     sub     x11, x9, x10
@@ -28514,12 +32795,12 @@ _pp_expand:
     str     x10, [sp, #160]
     mov     x9, #0
     str     x9, [sp, #168]
-.L869:
+.L1034:
     ldr     x9, [sp, #168]
     ldr     x10, [sp, #152]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L870
+    cbz     w11, .L1035
     ldr     x9, [sp, #160]
     ldr     x10, [sp, #168]
     add     x11, x9, x10
@@ -28531,13 +32812,14 @@ _pp_expand:
     add     x12, x13, x10
     add     x10, x9, x12
     ldrb    w9, [x10]
+    uxtb    w9, w9
     strb    w9, [x11]
     ldr     x9, [sp, #168]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #168]
-    b       .L869
-.L870:
+    b       .L1034
+.L1035:
     ldr     x9, [sp, #160]
     ldr     x10, [sp, #152]
     add     x11, x9, x10
@@ -28551,10 +32833,10 @@ _pp_expand:
     mov     x2, x11
     bl      _pp_expand
     str     x0, [sp, #1608]
-.L868:
-.L864:
-    b       .L871
-.L860:
+.L1033:
+.L1029:
+    b       .L1036
+.L1025:
     ldr     x9, [sp, #104]
     ldr     x10, [sp, #120]
     add     x11, x9, x10
@@ -28573,28 +32855,28 @@ _pp_expand:
     ldr     x10, [sp, #72]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L872
+    cbz     w11, .L1037
     ldr     x9, [sp, #176]
     movz    x10, #0x0001
     mov     x0, x9
     mov     x1, x10
     bl      _pp_out_append
     str     x0, [sp, #1736]
-.L872:
-.L871:
+.L1037:
+.L1036:
     ldr     x9, [sp, #112]
     ldr     x10, [sp, #72]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L873
+    cbz     w11, .L1038
     ldr     x9, [sp, #112]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #112]
-.L873:
-    b       .L855
-.L856:
-.L1193:
+.L1038:
+    b       .L1020
+.L1021:
+.L1381:
     add     sp, sp, #1792
     ldp     x29, x30, [sp], #16
     ret
@@ -28621,15 +32903,15 @@ _dump_tokens:
     adrp    x9, _DUMP_TOK_STORE@PAGE
     add     x9, x9, _DUMP_TOK_STORE@PAGEOFF
     str     x9, [sp, #32]
-.L874:
+.L1039:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #32]
     mov     x0, x9
     mov     x1, x10
     bl      _lex_next
     str     x0, [sp, #168]
-    adrp    x9, L_str160@PAGE
-    add     x9, x9, L_str160@PAGEOFF
+    adrp    x9, L_str201@PAGE
+    add     x9, x9, L_str201@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0005
     str     x9, [sp, #48]
@@ -28646,12 +32928,13 @@ _dump_tokens:
     mov     x11, #0
     add     x12, x10, x11
     ldr     w10, [x12]
+    mov     w10, w10
     mov     x0, x9
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #264]
-    adrp    x9, L_str161@PAGE
-    add     x9, x9, L_str161@PAGEOFF
+    adrp    x9, L_str202@PAGE
+    add     x9, x9, L_str202@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x0007
     str     x9, [sp, #64]
@@ -28672,8 +32955,8 @@ _dump_tokens:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #360]
-    adrp    x9, L_str162@PAGE
-    add     x9, x9, L_str162@PAGEOFF
+    adrp    x9, L_str203@PAGE
+    add     x9, x9, L_str203@PAGEOFF
     str     x9, [sp, #72]
     movz    x9, #0x0005
     str     x9, [sp, #80]
@@ -28694,8 +32977,8 @@ _dump_tokens:
     mov     x1, x10
     bl      _out_u64
     str     x0, [sp, #456]
-    adrp    x9, L_str163@PAGE
-    add     x9, x9, L_str163@PAGEOFF
+    adrp    x9, L_str204@PAGE
+    add     x9, x9, L_str204@PAGEOFF
     str     x9, [sp, #88]
     movz    x9, #0x0006
     str     x9, [sp, #96]
@@ -28726,15 +33009,16 @@ _dump_tokens:
     mov     x10, #0
     add     x11, x9, x10
     ldr     w9, [x11]
+    mov     w9, w9
     mov     x10, #0
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L876
-    b       .L875
-.L876:
-    b       .L874
-.L875:
-.L1194:
+    cbz     w11, .L1041
+    b       .L1040
+.L1041:
+    b       .L1039
+.L1040:
+.L1382:
     add     sp, sp, #640
     ldp     x29, x30, [sp], #16
     ret
@@ -28756,14 +33040,14 @@ _read_all:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L877
+    cbz     w11, .L1042
     mov     x9, #0
     mov     x0, x9
-    b       .L1195
-.L877:
+    b       .L1383
+.L1042:
     mov     x9, #0
     str     x9, [sp, #32]
-.L878:
+.L1043:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #32]
@@ -28781,23 +33065,23 @@ _read_all:
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L880
-    b       .L879
-.L880:
+    cbz     w11, .L1045
+    b       .L1044
+.L1045:
     ldr     x9, [sp, #32]
     ldr     x10, [sp, #40]
     add     x11, x9, x10
     str     x11, [sp, #32]
-    b       .L878
-.L879:
+    b       .L1043
+.L1044:
     ldr     x9, [sp, #24]
     mov     x0, x9
     bl      _io_close
     str     x0, [sp, #224]
     ldr     x9, [sp, #32]
     mov     x0, x9
-    b       .L1195
-.L1195:
+    b       .L1383
+.L1383:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -28812,37 +33096,39 @@ _bytes_eq_lit:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L881:
+.L1046:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L882
+    cbz     w11, .L1047
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L883
+    cbz     w11, .L1048
     mov     x9, #0
     mov     x0, x9
-    b       .L1196
-.L883:
+    b       .L1384
+.L1048:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L881
-.L882:
+    b       .L1046
+.L1047:
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L1196
-.L1196:
+    b       .L1384
+.L1384:
     add     sp, sp, #176
     ldp     x29, x30, [sp], #16
     ret
@@ -28857,49 +33143,52 @@ _cstr_eq:
     str     x2, [sp, #16]
     mov     x9, #0
     str     x9, [sp, #24]
-.L884:
+.L1049:
     ldr     x9, [sp, #24]
     ldr     x10, [sp, #16]
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L885
+    cbz     w11, .L1050
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #24]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     ldr     x10, [sp, #8]
     ldr     x11, [sp, #24]
     add     x12, x10, x11
     ldrb    w10, [x12]
+    uxtb    w10, w10
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L886
+    cbz     w11, .L1051
     mov     x9, #0
     mov     x0, x9
-    b       .L1197
-.L886:
+    b       .L1385
+.L1051:
     ldr     x9, [sp, #24]
     movz    x10, #0x0001
     add     x11, x9, x10
     str     x11, [sp, #24]
-    b       .L884
-.L885:
+    b       .L1049
+.L1050:
     ldr     x9, [sp, #0]
     ldr     x10, [sp, #16]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     mov     x10, #0
     cmp     w9, w10
     cset    w11, ne
-    cbz     w11, .L887
+    cbz     w11, .L1052
     mov     x9, #0
     mov     x0, x9
-    b       .L1197
-.L887:
+    b       .L1385
+.L1052:
     movz    x9, #0x0001
     mov     x0, x9
-    b       .L1197
-.L1197:
+    b       .L1385
+.L1385:
     add     sp, sp, #240
     ldp     x29, x30, [sp], #16
     ret
@@ -28908,18 +33197,18 @@ _cstr_eq:
 _main:
     stp     x29, x30, [sp, #-16]!
     mov     x29, sp
-    sub     sp, sp, #1856
+    sub     sp, sp, #2048
     str     x0, [sp, #0]
     str     x1, [sp, #8]
     ldr     x9, [sp, #0]
     movz    x10, #0x0003
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L888
+    cbz     w11, .L1053
     movz    x9, #0x0002
     mov     w0, w9
-    b       .L1198
-.L888:
+    b       .L1386
+.L1053:
     ldr     x9, [sp, #8]
     movz    x10, #0x0001
     movz    x11, #0x0008
@@ -28927,21 +33216,31 @@ _main:
     add     x10, x9, x12
     ldr     x9, [x10]
     str     x9, [sp, #16]
-    adrp    x9, L_str164@PAGE
-    add     x9, x9, L_str164@PAGEOFF
+    adrp    x9, L_str205@PAGE
+    add     x9, x9, L_str205@PAGEOFF
     str     x9, [sp, #24]
     movz    x9, #0x000d
     str     x9, [sp, #32]
-    adrp    x9, L_str165@PAGE
-    add     x9, x9, L_str165@PAGEOFF
+    adrp    x9, L_str206@PAGE
+    add     x9, x9, L_str206@PAGEOFF
     str     x9, [sp, #40]
     movz    x9, #0x0009
     str     x9, [sp, #48]
-    adrp    x9, L_str166@PAGE
-    add     x9, x9, L_str166@PAGEOFF
+    adrp    x9, L_str207@PAGE
+    add     x9, x9, L_str207@PAGEOFF
     str     x9, [sp, #56]
     movz    x9, #0x000c
     str     x9, [sp, #64]
+    adrp    x9, L_str208@PAGE
+    add     x9, x9, L_str208@PAGEOFF
+    str     x9, [sp, #72]
+    movz    x9, #0x000a
+    str     x9, [sp, #80]
+    adrp    x9, L_str209@PAGE
+    add     x9, x9, L_str209@PAGEOFF
+    str     x9, [sp, #88]
+    movz    x9, #0x000e
+    str     x9, [sp, #96]
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #24]
     ldr     x11, [sp, #32]
@@ -28950,7 +33249,7 @@ _main:
     mov     x2, x11
     bl      _cstr_eq
     mov     x12, x0
-    str     x12, [sp, #72]
+    str     x12, [sp, #104]
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #40]
     ldr     x11, [sp, #48]
@@ -28959,7 +33258,7 @@ _main:
     mov     x2, x11
     bl      _cstr_eq
     mov     x12, x0
-    str     x12, [sp, #80]
+    str     x12, [sp, #112]
     ldr     x9, [sp, #16]
     ldr     x10, [sp, #56]
     ldr     x11, [sp, #64]
@@ -28968,20 +33267,38 @@ _main:
     mov     x2, x11
     bl      _cstr_eq
     mov     x12, x0
-    str     x12, [sp, #88]
-    ldr     x9, [sp, #72]
+    str     x12, [sp, #120]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #72]
+    ldr     x11, [sp, #80]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cstr_eq
+    mov     x12, x0
+    str     x12, [sp, #128]
+    ldr     x9, [sp, #16]
+    ldr     x10, [sp, #88]
+    ldr     x11, [sp, #96]
+    mov     x0, x9
+    mov     x1, x10
+    mov     x2, x11
+    bl      _cstr_eq
+    mov     x12, x0
+    str     x12, [sp, #136]
+    ldr     x9, [sp, #104]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L889
+    cbz     w11, .L1054
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [x10]
-    str     x9, [sp, #96]
-    ldr     x9, [sp, #96]
+    str     x9, [sp, #144]
+    ldr     x9, [sp, #144]
     adrp    x10, _SRC_BUF@PAGE
     add     x10, x10, _SRC_BUF@PAGEOFF
     movz    x11, #0x0004, lsl #16
@@ -28990,20 +33307,20 @@ _main:
     mov     x2, x11
     bl      _read_all
     mov     x12, x0
-    str     x12, [sp, #104]
-    ldr     x9, [sp, #104]
+    str     x12, [sp, #152]
+    ldr     x9, [sp, #152]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L890
+    cbz     w11, .L1055
     movz    x9, #0x0003
     mov     w0, w9
-    b       .L1198
-.L890:
+    b       .L1386
+.L1055:
     adrp    x9, _OUT_STORAGE@PAGE
     add     x9, x9, _OUT_STORAGE@PAGEOFF
-    str     x9, [sp, #112]
-    ldr     x9, [sp, #112]
+    str     x9, [sp, #160]
+    ldr     x9, [sp, #160]
     movz    x10, #0x0001
     adrp    x11, _OUT_BUF@PAGE
     add     x11, x11, _OUT_BUF@PAGEOFF
@@ -29013,37 +33330,37 @@ _main:
     mov     x2, x11
     mov     x3, x12
     bl      _out_init
-    str     x0, [sp, #704]
-    ldr     x9, [sp, #112]
+    str     x0, [sp, #856]
+    ldr     x9, [sp, #160]
     adrp    x10, _SRC_BUF@PAGE
     add     x10, x10, _SRC_BUF@PAGEOFF
-    ldr     x11, [sp, #104]
+    ldr     x11, [sp, #152]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _dump_tokens
-    str     x0, [sp, #736]
-    ldr     x9, [sp, #112]
+    str     x0, [sp, #888]
+    ldr     x9, [sp, #160]
     mov     x0, x9
     bl      _out_flush
-    str     x0, [sp, #752]
+    str     x0, [sp, #904]
     mov     x9, #0
     mov     w0, w9
-    b       .L1198
-.L889:
-    ldr     x9, [sp, #80]
+    b       .L1386
+.L1054:
+    ldr     x9, [sp, #112]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L891
+    cbz     w11, .L1056
     ldr     x9, [sp, #8]
     movz    x10, #0x0002
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [x10]
-    str     x9, [sp, #120]
-    ldr     x9, [sp, #120]
+    str     x9, [sp, #168]
+    ldr     x9, [sp, #168]
     adrp    x10, _SRC_BUF@PAGE
     add     x10, x10, _SRC_BUF@PAGEOFF
     movz    x11, #0x0004, lsl #16
@@ -29052,43 +33369,43 @@ _main:
     mov     x2, x11
     bl      _read_all
     mov     x12, x0
-    str     x12, [sp, #128]
-    ldr     x9, [sp, #128]
+    str     x12, [sp, #176]
+    ldr     x9, [sp, #176]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L892
+    cbz     w11, .L1057
     movz    x9, #0x0003
     mov     w0, w9
-    b       .L1198
-.L892:
+    b       .L1386
+.L1057:
     bl      _ast_init
     mov     x9, x0
-    str     x9, [sp, #136]
+    str     x9, [sp, #184]
     bl      _ir_init
     mov     x9, x0
-    str     x9, [sp, #144]
-    ldr     x9, [sp, #136]
+    str     x9, [sp, #192]
+    ldr     x9, [sp, #184]
     adrp    x10, _SRC_BUF@PAGE
     add     x10, x10, _SRC_BUF@PAGEOFF
-    ldr     x11, [sp, #128]
+    ldr     x11, [sp, #176]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _parse
     mov     x12, x0
-    str     x12, [sp, #152]
-    ldr     x9, [sp, #144]
-    ldr     x10, [sp, #152]
+    str     x12, [sp, #200]
+    ldr     x9, [sp, #192]
+    ldr     x10, [sp, #200]
     mov     x0, x9
     mov     x1, x10
     bl      _lower
     mov     x11, x0
-    str     x11, [sp, #160]
+    str     x11, [sp, #208]
     adrp    x9, _OUT_STORAGE@PAGE
     add     x9, x9, _OUT_STORAGE@PAGEOFF
-    str     x9, [sp, #168]
-    ldr     x9, [sp, #168]
+    str     x9, [sp, #216]
+    ldr     x9, [sp, #216]
     movz    x10, #0x0001
     adrp    x11, _OUT_BUF@PAGE
     add     x11, x11, _OUT_BUF@PAGEOFF
@@ -29098,30 +33415,30 @@ _main:
     mov     x2, x11
     mov     x3, x12
     bl      _out_init
-    str     x0, [sp, #1016]
-    ldr     x9, [sp, #168]
-    ldr     x10, [sp, #160]
+    str     x0, [sp, #1168]
+    ldr     x9, [sp, #216]
+    ldr     x10, [sp, #208]
     mov     x0, x9
     mov     x1, x10
     bl      _dump_ir
-    str     x0, [sp, #1040]
-    ldr     x9, [sp, #168]
+    str     x0, [sp, #1192]
+    ldr     x9, [sp, #216]
     mov     x0, x9
     bl      _out_flush
-    str     x0, [sp, #1056]
+    str     x0, [sp, #1208]
     mov     x9, #0
     mov     w0, w9
-    b       .L1198
-.L891:
+    b       .L1386
+.L1056:
     ldr     x9, [sp, #0]
     movz    x10, #0x0004
     cmp     x9, x10
     cset    w11, lo
-    cbz     w11, .L893
+    cbz     w11, .L1058
     movz    x9, #0x0002
     mov     w0, w9
-    b       .L1198
-.L893:
+    b       .L1386
+.L1058:
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #0]
     movz    x11, #0x0003
@@ -29130,7 +33447,7 @@ _main:
     mul     x11, x12, x10
     add     x10, x9, x11
     ldr     x9, [x10]
-    str     x9, [sp, #176]
+    str     x9, [sp, #224]
     ldr     x9, [sp, #8]
     ldr     x10, [sp, #0]
     movz    x11, #0x0001
@@ -29139,141 +33456,142 @@ _main:
     mul     x11, x12, x10
     add     x10, x9, x11
     ldr     x9, [x10]
-    str     x9, [sp, #184]
+    str     x9, [sp, #232]
     bl      _pp_arena_init
     mov     x9, x0
-    str     x9, [sp, #192]
+    str     x9, [sp, #240]
     mov     x9, #0
-    str     x9, [sp, #200]
-.L894:
-    ldr     x9, [sp, #176]
-    ldr     x10, [sp, #200]
+    str     x9, [sp, #248]
+.L1059:
+    ldr     x9, [sp, #224]
+    ldr     x10, [sp, #248]
     add     x11, x9, x10
     ldrb    w9, [x11]
+    uxtb    w9, w9
     mov     x10, #0
     cmp     w9, w10
     cset    w11, eq
-    cbz     w11, .L896
-    b       .L895
-.L896:
-    ldr     x9, [sp, #200]
+    cbz     w11, .L1061
+    b       .L1060
+.L1061:
+    ldr     x9, [sp, #248]
     movz    x10, #0x0001
     add     x11, x9, x10
-    str     x11, [sp, #200]
-    b       .L894
-.L895:
-    ldr     x9, [sp, #192]
-    ldr     x10, [sp, #176]
-    ldr     x11, [sp, #200]
+    str     x11, [sp, #248]
+    b       .L1059
+.L1060:
+    ldr     x9, [sp, #240]
+    ldr     x10, [sp, #224]
+    ldr     x11, [sp, #248]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _pp_expand
-    str     x0, [sp, #1344]
+    str     x0, [sp, #1496]
     adrp    x9, _PP_OUT_LEN@PAGE
     add     x9, x9, _PP_OUT_LEN@PAGEOFF
-    str     x9, [sp, #208]
-    ldr     x9, [sp, #208]
+    str     x9, [sp, #256]
+    ldr     x9, [sp, #256]
     mov     x10, #0
     movz    x11, #0x0008
     mul     x12, x10, x11
     add     x10, x9, x12
     ldr     x9, [x10]
-    str     x9, [sp, #216]
-    ldr     x9, [sp, #216]
+    str     x9, [sp, #264]
+    ldr     x9, [sp, #264]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L897
+    cbz     w11, .L1062
     movz    x9, #0x0003
     mov     w0, w9
-    b       .L1198
-.L897:
+    b       .L1386
+.L1062:
     adrp    x9, _PP_OUT@PAGE
     add     x9, x9, _PP_OUT@PAGEOFF
-    str     x9, [sp, #224]
+    str     x9, [sp, #272]
     bl      _ast_init
     mov     x9, x0
-    str     x9, [sp, #232]
+    str     x9, [sp, #280]
     bl      _ir_init
     mov     x9, x0
-    str     x9, [sp, #240]
-    ldr     x9, [sp, #232]
-    ldr     x10, [sp, #224]
-    ldr     x11, [sp, #216]
+    str     x9, [sp, #288]
+    ldr     x9, [sp, #280]
+    ldr     x10, [sp, #272]
+    ldr     x11, [sp, #264]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     bl      _parse
     mov     x12, x0
-    str     x12, [sp, #248]
-    ldr     x9, [sp, #240]
-    ldr     x10, [sp, #248]
+    str     x12, [sp, #296]
+    ldr     x9, [sp, #288]
+    ldr     x10, [sp, #296]
     mov     x0, x9
     mov     x1, x10
     bl      _lower
     mov     x11, x0
-    str     x11, [sp, #256]
-    ldr     x9, [sp, #184]
+    str     x11, [sp, #304]
+    ldr     x9, [sp, #232]
     mov     x0, x9
     bl      _io_open_write
     mov     x10, x0
-    str     x10, [sp, #264]
-    ldr     x9, [sp, #264]
+    str     x10, [sp, #312]
+    ldr     x9, [sp, #312]
     mov     x10, #0
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L898
+    cbz     w11, .L1063
     movz    x9, #0x0004
     mov     w0, w9
-    b       .L1198
-.L898:
-    ldr     x9, [sp, #88]
+    b       .L1386
+.L1063:
+    ldr     x9, [sp, #120]
     movz    x10, #0x0001
     cmp     x9, x10
     cset    w11, eq
-    cbz     w11, .L899
-    ldr     x9, [sp, #248]
+    cbz     w11, .L1064
+    ldr     x9, [sp, #296]
     mov     x0, x9
     bl      _cgb_bss_layout
     mov     x10, x0
-    str     x10, [sp, #272]
-    ldr     x9, [sp, #248]
-    ldr     x10, [sp, #256]
+    str     x10, [sp, #320]
+    ldr     x9, [sp, #296]
+    ldr     x10, [sp, #304]
     mov     x0, x9
     mov     x1, x10
     bl      _codegen_bytes
-    str     x0, [sp, #1624]
+    str     x0, [sp, #1776]
     bl      _cb_pos
     mov     x9, x0
-    str     x9, [sp, #280]
+    str     x9, [sp, #328]
     adrp    x9, _CG_ENTRY@PAGE
     add     x9, x9, _CG_ENTRY@PAGEOFF
-    str     x9, [sp, #288]
-    ldr     x9, [sp, #264]
-    ldr     x10, [sp, #248]
-    ldr     x11, [sp, #280]
-    ldr     x12, [sp, #288]
+    str     x9, [sp, #336]
+    ldr     x9, [sp, #312]
+    ldr     x10, [sp, #296]
+    ldr     x11, [sp, #328]
+    ldr     x12, [sp, #336]
     mov     x13, #0
     movz    x14, #0x0008
     mul     x15, x13, x14
     add     x13, x12, x15
     ldr     x12, [x13]
-    ldr     x13, [sp, #272]
+    ldr     x13, [sp, #320]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     mov     x3, x12
     mov     x4, x13
     bl      _emit_macho_code_bss
-    str     x0, [sp, #1728]
-    b       .L900
-.L899:
+    str     x0, [sp, #1880]
+    b       .L1065
+.L1064:
     adrp    x9, _OUT_STORAGE@PAGE
     add     x9, x9, _OUT_STORAGE@PAGEOFF
-    str     x9, [sp, #296]
-    ldr     x9, [sp, #296]
-    ldr     x10, [sp, #264]
+    str     x9, [sp, #344]
+    ldr     x9, [sp, #344]
+    ldr     x10, [sp, #312]
     adrp    x11, _OUT_BUF@PAGE
     add     x11, x11, _OUT_BUF@PAGEOFF
     movz    x12, #0x0001, lsl #16
@@ -29282,27 +33600,39 @@ _main:
     mov     x2, x11
     mov     x3, x12
     bl      _out_init
-    str     x0, [sp, #1776]
-    ldr     x9, [sp, #296]
+    str     x0, [sp, #1928]
+    movz    x9, #0x0001
+    str     x9, [sp, #352]
+    ldr     x9, [sp, #136]
     movz    x10, #0x0001
-    ldr     x11, [sp, #248]
-    ldr     x12, [sp, #256]
+    cmp     x9, x10
+    cset    w11, eq
+    cbz     w11, .L1066
+    movz    x9, #0x0002
+    str     x9, [sp, #352]
+.L1066:
+    ldr     x9, [sp, #344]
+    ldr     x10, [sp, #352]
+    ldr     x11, [sp, #128]
+    ldr     x12, [sp, #296]
+    ldr     x13, [sp, #304]
     mov     x0, x9
     mov     x1, x10
     mov     x2, x11
     mov     x3, x12
+    mov     x4, x13
     bl      _codegen
-    str     x0, [sp, #1816]
-.L900:
-    ldr     x9, [sp, #264]
+    str     x0, [sp, #2016]
+.L1065:
+    ldr     x9, [sp, #312]
     mov     x0, x9
     bl      _io_close
-    str     x0, [sp, #1832]
+    str     x0, [sp, #2032]
     mov     x9, #0
     mov     w0, w9
-    b       .L1198
-.L1198:
-    add     sp, sp, #1856
+    b       .L1386
+.L1386:
+    add     sp, sp, #2048
     ldp     x29, x30, [sp], #16
     ret
 
@@ -29393,6 +33723,17 @@ L_str10:
     .byte   0x00
     .balign  8
 L_str11:
+    .byte   0x63
+    .byte   0x6f
+    .byte   0x6e
+    .byte   0x74
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x75
+    .byte   0x65
+    .byte   0x00
+    .balign  8
+L_str12:
     .byte   0x73
     .byte   0x74
     .byte   0x72
@@ -29401,19 +33742,19 @@ L_str11:
     .byte   0x74
     .byte   0x00
     .balign  8
-L_str12:
+L_str13:
     .byte   0x62
     .byte   0x73
     .byte   0x73
     .byte   0x00
     .balign  8
-L_str13:
+L_str14:
     .byte   0x6e
     .byte   0x69
     .byte   0x6c
     .byte   0x00
     .balign  8
-L_str14:
+L_str15:
     .byte   0x73
     .byte   0x69
     .byte   0x7a
@@ -29422,7 +33763,56 @@ L_str14:
     .byte   0x66
     .byte   0x00
     .balign  8
-L_str15:
+L_str16:
+    .byte   0x61
+    .byte   0x73
+    .byte   0x00
+    .balign  8
+L_str17:
+    .byte   0x61
+    .byte   0x72
+    .byte   0x72
+    .byte   0x61
+    .byte   0x79
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x6f
+    .byte   0x63
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x20
+    .byte   0x72
+    .byte   0x65
+    .byte   0x71
+    .byte   0x75
+    .byte   0x69
+    .byte   0x65
+    .byte   0x72
+    .byte   0x65
+    .byte   0x20
+    .byte   0x65
+    .byte   0x6c
+    .byte   0x65
+    .byte   0x6d
+    .byte   0x65
+    .byte   0x6e
+    .byte   0x74
+    .byte   0x6f
+    .byte   0x73
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x38
+    .byte   0x20
+    .byte   0x62
+    .byte   0x79
+    .byte   0x74
+    .byte   0x65
+    .byte   0x73
+    .byte   0x00
+    .balign  8
+L_str18:
     .byte   0x64
     .byte   0x65
     .byte   0x6d
@@ -29445,7 +33835,7 @@ L_str15:
     .byte   0x29
     .byte   0x00
     .balign  8
-L_str16:
+L_str19:
     .byte   0x73
     .byte   0x79
     .byte   0x73
@@ -29455,7 +33845,35 @@ L_str16:
     .byte   0x6c
     .byte   0x00
     .balign  8
-L_str17:
+L_str20:
+    .byte   0x69
+    .byte   0x64
+    .byte   0x65
+    .byte   0x6e
+    .byte   0x74
+    .byte   0x69
+    .byte   0x66
+    .byte   0x69
+    .byte   0x63
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x20
+    .byte   0x6e
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x72
+    .byte   0x65
+    .byte   0x73
+    .byte   0x75
+    .byte   0x65
+    .byte   0x6c
+    .byte   0x74
+    .byte   0x6f
+    .byte   0x00
+    .balign  8
+L_str21:
     .byte   0x65
     .byte   0x78
     .byte   0x70
@@ -29485,7 +33903,7 @@ L_str17:
     .byte   0x61
     .byte   0x00
     .balign  8
-L_str18:
+L_str22:
     .byte   0x73
     .byte   0x65
     .byte   0x20
@@ -29520,19 +33938,19 @@ L_str18:
     .byte   0x2e
     .byte   0x00
     .balign  8
-L_str19:
+L_str23:
     .byte   0x70
     .byte   0x74
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str20:
+L_str24:
     .byte   0x6c
     .byte   0x65
     .byte   0x6e
     .byte   0x00
     .balign  8
-L_str21:
+L_str25:
     .byte   0x63
     .byte   0x61
     .byte   0x6d
@@ -29562,7 +33980,7 @@ L_str21:
     .byte   0x74
     .byte   0x00
     .balign  8
-L_str22:
+L_str26:
     .byte   0x63
     .byte   0x61
     .byte   0x6d
@@ -29592,7 +34010,7 @@ L_str22:
     .byte   0x74
     .byte   0x00
     .balign  8
-L_str23:
+L_str27:
     .byte   0x70
     .byte   0x6f
     .byte   0x73
@@ -29615,7 +34033,70 @@ L_str23:
     .byte   0x6f
     .byte   0x00
     .balign  8
-L_str24:
+L_str28:
+    .byte   0x63
+    .byte   0x61
+    .byte   0x73
+    .byte   0x74
+    .byte   0x20
+    .byte   0x72
+    .byte   0x65
+    .byte   0x71
+    .byte   0x75
+    .byte   0x69
+    .byte   0x65
+    .byte   0x72
+    .byte   0x65
+    .byte   0x20
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x69
+    .byte   0x67
+    .byte   0x65
+    .byte   0x6e
+    .byte   0x20
+    .byte   0x65
+    .byte   0x73
+    .byte   0x63
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x61
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str29:
+    .byte   0x63
+    .byte   0x61
+    .byte   0x73
+    .byte   0x74
+    .byte   0x20
+    .byte   0x72
+    .byte   0x65
+    .byte   0x71
+    .byte   0x75
+    .byte   0x69
+    .byte   0x65
+    .byte   0x72
+    .byte   0x65
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x73
+    .byte   0x74
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x65
+    .byte   0x73
+    .byte   0x63
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x61
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str30:
     .byte   0x64
     .byte   0x65
     .byte   0x72
@@ -29648,7 +34129,44 @@ L_str24:
     .byte   0x6f
     .byte   0x00
     .balign  8
-L_str25:
+L_str31:
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x64
+    .byte   0x65
+    .byte   0x78
+    .byte   0x61
+    .byte   0x63
+    .byte   0x69
+    .byte   0x6f
+    .byte   0x6e
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x61
+    .byte   0x72
+    .byte   0x72
+    .byte   0x61
+    .byte   0x79
+    .byte   0x20
+    .byte   0x72
+    .byte   0x65
+    .byte   0x71
+    .byte   0x75
+    .byte   0x69
+    .byte   0x65
+    .byte   0x72
+    .byte   0x65
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x6f
+    .byte   0x63
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x00
+    .balign  8
+L_str32:
     .byte   0x64
     .byte   0x65
     .byte   0x72
@@ -29673,7 +34191,7 @@ L_str25:
     .byte   0x6f
     .byte   0x00
     .balign  8
-L_str26:
+L_str33:
     .byte   0x73
     .byte   0x65
     .byte   0x20
@@ -29693,7 +34211,70 @@ L_str26:
     .byte   0x6e
     .byte   0x00
     .balign  8
-L_str27:
+L_str34:
+    .byte   0x61
+    .byte   0x72
+    .byte   0x72
+    .byte   0x61
+    .byte   0x79
+    .byte   0x20
+    .byte   0x72
+    .byte   0x65
+    .byte   0x71
+    .byte   0x75
+    .byte   0x69
+    .byte   0x65
+    .byte   0x72
+    .byte   0x65
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x6f
+    .byte   0x6e
+    .byte   0x67
+    .byte   0x69
+    .byte   0x74
+    .byte   0x75
+    .byte   0x64
+    .byte   0x20
+    .byte   0x63
+    .byte   0x6f
+    .byte   0x6e
+    .byte   0x73
+    .byte   0x74
+    .byte   0x61
+    .byte   0x6e
+    .byte   0x74
+    .byte   0x65
+    .byte   0x00
+    .balign  8
+L_str35:
+    .byte   0x61
+    .byte   0x72
+    .byte   0x72
+    .byte   0x61
+    .byte   0x79
+    .byte   0x20
+    .byte   0x76
+    .byte   0x61
+    .byte   0x63
+    .byte   0x69
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x6e
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x73
+    .byte   0x6f
+    .byte   0x70
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x74
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x00
+    .balign  8
+L_str36:
     .byte   0x73
     .byte   0x65
     .byte   0x20
@@ -29712,30 +34293,89 @@ L_str27:
     .byte   0x6f
     .byte   0x00
     .balign  8
-L_str28:
+L_str37:
     .byte   0x75
     .byte   0x38
     .byte   0x00
     .balign  8
-L_str29:
+L_str38:
     .byte   0x75
     .byte   0x33
     .byte   0x32
     .byte   0x00
     .balign  8
-L_str30:
+L_str39:
     .byte   0x75
     .byte   0x36
     .byte   0x34
     .byte   0x00
     .balign  8
-L_str31:
+L_str40:
+    .byte   0x69
+    .byte   0x38
+    .byte   0x00
+    .balign  8
+L_str41:
+    .byte   0x69
+    .byte   0x33
+    .byte   0x32
+    .byte   0x00
+    .balign  8
+L_str42:
+    .byte   0x69
+    .byte   0x36
+    .byte   0x34
+    .byte   0x00
+    .balign  8
+L_str43:
+    .byte   0x62
+    .byte   0x6f
+    .byte   0x6f
+    .byte   0x6c
+    .byte   0x00
+    .balign  8
+L_str44:
     .byte   0x73
     .byte   0x74
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str32:
+L_str45:
+    .byte   0x6c
+    .byte   0x65
+    .byte   0x63
+    .byte   0x74
+    .byte   0x75
+    .byte   0x72
+    .byte   0x61
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x6f
+    .byte   0x63
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x20
+    .byte   0x6e
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x69
+    .byte   0x63
+    .byte   0x69
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x69
+    .byte   0x7a
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x00
+    .balign  8
+L_str46:
     .byte   0x6c
     .byte   0x65
     .byte   0x74
@@ -29764,7 +34404,80 @@ L_str32:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str33:
+L_str47:
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x69
+    .byte   0x63
+    .byte   0x69
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x69
+    .byte   0x7a
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x61
+    .byte   0x72
+    .byte   0x72
+    .byte   0x61
+    .byte   0x79
+    .byte   0x20
+    .byte   0x6e
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x73
+    .byte   0x6f
+    .byte   0x70
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x74
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x00
+    .balign  8
+L_str48:
+    .byte   0x61
+    .byte   0x73
+    .byte   0x69
+    .byte   0x67
+    .byte   0x6e
+    .byte   0x61
+    .byte   0x63
+    .byte   0x69
+    .byte   0x6f
+    .byte   0x6e
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x61
+    .byte   0x72
+    .byte   0x72
+    .byte   0x61
+    .byte   0x79
+    .byte   0x20
+    .byte   0x6e
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x73
+    .byte   0x6f
+    .byte   0x70
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x74
+    .byte   0x61
+    .byte   0x64
+    .byte   0x61
+    .byte   0x00
+    .balign  8
+L_str49:
     .byte   0x66
     .byte   0x75
     .byte   0x6e
@@ -29793,7 +34506,7 @@ L_str33:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str34:
+L_str50:
     .byte   0x70
     .byte   0x61
     .byte   0x72
@@ -29828,7 +34541,7 @@ L_str34:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str35:
+L_str51:
     .byte   0x63
     .byte   0x6f
     .byte   0x6e
@@ -29859,7 +34572,7 @@ L_str35:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str36:
+L_str52:
     .byte   0x63
     .byte   0x6f
     .byte   0x6e
@@ -29889,7 +34602,7 @@ L_str36:
     .byte   0x6f
     .byte   0x00
     .balign  8
-L_str37:
+L_str53:
     .byte   0x62
     .byte   0x73
     .byte   0x73
@@ -29918,7 +34631,7 @@ L_str37:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str38:
+L_str54:
     .byte   0x62
     .byte   0x73
     .byte   0x73
@@ -29941,7 +34654,7 @@ L_str38:
     .byte   0x6f
     .byte   0x00
     .balign  8
-L_str39:
+L_str55:
     .byte   0x73
     .byte   0x74
     .byte   0x72
@@ -29973,7 +34686,7 @@ L_str39:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str40:
+L_str56:
     .byte   0x63
     .byte   0x61
     .byte   0x6d
@@ -30004,7 +34717,17 @@ L_str40:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str41:
+L_str57:
+    .byte   0x73
+    .byte   0x79
+    .byte   0x73
+    .byte   0x63
+    .byte   0x61
+    .byte   0x6c
+    .byte   0x6c
+    .byte   0x00
+    .balign  8
+L_str58:
     .byte   0x64
     .byte   0x65
     .byte   0x6d
@@ -30029,7 +34752,7 @@ L_str41:
     .byte   0x29
     .byte   0x00
     .balign  8
-L_str42:
+L_str59:
     .byte   0x62
     .byte   0x72
     .byte   0x65
@@ -30051,13 +34774,38 @@ L_str42:
     .byte   0x70
     .byte   0x00
     .balign  8
-L_str43:
+L_str60:
+    .byte   0x63
+    .byte   0x6f
+    .byte   0x6e
+    .byte   0x74
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x75
+    .byte   0x65
+    .byte   0x20
+    .byte   0x66
+    .byte   0x75
+    .byte   0x65
+    .byte   0x72
+    .byte   0x61
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x6f
+    .byte   0x6f
+    .byte   0x70
+    .byte   0x00
+    .balign  8
+L_str61:
     .byte   0x66
     .byte   0x6e
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str44:
+L_str62:
     .byte   0x20
     .byte   0x6e
     .byte   0x70
@@ -30069,7 +34817,7 @@ L_str44:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str45:
+L_str63:
     .byte   0x20
     .byte   0x6e
     .byte   0x73
@@ -30080,7 +34828,7 @@ L_str45:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str46:
+L_str64:
     .byte   0x20
     .byte   0x66
     .byte   0x72
@@ -30096,7 +34844,7 @@ L_str46:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str47:
+L_str65:
     .byte   0x20
     .byte   0x20
     .byte   0x6f
@@ -30104,7 +34852,7 @@ L_str47:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str48:
+L_str66:
     .byte   0x20
     .byte   0x64
     .byte   0x73
@@ -30112,19 +34860,19 @@ L_str48:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str49:
+L_str67:
     .byte   0x20
     .byte   0x61
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str50:
+L_str68:
     .byte   0x20
     .byte   0x62
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str51:
+L_str69:
     .byte   0x20
     .byte   0x6c
     .byte   0x6f
@@ -30134,7 +34882,7 @@ L_str51:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str52:
+L_str70:
     .byte   0x20
     .byte   0x69
     .byte   0x6d
@@ -30142,7 +34890,7 @@ L_str52:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str53:
+L_str71:
     .byte   0x20
     .byte   0x6c
     .byte   0x61
@@ -30152,7 +34900,7 @@ L_str53:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str54:
+L_str72:
     .byte   0x20
     .byte   0x73
     .byte   0x74
@@ -30163,211 +34911,19 @@ L_str54:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str55:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6c
-    .byte   0x64
-    .byte   0x72
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str56:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x73
-    .byte   0x74
-    .byte   0x72
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str57:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6c
-    .byte   0x64
-    .byte   0x72
-    .byte   0x62
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str58:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x73
-    .byte   0x74
-    .byte   0x72
-    .byte   0x62
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str59:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x5b
-    .byte   0x73
-    .byte   0x70
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x23
-    .byte   0x00
-    .balign  8
-L_str60:
-    .byte   0x5d
-    .byte   0x0a
-    .byte   0x00
-    .balign  8
-L_str61:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x5b
-    .byte   0x00
-    .balign  8
-L_str62:
-    .byte   0x5d
-    .byte   0x0a
-    .byte   0x00
-    .balign  8
-L_str63:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6d
-    .byte   0x6f
-    .byte   0x76
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str64:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x23
-    .byte   0x30
-    .byte   0x0a
-    .byte   0x00
-    .balign  8
-L_str65:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6d
-    .byte   0x6f
-    .byte   0x76
-    .byte   0x7a
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str66:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x23
-    .byte   0x30
-    .byte   0x78
-    .byte   0x00
-    .balign  8
-L_str67:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x6c
-    .byte   0x73
-    .byte   0x6c
-    .byte   0x20
-    .byte   0x23
-    .byte   0x00
-    .balign  8
-L_str68:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6d
-    .byte   0x6f
-    .byte   0x76
-    .byte   0x6b
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str69:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x23
-    .byte   0x30
-    .byte   0x78
-    .byte   0x00
-    .balign  8
-L_str70:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x6c
-    .byte   0x73
-    .byte   0x6c
-    .byte   0x20
-    .byte   0x23
-    .byte   0x00
-    .balign  8
-L_str71:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6c
-    .byte   0x64
-    .byte   0x72
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str72:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x5b
-    .byte   0x73
-    .byte   0x70
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x23
-    .byte   0x00
-    .balign  8
 L_str73:
-    .byte   0x5d
-    .byte   0x0a
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x64
+    .byte   0x72
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
     .byte   0x00
     .balign  8
 L_str74:
@@ -30386,6 +34942,36 @@ L_str74:
     .byte   0x00
     .balign  8
 L_str75:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x64
+    .byte   0x72
+    .byte   0x62
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str76:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x73
+    .byte   0x74
+    .byte   0x72
+    .byte   0x62
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str77:
     .byte   0x2c
     .byte   0x20
     .byte   0x5b
@@ -30396,141 +34982,150 @@ L_str75:
     .byte   0x23
     .byte   0x00
     .balign  8
-L_str76:
+L_str78:
     .byte   0x5d
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str77:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6d
-    .byte   0x6f
-    .byte   0x76
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str78:
+L_str79:
     .byte   0x2c
     .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str79:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x6d
-    .byte   0x6f
-    .byte   0x76
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
+    .byte   0x5b
     .byte   0x00
     .balign  8
 L_str80:
-    .byte   0x2c
-    .byte   0x20
+    .byte   0x5d
+    .byte   0x0a
     .byte   0x00
     .balign  8
 L_str81:
-    .byte   0x61
-    .byte   0x64
-    .byte   0x64
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x6d
+    .byte   0x6f
+    .byte   0x76
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
     .byte   0x00
     .balign  8
 L_str82:
-    .byte   0x73
-    .byte   0x75
-    .byte   0x62
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x23
+    .byte   0x30
+    .byte   0x0a
     .byte   0x00
     .balign  8
 L_str83:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
     .byte   0x6d
-    .byte   0x75
-    .byte   0x6c
+    .byte   0x6f
+    .byte   0x76
+    .byte   0x7a
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
     .byte   0x00
     .balign  8
 L_str84:
-    .byte   0x75
-    .byte   0x64
-    .byte   0x69
-    .byte   0x76
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x23
+    .byte   0x30
+    .byte   0x78
     .byte   0x00
     .balign  8
 L_str85:
-    .byte   0x61
-    .byte   0x6e
-    .byte   0x64
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x6c
+    .byte   0x73
+    .byte   0x6c
+    .byte   0x20
+    .byte   0x23
     .byte   0x00
     .balign  8
 L_str86:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x6d
     .byte   0x6f
-    .byte   0x72
-    .byte   0x72
+    .byte   0x76
+    .byte   0x6b
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
     .byte   0x00
     .balign  8
 L_str87:
-    .byte   0x65
-    .byte   0x6f
-    .byte   0x72
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x23
+    .byte   0x30
+    .byte   0x78
     .byte   0x00
     .balign  8
 L_str88:
+    .byte   0x2c
+    .byte   0x20
     .byte   0x6c
     .byte   0x73
     .byte   0x6c
+    .byte   0x20
+    .byte   0x23
     .byte   0x00
     .balign  8
 L_str89:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
     .byte   0x6c
-    .byte   0x73
+    .byte   0x64
     .byte   0x72
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
     .byte   0x00
     .balign  8
 L_str90:
+    .byte   0x2c
     .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x61
-    .byte   0x64
-    .byte   0x72
+    .byte   0x5b
+    .byte   0x73
     .byte   0x70
+    .byte   0x2c
     .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
+    .byte   0x23
     .byte   0x00
     .balign  8
 L_str91:
-    .byte   0x2c
-    .byte   0x20
-    .byte   0x5f
+    .byte   0x5d
+    .byte   0x0a
     .byte   0x00
     .balign  8
 L_str92:
-    .byte   0x40
-    .byte   0x50
-    .byte   0x41
-    .byte   0x47
-    .byte   0x45
-    .byte   0x0a
     .byte   0x20
     .byte   0x20
     .byte   0x20
     .byte   0x20
-    .byte   0x61
-    .byte   0x64
-    .byte   0x64
+    .byte   0x73
+    .byte   0x74
+    .byte   0x72
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30541,17 +35136,16 @@ L_str92:
 L_str93:
     .byte   0x2c
     .byte   0x20
+    .byte   0x5b
+    .byte   0x73
+    .byte   0x70
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x23
     .byte   0x00
     .balign  8
 L_str94:
-    .byte   0x40
-    .byte   0x50
-    .byte   0x41
-    .byte   0x47
-    .byte   0x45
-    .byte   0x4f
-    .byte   0x46
-    .byte   0x46
+    .byte   0x5d
     .byte   0x0a
     .byte   0x00
     .balign  8
@@ -30560,10 +35154,10 @@ L_str95:
     .byte   0x20
     .byte   0x20
     .byte   0x20
-    .byte   0x61
-    .byte   0x64
-    .byte   0x72
-    .byte   0x70
+    .byte   0x6d
+    .byte   0x6f
+    .byte   0x76
+    .byte   0x20
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30573,27 +35167,16 @@ L_str95:
 L_str96:
     .byte   0x2c
     .byte   0x20
-    .byte   0x4c
-    .byte   0x5f
-    .byte   0x73
-    .byte   0x74
-    .byte   0x72
     .byte   0x00
     .balign  8
 L_str97:
-    .byte   0x40
-    .byte   0x50
-    .byte   0x41
-    .byte   0x47
-    .byte   0x45
-    .byte   0x0a
     .byte   0x20
     .byte   0x20
     .byte   0x20
     .byte   0x20
-    .byte   0x61
-    .byte   0x64
-    .byte   0x64
+    .byte   0x6d
+    .byte   0x6f
+    .byte   0x76
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30607,18 +35190,100 @@ L_str98:
     .byte   0x00
     .balign  8
 L_str99:
+    .byte   0x61
+    .byte   0x64
+    .byte   0x64
+    .byte   0x00
+    .balign  8
+L_str100:
+    .byte   0x73
+    .byte   0x75
+    .byte   0x62
+    .byte   0x00
+    .balign  8
+L_str101:
+    .byte   0x6d
+    .byte   0x75
+    .byte   0x6c
+    .byte   0x00
+    .balign  8
+L_str102:
+    .byte   0x73
+    .byte   0x64
+    .byte   0x69
+    .byte   0x76
+    .byte   0x00
+    .balign  8
+L_str103:
+    .byte   0x75
+    .byte   0x64
+    .byte   0x69
+    .byte   0x76
+    .byte   0x00
+    .balign  8
+L_str104:
+    .byte   0x61
+    .byte   0x6e
+    .byte   0x64
+    .byte   0x00
+    .balign  8
+L_str105:
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str106:
+    .byte   0x65
+    .byte   0x6f
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str107:
+    .byte   0x6c
+    .byte   0x73
+    .byte   0x6c
+    .byte   0x00
+    .balign  8
+L_str108:
+    .byte   0x6c
+    .byte   0x73
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str109:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x61
+    .byte   0x64
+    .byte   0x72
+    .byte   0x70
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str110:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x5f
+    .byte   0x00
+    .balign  8
+L_str111:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str112:
     .byte   0x40
     .byte   0x50
     .byte   0x41
     .byte   0x47
     .byte   0x45
-    .byte   0x4f
-    .byte   0x46
-    .byte   0x46
     .byte   0x0a
-    .byte   0x00
-    .balign  8
-L_str100:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30633,7 +35298,161 @@ L_str100:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str101:
+L_str113:
+    .byte   0x0a
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x61
+    .byte   0x64
+    .byte   0x64
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str114:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str115:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x3a
+    .byte   0x6c
+    .byte   0x6f
+    .byte   0x31
+    .byte   0x32
+    .byte   0x3a
+    .byte   0x00
+    .balign  8
+L_str116:
+    .byte   0x40
+    .byte   0x50
+    .byte   0x41
+    .byte   0x47
+    .byte   0x45
+    .byte   0x4f
+    .byte   0x46
+    .byte   0x46
+    .byte   0x0a
+    .byte   0x00
+    .balign  8
+L_str117:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x61
+    .byte   0x64
+    .byte   0x72
+    .byte   0x70
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str118:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x4c
+    .byte   0x5f
+    .byte   0x73
+    .byte   0x74
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str119:
+    .byte   0x0a
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x61
+    .byte   0x64
+    .byte   0x64
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str120:
+    .byte   0x40
+    .byte   0x50
+    .byte   0x41
+    .byte   0x47
+    .byte   0x45
+    .byte   0x0a
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x61
+    .byte   0x64
+    .byte   0x64
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str121:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str122:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x3a
+    .byte   0x6c
+    .byte   0x6f
+    .byte   0x31
+    .byte   0x32
+    .byte   0x3a
+    .byte   0x4c
+    .byte   0x5f
+    .byte   0x73
+    .byte   0x74
+    .byte   0x72
+    .byte   0x00
+    .balign  8
+L_str123:
+    .byte   0x40
+    .byte   0x50
+    .byte   0x41
+    .byte   0x47
+    .byte   0x45
+    .byte   0x4f
+    .byte   0x46
+    .byte   0x46
+    .byte   0x0a
+    .byte   0x00
+    .balign  8
+L_str124:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x61
+    .byte   0x64
+    .byte   0x64
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str125:
     .byte   0x2c
     .byte   0x20
     .byte   0x73
@@ -30643,57 +35462,137 @@ L_str101:
     .byte   0x23
     .byte   0x00
     .balign  8
-L_str102:
+L_str126:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x73
+    .byte   0x78
+    .byte   0x74
+    .byte   0x62
     .byte   0x20
     .byte   0x20
     .byte   0x20
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str103:
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x20
-    .byte   0x00
-    .balign  8
-L_str104:
+L_str127:
     .byte   0x2c
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str105:
+L_str128:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x75
+    .byte   0x78
+    .byte   0x74
+    .byte   0x62
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str129:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str130:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x73
+    .byte   0x78
+    .byte   0x74
+    .byte   0x77
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str131:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str132:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str133:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str134:
+    .byte   0x2c
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str135:
     .byte   0x65
     .byte   0x71
     .byte   0x00
     .balign  8
-L_str106:
+L_str136:
     .byte   0x6e
     .byte   0x65
     .byte   0x00
     .balign  8
-L_str107:
+L_str137:
     .byte   0x6c
     .byte   0x6f
     .byte   0x00
     .balign  8
-L_str108:
+L_str138:
     .byte   0x6c
     .byte   0x73
     .byte   0x00
     .balign  8
-L_str109:
+L_str139:
     .byte   0x68
     .byte   0x69
     .byte   0x00
     .balign  8
-L_str110:
+L_str140:
     .byte   0x68
     .byte   0x73
     .byte   0x00
     .balign  8
-L_str111:
+L_str141:
+    .byte   0x6c
+    .byte   0x74
+    .byte   0x00
+    .balign  8
+L_str142:
+    .byte   0x6c
+    .byte   0x65
+    .byte   0x00
+    .balign  8
+L_str143:
+    .byte   0x67
+    .byte   0x74
+    .byte   0x00
+    .balign  8
+L_str144:
+    .byte   0x67
+    .byte   0x65
+    .byte   0x00
+    .balign  8
+L_str145:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30708,12 +35607,12 @@ L_str111:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str112:
+L_str146:
     .byte   0x2c
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str113:
+L_str147:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30728,7 +35627,29 @@ L_str113:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str114:
+L_str148:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x62
+    .byte   0x6c
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x74
+    .byte   0x74
+    .byte   0x5f
+    .byte   0x73
+    .byte   0x79
+    .byte   0x73
+    .byte   0x0a
+    .byte   0x00
+    .balign  8
+L_str149:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30749,7 +35670,7 @@ L_str114:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str115:
+L_str150:
     .byte   0x73
     .byte   0x79
     .byte   0x73
@@ -30759,7 +35680,7 @@ L_str115:
     .byte   0x6c
     .byte   0x00
     .balign  8
-L_str116:
+L_str151:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30774,7 +35695,7 @@ L_str116:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str117:
+L_str152:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30791,7 +35712,7 @@ L_str117:
     .byte   0x4c
     .byte   0x00
     .balign  8
-L_str118:
+L_str153:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30808,7 +35729,7 @@ L_str118:
     .byte   0x4c
     .byte   0x00
     .balign  8
-L_str119:
+L_str154:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30823,24 +35744,24 @@ L_str119:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str120:
+L_str155:
     .byte   0x2c
     .byte   0x20
     .byte   0x2e
     .byte   0x4c
     .byte   0x00
     .balign  8
-L_str121:
+L_str156:
     .byte   0x2e
     .byte   0x4c
     .byte   0x00
     .balign  8
-L_str122:
+L_str157:
     .byte   0x3a
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str123:
+L_str158:
     .byte   0x0a
     .byte   0x20
     .byte   0x20
@@ -30857,7 +35778,7 @@ L_str123:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str124:
+L_str159:
     .byte   0x3a
     .byte   0x0a
     .byte   0x20
@@ -30916,7 +35837,7 @@ L_str124:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str125:
+L_str160:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30940,7 +35861,7 @@ L_str125:
     .byte   0x23
     .byte   0x00
     .balign  8
-L_str126:
+L_str161:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -30967,17 +35888,17 @@ L_str126:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str127:
+L_str162:
     .byte   0x2e
     .byte   0x4c
     .byte   0x00
     .balign  8
-L_str128:
+L_str163:
     .byte   0x3a
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str129:
+L_str164:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31001,7 +35922,7 @@ L_str129:
     .byte   0x23
     .byte   0x00
     .balign  8
-L_str130:
+L_str165:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31028,7 +35949,7 @@ L_str130:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str131:
+L_str166:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31071,7 +35992,7 @@ L_str131:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str132:
+L_str167:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31101,7 +36022,20 @@ L_str132:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str133:
+L_str168:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x2e
+    .byte   0x74
+    .byte   0x65
+    .byte   0x78
+    .byte   0x74
+    .byte   0x0a
+    .byte   0x00
+    .balign  8
+L_str169:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31128,7 +36062,7 @@ L_str133:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str134:
+L_str170:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31145,7 +36079,32 @@ L_str134:
     .byte   0x78
     .byte   0x00
     .balign  8
-L_str135:
+L_str171:
+    .byte   0x0a
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x2e
+    .byte   0x73
+    .byte   0x65
+    .byte   0x63
+    .byte   0x74
+    .byte   0x69
+    .byte   0x6f
+    .byte   0x6e
+    .byte   0x20
+    .byte   0x2e
+    .byte   0x72
+    .byte   0x6f
+    .byte   0x64
+    .byte   0x61
+    .byte   0x74
+    .byte   0x61
+    .byte   0x0a
+    .byte   0x00
+    .balign  8
+L_str172:
     .byte   0x0a
     .byte   0x20
     .byte   0x20
@@ -31179,7 +36138,7 @@ L_str135:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str136:
+L_str173:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31202,12 +36161,12 @@ L_str136:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str137:
+L_str174:
     .byte   0x3a
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str138:
+L_str175:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31300,7 +36259,30 @@ L_str138:
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str139:
+L_str176:
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x20
+    .byte   0x2e
+    .byte   0x63
+    .byte   0x6f
+    .byte   0x6d
+    .byte   0x6d
+    .byte   0x20
+    .byte   0x00
+    .balign  8
+L_str177:
+    .byte   0x2c
+    .byte   0x00
+    .balign  8
+L_str178:
+    .byte   0x2c
+    .byte   0x38
+    .byte   0x0a
+    .byte   0x00
+    .balign  8
+L_str179:
     .byte   0x20
     .byte   0x20
     .byte   0x20
@@ -31331,17 +36313,17 @@ L_str139:
     .byte   0x5f
     .byte   0x00
     .balign  8
-L_str140:
+L_str180:
     .byte   0x2c
     .byte   0x00
     .balign  8
-L_str141:
+L_str181:
     .byte   0x2c
     .byte   0x33
     .byte   0x0a
     .byte   0x00
     .balign  8
-L_str142:
+L_str182:
     .byte   0x5f
     .byte   0x5f
     .byte   0x50
@@ -31354,7 +36336,7 @@ L_str142:
     .byte   0x4f
     .byte   0x00
     .balign  8
-L_str143:
+L_str183:
     .byte   0x5f
     .byte   0x5f
     .byte   0x54
@@ -31363,7 +36345,7 @@ L_str143:
     .byte   0x54
     .byte   0x00
     .balign  8
-L_str144:
+L_str184:
     .byte   0x5f
     .byte   0x5f
     .byte   0x74
@@ -31372,7 +36354,7 @@ L_str144:
     .byte   0x74
     .byte   0x00
     .balign  8
-L_str145:
+L_str185:
     .byte   0x5f
     .byte   0x5f
     .byte   0x4c
@@ -31385,7 +36367,7 @@ L_str145:
     .byte   0x54
     .byte   0x00
     .balign  8
-L_str146:
+L_str186:
     .byte   0x2f
     .byte   0x75
     .byte   0x73
@@ -31401,7 +36383,7 @@ L_str146:
     .byte   0x64
     .byte   0x00
     .balign  8
-L_str147:
+L_str187:
     .byte   0x5f
     .byte   0x5f
     .byte   0x50
@@ -31414,7 +36396,7 @@ L_str147:
     .byte   0x4f
     .byte   0x00
     .balign  8
-L_str148:
+L_str188:
     .byte   0x5f
     .byte   0x5f
     .byte   0x54
@@ -31423,7 +36405,7 @@ L_str148:
     .byte   0x54
     .byte   0x00
     .balign  8
-L_str149:
+L_str189:
     .byte   0x5f
     .byte   0x5f
     .byte   0x74
@@ -31432,7 +36414,7 @@ L_str149:
     .byte   0x74
     .byte   0x00
     .balign  8
-L_str150:
+L_str190:
     .byte   0x5f
     .byte   0x5f
     .byte   0x44
@@ -31441,7 +36423,7 @@ L_str150:
     .byte   0x41
     .byte   0x00
     .balign  8
-L_str151:
+L_str191:
     .byte   0x5f
     .byte   0x5f
     .byte   0x62
@@ -31449,7 +36431,7 @@ L_str151:
     .byte   0x73
     .byte   0x00
     .balign  8
-L_str152:
+L_str192:
     .byte   0x5f
     .byte   0x5f
     .byte   0x4c
@@ -31462,7 +36444,7 @@ L_str152:
     .byte   0x54
     .byte   0x00
     .balign  8
-L_str153:
+L_str193:
     .byte   0x2f
     .byte   0x75
     .byte   0x73
@@ -31478,7 +36460,7 @@ L_str153:
     .byte   0x64
     .byte   0x00
     .balign  8
-L_str154:
+L_str194:
     .byte   0x73
     .byte   0x79
     .byte   0x73
@@ -31488,14 +36470,14 @@ L_str154:
     .byte   0x6c
     .byte   0x00
     .balign  8
-L_str155:
+L_str195:
     .byte   0x6d
     .byte   0x61
     .byte   0x69
     .byte   0x6e
     .byte   0x00
     .balign  8
-L_str156:
+L_str196:
     .byte   0x64
     .byte   0x65
     .byte   0x6d
@@ -31524,7 +36506,7 @@ L_str156:
     .byte   0x29
     .byte   0x00
     .balign  8
-L_str157:
+L_str197:
     .byte   0x66
     .byte   0x75
     .byte   0x65
@@ -31569,7 +36551,52 @@ L_str157:
     .byte   0x29
     .byte   0x00
     .balign  8
-L_str158:
+L_str198:
+    .byte   0x66
+    .byte   0x75
+    .byte   0x65
+    .byte   0x6e
+    .byte   0x74
+    .byte   0x65
+    .byte   0x20
+    .byte   0x65
+    .byte   0x78
+    .byte   0x70
+    .byte   0x61
+    .byte   0x6e
+    .byte   0x64
+    .byte   0x69
+    .byte   0x64
+    .byte   0x61
+    .byte   0x20
+    .byte   0x64
+    .byte   0x65
+    .byte   0x6d
+    .byte   0x61
+    .byte   0x73
+    .byte   0x69
+    .byte   0x61
+    .byte   0x64
+    .byte   0x6f
+    .byte   0x20
+    .byte   0x67
+    .byte   0x72
+    .byte   0x61
+    .byte   0x6e
+    .byte   0x64
+    .byte   0x65
+    .byte   0x20
+    .byte   0x28
+    .byte   0x50
+    .byte   0x50
+    .byte   0x5f
+    .byte   0x4f
+    .byte   0x55
+    .byte   0x54
+    .byte   0x29
+    .byte   0x00
+    .balign  8
+L_str199:
     .byte   0x69
     .byte   0x6d
     .byte   0x70
@@ -31579,7 +36606,7 @@ L_str158:
     .byte   0x20
     .byte   0x00
     .balign  8
-L_str159:
+L_str200:
     .byte   0x66
     .byte   0x69
     .byte   0x63
@@ -31628,7 +36655,7 @@ L_str159:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str160:
+L_str201:
     .byte   0x6b
     .byte   0x69
     .byte   0x6e
@@ -31636,7 +36663,7 @@ L_str160:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str161:
+L_str202:
     .byte   0x20
     .byte   0x73
     .byte   0x74
@@ -31646,7 +36673,7 @@ L_str161:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str162:
+L_str203:
     .byte   0x20
     .byte   0x6c
     .byte   0x65
@@ -31654,7 +36681,7 @@ L_str162:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str163:
+L_str204:
     .byte   0x20
     .byte   0x6c
     .byte   0x69
@@ -31663,7 +36690,7 @@ L_str163:
     .byte   0x3d
     .byte   0x00
     .balign  8
-L_str164:
+L_str205:
     .byte   0x2d
     .byte   0x2d
     .byte   0x64
@@ -31679,7 +36706,7 @@ L_str164:
     .byte   0x73
     .byte   0x00
     .balign  8
-L_str165:
+L_str206:
     .byte   0x2d
     .byte   0x2d
     .byte   0x64
@@ -31691,7 +36718,7 @@ L_str165:
     .byte   0x72
     .byte   0x00
     .balign  8
-L_str166:
+L_str207:
     .byte   0x2d
     .byte   0x2d
     .byte   0x65
@@ -31704,6 +36731,36 @@ L_str166:
     .byte   0x63
     .byte   0x68
     .byte   0x6f
+    .byte   0x00
+    .balign  8
+L_str208:
+    .byte   0x2d
+    .byte   0x2d
+    .byte   0x65
+    .byte   0x6d
+    .byte   0x69
+    .byte   0x74
+    .byte   0x3d
+    .byte   0x6f
+    .byte   0x62
+    .byte   0x6a
+    .byte   0x00
+    .balign  8
+L_str209:
+    .byte   0x2d
+    .byte   0x2d
+    .byte   0x74
+    .byte   0x61
+    .byte   0x72
+    .byte   0x67
+    .byte   0x65
+    .byte   0x74
+    .byte   0x3d
+    .byte   0x6c
+    .byte   0x69
+    .byte   0x6e
+    .byte   0x75
+    .byte   0x78
     .byte   0x00
 
     .zerofill __DATA,__bss,_IO_BUF,16777216,3

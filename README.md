@@ -51,6 +51,7 @@ bootstrap autónomo.
 
 ```bash
 build/main --emit=macho fuente.tt -o salida    # ejecutable Mach-O firmado
+build/main --emit=obj fuente.tt -o modulo.s    # asm enlazable, sin entrypoint
 build/main fuente.tt -o salida.s               # backend textual legado
 build/main --dump-tokens fuente.tt             # imprime tokens
 build/main --dump-ir     fuente.tt             # imprime IR lineal
@@ -70,6 +71,9 @@ clang -c salida.s -o salida.o
 clang -e _tt_start -o salida salida.o
 ./salida
 ```
+
+`--emit=obj` conserva la ABI C de macOS arm64 y omite `_tt_start`. Convierte
+su salida con `clang -c modulo.s -o modulo.o` y enlaza el objeto desde C o Rust.
 
 ## Ejecutar programas
 
@@ -101,13 +105,17 @@ import 'lib/std.tt'
 | módulo | equivalente aproximado | API actual |
 |---|---|---|
 | `src/runtime/io.tt` | `stdio` + parte de `stdlib` | `io_open_read`, `io_open_write`, `io_read`, `io_write`, `io_close`, `io_exit`, `io_getpid`, `io_unlink`, `io_chdir`, `io_mkdir`, `Arena`, `arena_init`, `arena_take` |
+| `lib/arena.tt` | asignación freestanding | `Arena`, `arena_init`, `arena_take` sobre memoria del llamante |
 | `lib/str.tt` | `string.h` mínimo | `bytes_eq`, `mem_copy` |
-| `lib/string.tt` | operaciones de `str` | `string_eq`, `string_has_prefix`, `string_find_byte` |
+| `lib/string.tt` | operaciones de `str` | `string_eq`, `string_has_prefix`, `string_find_byte`, `str_next_codepoint` |
 | `lib/parse.tt` | conversión numérica | `parse_u64`, `parse_i64` con validación y detección de overflow |
 | `lib/fmt.tt` | formato/salida bufferizada | `Out`, `out_init`, `out_flush`, `out_byte`, `out_bytes`, `out_u64`, `out_hex4`, `die_line` |
 | `lib/stdio.tt` | stdout/stderr | `stdio_init`, `print`, `println`, `print_u64`, variantes `e*`, `flush`, `eflush` |
 | `lib/vec.tt` | contenedor dinámico | `Vec`, `vec_init`, `vec_push`, `vec_get` |
 | `lib/ast.tt` | soporte interno | arena global del AST mediante `ast_init` |
+
+`lib/freestanding.tt` importa arena, bytes, strings, parseo y vector sin añadir
+`bss`. Está destinado a objetos enlazables; cada llamada aporta su scratch.
 
 `stdio_init` debe ejecutarse antes de escribir y los buffers requieren `flush`
 o `eflush`. `parse_u64`/`parse_i64` devuelven 1 en éxito y escriben por puntero;

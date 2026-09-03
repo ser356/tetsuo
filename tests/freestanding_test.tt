@@ -1,0 +1,16 @@
+import 'lib/freestanding.tt'
+
+fun tt_freestanding(scratch: *u8, scratch_len: u64, input: str) -> u64 {
+    let ar: Arena
+    arena_init(&ar, scratch, scratch_len)
+    let values: Vec
+    let first: *u8 = arena_take(&ar, 8)
+    vec_init(&values, 8, first, 1)
+    let value: u64 = 0
+    if parse_u64(input, &value) == 0 { return 0 }
+    vec_push(&ar, &values, &value)
+    let expected: str = '42'
+    if string_eq(input, expected) == 0 { return 0 }
+    let stored: *u64 = vec_get(&values, 0)
+    return @stored
+}

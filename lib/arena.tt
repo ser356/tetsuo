@@ -1,0 +1,25 @@
+const EXIT_ARENA_OOM: u64 = 70
+
+struct Arena {
+    base: *u8,
+    pos: u64,
+    cap: u64,
+}
+
+fun arena_init(a: *Arena, base: *u8, cap: u64) {
+    a.base = base
+    a.pos = 0
+    a.cap = cap
+}
+
+fun arena_take(a: *Arena, n: u64) -> *u8 {
+    if n + 7 < n { syscall(1, EXIT_ARENA_OOM, 0, 0) }
+    let aligned: u64 = ((n + 7) / 8) * 8
+    let pos: u64 = a.pos
+    let cap: u64 = a.cap
+    if pos > cap { syscall(1, EXIT_ARENA_OOM, 0, 0) }
+    if aligned > cap - pos { syscall(1, EXIT_ARENA_OOM, 0, 0) }
+    let p: *u8 = a.base + pos
+    a.pos = pos + aligned
+    return p
+}

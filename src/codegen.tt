@@ -720,10 +720,15 @@ fun emit_i_jmp(o: *Out, i: *Ins) {
 }
 
 fun emit_i_jz(o: *Out, fn: *IrFn, i: *Ins) {
-    let sw: u64 = ensure_src_w(o, fn, i.a, 16)
+    let wide: u64 = 0
+    let types: **Type = fn.slot_types
+    if type_width(types[i.a]) == 8 { wide = 1 }
+    let sw: u64 = 0
+    if wide == 1 { sw = ensure_src_x(o, fn, i.a, 16) }
+    else { sw = ensure_src_w(o, fn, i.a, 16) }
     let s0: str = '    cbz     '
     out_bytes(o, s0.ptr, s0.len)
-    out_w_n(o, sw)
+    out_reg_wx(o, sw, wide)
     let s1: str = ', .L'
     out_bytes(o, s1.ptr, s1.len)
     out_u64(o, i.label)
@@ -973,11 +978,11 @@ fun emit_bsses(o: *Out, prog: *Program) {
 //
 // Los labels de epilogo se numeran a partir del maximo usado por el lowering,
 // igual que en codegen_bytes.tt, para que no colisionen.
-fun codegen(o: *Out, target: u64, prog: *Program, funcs: *IrFn) {
+fun codegen(o: *Out, target: u64, no_entry: u64, prog: *Program, funcs: *IrFn) {
     set_target(target)
     emit_text_section(o)
     if target == TGT_MACOS {
-        emit_macos_start(o)
+        if no_entry == 0 { emit_macos_start(o) }
     }
     let max_label: u64 = 0
     let scan: *IrFn = funcs

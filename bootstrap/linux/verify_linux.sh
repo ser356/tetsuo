@@ -61,6 +61,14 @@ if [[ -f tests/shifts_test.tt ]]; then
     smoke "$BUILD/shifts_combined.tt" 0 "shifts_test"
 fi
 
+if [[ -f tests/operators_test.tt ]]; then
+    smoke tests/operators_test.tt 0 "operators_test"
+fi
+
+if [[ -f tests/logical_test.tt ]]; then
+    smoke tests/logical_test.tt 0 "logical_test"
+fi
+
 # 24.b encoder AArch64
 if [[ -f src/asm.tt && -f tests/asm_test.tt ]]; then
     cat src/runtime/io.tt lib/str.tt lib/fmt.tt src/asm.tt tests/asm_test.tt > "$BUILD/asm_combined.tt"

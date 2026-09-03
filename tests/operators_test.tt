@@ -1,0 +1,21 @@
+bss OP_COUNT: 8
+
+fun counted(v: u64) -> u64 {
+    let count: *u64 = OP_COUNT
+    count[0] = count[0] + 1
+    return v
+}
+
+fun main() -> u64 {
+    if 17 % 5 != 2 { return 1 }
+    if 2 + 17 % 5 * 3 != 8 { return 2 }
+    let neg: i64 = -17
+    if neg % 5 != -2 { return 3 }
+    if counted(17) % counted(5) != 2 { return 4 }
+    let count: *u64 = OP_COUNT
+    if count[0] != 2 { return 5 }
+    if !0 != 1 { return 6 }
+    if !9 != 0 { return 7 }
+    if !!9 != 1 { return 8 }
+    return 0
+}

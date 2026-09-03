@@ -42,6 +42,7 @@ check "parens.tt (if/while opt)"        9   bash tests/macos_build.sh tests/pare
 check "sizeof.tt"                       16  bash tests/macos_build.sh tests/sizeof.tt
 check "str_test.tt (mem_copy)"          3   bash tests/macos_build.sh tests/str_test.tt
 check "string + parse primitives"       0   bash tests/string_parse_build.sh
+check "utf8 decoder"                     0   bash tests/macos_build.sh tests/utf8_test.tt
 check "stdio + std umbrella"            0   bash tests/stdio_build.sh
 check "fmt_test.tt (out_u64)"           4   bash tests/macos_build.sh tests/fmt_test.tt
 check "vec_test.tt (arena grow)"        20  bash tests/macos_build.sh tests/vec_test.tt
@@ -85,10 +86,15 @@ check "emit_prologue_test.tt"           174 bash tests/macos_build.sh tests/emit
 check "emit_instr_test.tt"              59  bash tests/macos_build.sh tests/emit_instr_test.tt
 check "codegen_e2e (stage1 -> bin)"     42  bash tests/codegen_e2e_build.sh
 check "main_e2e (argv-driven driver)"   42  bash tests/main_e2e_build.sh
+check "emit=obj (C ABI link)"             0   bash tests/obj_link_build.sh
+check "freestanding (2 pthreads)"          0   bash tests/freestanding_build.sh
+check "release parser ABI"                 0   bash tests/release_name_abi_build.sh
 
 section "Preprocessor + Mach-O nativo (hitos 23-24)"
 check "import_build.sh (pp inline)"     42  bash tests/import_build.sh
 check "shifts_test.tt (<< >>)"          0   bash tests/macos_build.sh tests/shifts_test.tt
+check "operators_test.tt (% !)"          0   bash tests/macos_build.sh tests/operators_test.tt
+check "logical_test.tt (&& ||)"           0   bash tests/macos_build.sh tests/logical_test.tt
 check "asm_test.tt (encoder AArch64)"   0   bash tests/macos_build.sh tests/asm_test.tt
 check "sha256_test.tt (vectors)"        0   bash tests/macos_build.sh tests/sha256_test.tt
 check "macho_build.sh (adhoc signed)"   42  bash tests/macho_build.sh

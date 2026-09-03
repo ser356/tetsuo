@@ -134,14 +134,16 @@ Precedencias, de mayor a menor:
 
 | nivel | operadores                       |
 |-------|----------------------------------|
-| unario| `@expr` (deref), `&var` (dirección) |
+| unario| `@expr` (deref), `&var` (dirección), `!expr`, `-expr` |
 | postfijo | `f(args)`, `.campo`, `[i]`, `as T` |
-| 6     | `*` `/`                          |
+| 6     | `*` `/` `%`                      |
 | 5     | `+` `-`                          |
 | 4     | `&` (AND bit a bit)              |
 | 3     | `^`                              |
 | 2     | `\|`                             |
-| 1     | `==` `!=` `<` `<=` `>` `>=`      |
+| 3     | `==` `!=` `<` `<=` `>` `>=`      |
+| 2     | `&&`                             |
+| 1     | `\|\|`                           |
 
 - `(expr)` agrupa.
 - `nil` es azúcar para el literal `0` (puntero nulo). Compara solo con
@@ -175,8 +177,10 @@ actual son módulos `.tt` importables:
 
 - `src/runtime/io.tt`: syscalls de archivos y proceso básico; también `Arena`,
   `arena_init` y `arena_take`. La arena es bump-only: no existe `free`.
+- `lib/arena.tt`: `Arena`, `arena_init` y `arena_take` sin almacenamiento global.
 - `lib/str.tt`: `bytes_eq` y `mem_copy`; `str` sigue siendo solo `(ptr, len)`.
-- `lib/string.tt`: igualdad, prefijo y búsqueda de byte sobre `str`.
+- `lib/string.tt`: igualdad, prefijo, búsqueda de byte y decodificación UTF-8
+  estricta con `str_next_codepoint`.
 - `lib/parse.tt`: `parse_u64` y `parse_i64`, con rechazo de vacío, caracteres
   inválidos y overflow. Devuelven 1 en éxito y 0 en error.
 - `lib/fmt.tt`: salida bufferizada `Out`, bytes, decimal `u64`, hexadecimal de
@@ -188,6 +192,11 @@ actual son módulos `.tt` importables:
 
 `lib/std.tt` importa en orden runtime, bytes, strings, parseo, formato, stdio y
 vector. Es la entrada recomendada para CLI; `ast.tt` queda fuera por ser interna.
+`lib/freestanding.tt` importa solo arena, bytes, strings, parseo y vector. No
+declara `bss`; el llamante debe aportar un scratch distinto por llamada.
+
+`lib/release_name.tt` expone `tt_release_parse_v1` para FFI. Recibe bytes,
+scratch del llamante y un `TTParsedRelease` de ocho campos `u64`; no usa `bss`.
 
 Equivalencias prácticas:
 
@@ -256,3 +265,7 @@ El compilador para en el primer error con `parser: linea N: mensaje` (o
 
 El runtime macOS ofrece archivos básicos, `getpid`, `mkdir`, `chdir` y
 `unlink`. Red, procesos hijo, entorno y reloj aún no tienen API estable.
+
+`--emit=obj` emite ensamblador macOS arm64 sin `_tt_start`, apto para producir
+con `clang -c` un objeto enlazable desde C o Rust. Las funciones exportadas
+usan la ABI AAPCS64 y deben llevar prefijo manual para evitar colisiones.

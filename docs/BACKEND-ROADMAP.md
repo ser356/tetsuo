@@ -1,5 +1,17 @@
 # Guía de implementación: llevar tetsuo a partes del backend
 
+## Estado — 4 septiembre 2026
+
+- ✅ Fase 0: `--emit=obj`, enlace C y ABI AArch64 verificados.
+- ✅ Fase 1: `lib/freestanding.tt`, arena del llamante y smoke con dos hilos.
+- ✅ Fase 2: decodificador UTF-8 estricto con vectores válidos e inválidos.
+- ✅ Punto de control: parser de releases en `lib/release_name.tt`, ABI v1 y
+  ensamblador integrado en Videodrome para `aarch64-apple-darwin`; Rust queda
+  como fallback y oráculo diferencial.
+- ✅ Fase 3: `%`, `!`, `&&` y `||`, incluido cortocircuito comprobado.
+- ⏸ Fase 4: aplazada. El parser ya funciona con cascadas; una tabla real exige
+  layout global, relocaciones y cargas de `str` de 16 bytes sin consumidor.
+
 Complemento operativo de `docs/BACKEND-READINESS.md`. Aquel dice *qué* es
 portable y por qué; este dice *cómo* llegar, en qué orden y con qué criterio de
 cierre por hito.
@@ -342,6 +354,11 @@ Sugerencia: hito propio, con un smoke que fuerce >7 valores vivos simultáneos
 ---
 
 ## 8. Fase 4 — Tablas constantes de cadenas
+
+**Decisión tras el port: aplazada por YAGNI.** Las cascadas actuales quedan
+encapsuladas en `tt_release_tag_id`; no han impedido el port ni su integración.
+Se reabre solo si otra tabla real aparece y justifica layout, relocaciones y
+carga de agregados de 16 bytes en ambos backends.
 
 Es el hueco que más código artificial genera: las 32 parejas de
 `RESOLUTIONS`/`SOURCES`/`CODECS` acaban como cascada de `if`.

@@ -23,6 +23,7 @@ fun main() -> u32 {
     if enc_bl(2) != 0x94000002 { return 22 }
     if enc_b(2) != 0x14000002 { return 23 }
     if enc_cbz_w(0, 2) != 0x34000040 { return 24 }
+    if enc_cbz_x(0, 2) != 0xb4000040 { return 29 }
     if enc_cmp_reg(0, 1) != 0xeb01001f { return 25 }
     if enc_cset(0, 1) != 0x1a9f17e0 { return 26 }
     if enc_svc(0x80) != 0xd4001001 { return 27 }

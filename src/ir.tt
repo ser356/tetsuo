@@ -331,9 +331,43 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         ir_emit(b.f, la)
         return dst
     }
+    if e.kind == EX_LOGAND { return lower_logical(b, e, 0) }
+    if e.kind == EX_LOGOR { return lower_logical(b, e, 1) }
     if e.kind == EX_BIN {
         let la: u64 = lower_expr(b, e.lhs)
         let lb: u64 = lower_expr(b, e.rhs)
+        if e.op == OP_MOD {
+            let width: u64 = ir_width_of(e.type, 4)
+            let signed: u64 = type_is_signed(e.type)
+            let quotient: u64 = ir_new_slot(b, e.type)
+            let div: *Ins = mk_ins(b.ar, IR_BINOP)
+            div.dst = quotient
+            div.a = la
+            div.b = lb
+            div.binop = OP_DIV
+            div.width = width
+            div.is_signed = signed
+            ir_emit(b.f, div)
+            let product: u64 = ir_new_slot(b, e.type)
+            let mul: *Ins = mk_ins(b.ar, IR_BINOP)
+            mul.dst = product
+            mul.a = quotient
+            mul.b = lb
+            mul.binop = OP_MUL
+            mul.width = width
+            mul.is_signed = signed
+            ir_emit(b.f, mul)
+            let remainder: u64 = ir_new_slot(b, e.type)
+            let sub: *Ins = mk_ins(b.ar, IR_BINOP)
+            sub.dst = remainder
+            sub.a = la
+            sub.b = product
+            sub.binop = OP_SUB
+            sub.width = width
+            sub.is_signed = signed
+            ir_emit(b.f, sub)
+            return remainder
+        }
         let dst: u64 = ir_new_slot(b, e.type)
         let op: *Ins = mk_ins(b.ar, IR_BINOP)
         op.dst = dst
@@ -446,6 +480,40 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         return dst4
     }
     return 0
+}
+
+fun lower_logical(b: *B, e: *Expr, is_or: u64) -> u64 {
+    let dst: u64 = ir_new_slot(b, e.type)
+    let init: *Ins = mk_ins(b.ar, IR_MOVI)
+    init.dst = dst
+    init.imm = is_or
+    ir_emit(b.f, init)
+    let lhs: u64 = lower_expr(b, e.lhs)
+    let end_label: u64 = ir_new_label(b)
+    if is_or == 1 {
+        let rhs_label: u64 = ir_new_label(b)
+        ir_emit_jz(b, lhs, rhs_label)
+        ir_emit_jmp(b, end_label)
+        ir_emit_label(b, rhs_label)
+    } else {
+        ir_emit_jz(b, lhs, end_label)
+    }
+    let rhs: u64 = lower_expr(b, e.rhs)
+    let zero: u64 = ir_new_slot(b, e.type)
+    let mov: *Ins = mk_ins(b.ar, IR_MOVI)
+    mov.dst = zero
+    mov.imm = 0
+    ir_emit(b.f, mov)
+    let cmp: *Ins = mk_ins(b.ar, IR_CMPNE)
+    cmp.dst = dst
+    cmp.a = rhs
+    cmp.b = zero
+    let right: *Expr = e.rhs
+    cmp.width = ir_width_of(right.type, 4)
+    cmp.is_signed = type_is_signed(right.type)
+    ir_emit(b.f, cmp)
+    ir_emit_label(b, end_label)
+    return dst
 }
 
 // Comparacion: baja los dos lados y emite un IR_CMPxx, que deja 0 o 1 en un
@@ -855,15 +923,23 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
         s = s + 1
     }
 
-    let call_ix_bytes: u64 = n * 8
-    if call_ix_bytes == 0 { call_ix_bytes = 8 }
-    let call_ix: *u64 = arena_take(ar, call_ix_bytes)
-    let ncalls: u64 = 0
+    let barrier_bytes: u64 = n * 8
+    if barrier_bytes == 0 { barrier_bytes = 8 }
+    let barriers: *u64 = arena_take(ar, barrier_bytes)
+    let nbarriers: u64 = 0
     let j: u64 = 0
     while j < n {
         if arr[j].op == IR_CALL {
-            call_ix[ncalls] = j
-            ncalls = ncalls + 1
+            barriers[nbarriers] = j
+            nbarriers = nbarriers + 1
+        }
+        if arr[j].op == IR_JMP {
+            barriers[nbarriers] = j
+            nbarriers = nbarriers + 1
+        }
+        if arr[j].op == IR_JZ {
+            barriers[nbarriers] = j
+            nbarriers = nbarriers + 1
         }
         j = j + 1
     }
@@ -896,8 +972,8 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
         if def_idx[s] < n {
             if last_use[s] < n {
                 let c: u64 = 0
-                while c < ncalls {
-                    let ci: u64 = call_ix[c]
+                while c < nbarriers {
+                    let ci: u64 = barriers[c]
                     if ci > def_idx[s] {
                         if ci < last_use[s] { cross[s] = 1 }
                     }

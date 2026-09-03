@@ -1,0 +1,320 @@
+const TT_RELEASE_ABI_VERSION: u64 = 1
+const TT_RELEASE_NONE: u64 = 18446744073709551615
+
+struct TTParsedRelease {
+    abi_version: u64,
+    title_len: u64,
+    year: u64,
+    season: u64,
+    episode: u64,
+    resolution_id: u64,
+    source_id: u64,
+    codec_id: u64,
+}
+
+fun tt_release_lower(c: u8) -> u8 {
+    if c >= 65 {
+        if c <= 90 { return c + 32 }
+    }
+    return c
+}
+
+fun tt_release_is_sep(c: u8) -> u64 {
+    if c == 46 { return 1 }
+    if c == 95 { return 1 }
+    if c == 32 { return 1 }
+    if c == 91 { return 1 }
+    if c == 93 { return 1 }
+    if c == 40 { return 1 }
+    if c == 41 { return 1 }
+    return 0
+}
+
+fun tt_release_next_token(raw: *u8, raw_len: u64, pos: *u64, start: *u64, token_len: *u64) -> u64 {
+    let i: u64 = @pos
+    while i < raw_len {
+        if tt_release_is_sep(raw[i]) == 0 { break }
+        i = i + 1
+    }
+    if i == raw_len {
+        @pos = i
+        return 0
+    }
+    let s: u64 = i
+    while i < raw_len {
+        if tt_release_is_sep(raw[i]) == 1 { break }
+        i = i + 1
+    }
+    @start = s
+    @token_len = i - s
+    @pos = i
+    return 1
+}
+
+fun tt_release_eq_ci(p: *u8, n: u64, lit: str) -> u64 {
+    if n != lit.len { return 0 }
+    let i: u64 = 0
+    while i < n {
+        if tt_release_lower(p[i]) != lit.ptr[i] { return 0 }
+        i = i + 1
+    }
+    return 1
+}
+
+fun tt_release_tag_eq(p: *u8, n: u64, lit: str) -> u64 {
+    if tt_release_eq_ci(p, n, lit) == 1 { return 1 }
+    let head: u64 = 0
+    while head < n {
+        if p[head] == 45 { break }
+        head = head + 1
+    }
+    if head == n { return 0 }
+    return tt_release_eq_ci(p, head, lit)
+}
+
+fun tt_release_parse_u16(p: *u8, n: u64, out: *u64) -> u64 {
+    if n == 0 { return 0 }
+    let value: u64 = 0
+    let i: u64 = 0
+    while i < n {
+        let c: u8 = p[i]
+        if c < 48 { return 0 }
+        if c > 57 { return 0 }
+        let digit: u64 = c - 48
+        if value > 6553 { return 0 }
+        if value == 6553 {
+            if digit > 5 { return 0 }
+        }
+        value = value * 10 + digit
+        i = i + 1
+    }
+    @out = value
+    return 1
+}
+
+fun tt_release_tag_id(kind: u64, p: *u8, n: u64) -> u64 {
+    if kind == 1 {
+        let a: str = '2160p'; if tt_release_tag_eq(p, n, a) == 1 { return 1 }
+        let b: str = '1440p'; if tt_release_tag_eq(p, n, b) == 1 { return 2 }
+        let c: str = '1080p'; if tt_release_tag_eq(p, n, c) == 1 { return 3 }
+        let d: str = '720p'; if tt_release_tag_eq(p, n, d) == 1 { return 4 }
+        let e: str = '480p'; if tt_release_tag_eq(p, n, e) == 1 { return 5 }
+        let f: str = '4k'; if tt_release_tag_eq(p, n, f) == 1 { return 1 }
+        let g: str = 'uhd'; if tt_release_tag_eq(p, n, g) == 1 { return 1 }
+        let h: str = 'fullhd'; if tt_release_tag_eq(p, n, h) == 1 { return 3 }
+        let j: str = 'fhd'; if tt_release_tag_eq(p, n, j) == 1 { return 3 }
+        return 0
+    }
+    if kind == 2 {
+        let a: str = 'bluray'; if tt_release_tag_eq(p, n, a) == 1 { return 1 }
+        let b: str = 'blu-ray'; if tt_release_tag_eq(p, n, b) == 1 { return 1 }
+        let c: str = 'bdrip'; if tt_release_tag_eq(p, n, c) == 1 { return 2 }
+        let d: str = 'brrip'; if tt_release_tag_eq(p, n, d) == 1 { return 3 }
+        let e: str = 'webrip'; if tt_release_tag_eq(p, n, e) == 1 { return 4 }
+        let f: str = 'web-dl'; if tt_release_tag_eq(p, n, f) == 1 { return 5 }
+        let g: str = 'webdl'; if tt_release_tag_eq(p, n, g) == 1 { return 5 }
+        let h: str = 'web'; if tt_release_tag_eq(p, n, h) == 1 { return 6 }
+        let j: str = 'hdrip'; if tt_release_tag_eq(p, n, j) == 1 { return 7 }
+        let k: str = 'dvdrip'; if tt_release_tag_eq(p, n, k) == 1 { return 8 }
+        let l: str = 'hdtv'; if tt_release_tag_eq(p, n, l) == 1 { return 9 }
+        let m: str = 'remux'; if tt_release_tag_eq(p, n, m) == 1 { return 10 }
+        let q: str = 'uhdrip'; if tt_release_tag_eq(p, n, q) == 1 { return 11 }
+        let r: str = 'dvd'; if tt_release_tag_eq(p, n, r) == 1 { return 12 }
+        return 0
+    }
+    let a: str = 'x265'; if tt_release_tag_eq(p, n, a) == 1 { return 1 }
+    let b: str = 'x264'; if tt_release_tag_eq(p, n, b) == 1 { return 2 }
+    let c: str = 'h265'; if tt_release_tag_eq(p, n, c) == 1 { return 3 }
+    let d: str = 'h264'; if tt_release_tag_eq(p, n, d) == 1 { return 4 }
+    let e: str = 'hevc'; if tt_release_tag_eq(p, n, e) == 1 { return 5 }
+    let f: str = 'av1'; if tt_release_tag_eq(p, n, f) == 1 { return 6 }
+    let g: str = 'xvid'; if tt_release_tag_eq(p, n, g) == 1 { return 7 }
+    let h: str = 'divx'; if tt_release_tag_eq(p, n, h) == 1 { return 8 }
+    let j: str = 'vp9'; if tt_release_tag_eq(p, n, j) == 1 { return 9 }
+    return 0
+}
+
+fun tt_release_parse_v1(raw: *u8, raw_len: u64, scratch: *u8, scratch_len: u64, out: *TTParsedRelease) -> u64 {
+    let none: u64 = TT_RELEASE_NONE
+    out.abi_version = TT_RELEASE_ABI_VERSION
+    out.title_len = 0
+    out.year = none
+    out.season = none
+    out.episode = none
+    out.resolution_id = 0
+    out.source_id = 0
+    out.codec_id = 0
+
+    let pos: u64 = 0
+    let start: u64 = 0
+    let n: u64 = 0
+    let token_index: u64 = 0
+    let tag_cut: u64 = none
+    let year_any: u64 = none
+    let year_any_pos: u64 = none
+    let year_before: u64 = none
+    let year_before_pos: u64 = none
+    let episode_only: u64 = none
+
+    while tt_release_next_token(raw, raw_len, &pos, &start, &n) == 1 {
+        let p: *u8 = raw + start
+        let handled: u64 = 0
+        if n > 0 {
+            if tt_release_lower(p[0]) == 115 {
+                let j: u64 = 1
+                while j < n {
+                    let c: u8 = tt_release_lower(p[j])
+                    if c < 48 { break }
+                    if c > 57 { break }
+                    j = j + 1
+                }
+                if j > 1 {
+                    if j < n {
+                        if tt_release_lower(p[j]) == 101 {
+                            let k: u64 = j + 1
+                            while k < n {
+                                let c2: u8 = tt_release_lower(p[k])
+                                if c2 < 48 { break }
+                                if c2 > 57 { break }
+                                k = k + 1
+                            }
+                            let sv: u64 = 0
+                            let ev: u64 = 0
+                            if k > j + 1 {
+                                if tt_release_parse_u16(p + 1, j - 1, &sv) == 1 {
+                                    if tt_release_parse_u16(p + j + 1, k - j - 1, &ev) == 1 {
+                                        if out.season == none {
+                                            out.season = sv
+                                            out.episode = ev
+                                        }
+                                        if tag_cut == none { tag_cut = token_index }
+                                        handled = 1
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        let sv2: u64 = 0
+                        if tt_release_parse_u16(p + 1, n - 1, &sv2) == 1 {
+                            if out.season == none { out.season = sv2 }
+                            if tag_cut == none { tag_cut = token_index }
+                            handled = 1
+                        }
+                    }
+                }
+            }
+        }
+        if handled == 0 {
+            if n > 1 {
+                if tt_release_lower(p[0]) == 101 {
+                    let ep_start: u64 = 1
+                    if n > 2 {
+                        if tt_release_lower(p[1]) == 112 { ep_start = 2 }
+                    }
+                    let ev2: u64 = 0
+                    if tt_release_parse_u16(p + ep_start, n - ep_start, &ev2) == 1 {
+                        if episode_only == none { episode_only = ev2 }
+                        if tag_cut == none { tag_cut = token_index }
+                        handled = 1
+                    }
+                }
+            }
+        }
+        if handled == 0 {
+            if n == 4 {
+                let y: u64 = 0
+                if tt_release_parse_u16(p, n, &y) == 1 {
+                    if y >= 1900 {
+                        if y <= 2099 {
+                            year_any = y
+                            year_any_pos = token_index
+                            if tag_cut == none {
+                                year_before = y
+                                year_before_pos = token_index
+                            }
+                            handled = 1
+                        }
+                    }
+                }
+            }
+        }
+        if handled == 0 {
+            if out.resolution_id == 0 {
+                let rid: u64 = tt_release_tag_id(1, p, n)
+                if rid != 0 {
+                    out.resolution_id = rid
+                    if tag_cut == none { tag_cut = token_index }
+                    handled = 1
+                }
+            }
+        }
+        if handled == 0 {
+            if out.source_id == 0 {
+                let sid: u64 = tt_release_tag_id(2, p, n)
+                if sid != 0 {
+                    out.source_id = sid
+                    if tag_cut == none { tag_cut = token_index }
+                    handled = 1
+                }
+            }
+        }
+        if handled == 0 {
+            if out.codec_id == 0 {
+                let cid: u64 = tt_release_tag_id(3, p, n)
+                if cid != 0 {
+                    out.codec_id = cid
+                    if tag_cut == none { tag_cut = token_index }
+                }
+            }
+        }
+        token_index = token_index + 1
+    }
+
+    if out.season != none {
+        if out.episode == none {
+            if episode_only != none { out.episode = episode_only }
+        }
+    }
+    let year_cut: u64 = token_index
+    if year_before != none {
+        out.year = year_before
+        year_cut = year_before_pos
+    } else if year_any != none {
+        out.year = year_any
+        year_cut = year_any_pos
+    }
+    if tag_cut == none { tag_cut = token_index }
+    let cut: u64 = tag_cut
+    if year_cut < cut { cut = year_cut }
+
+    pos = 0
+    token_index = 0
+    let required: u64 = 0
+    while tt_release_next_token(raw, raw_len, &pos, &start, &n) == 1 {
+        if token_index >= cut { break }
+        if required > 0 { required = required + 1 }
+        required = required + n
+        token_index = token_index + 1
+    }
+    if required > scratch_len { return required }
+
+    pos = 0
+    token_index = 0
+    let written: u64 = 0
+    while tt_release_next_token(raw, raw_len, &pos, &start, &n) == 1 {
+        if token_index >= cut { break }
+        if written > 0 {
+            scratch[written] = 32
+            written = written + 1
+        }
+        let copy_i: u64 = 0
+        while copy_i < n {
+            scratch[written + copy_i] = raw[start + copy_i]
+            copy_i = copy_i + 1
+        }
+        written = written + n
+        token_index = token_index + 1
+    }
+    out.title_len = written
+    return 0
+}

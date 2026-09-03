@@ -327,10 +327,12 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let flag_tok: str = '--dump-tokens'
     let flag_ir: str = '--dump-ir'
     let flag_macho: str = '--emit=macho'
+    let flag_obj: str = '--emit=obj'
     let flag_linux: str = '--target=linux'
     let is_dump_tok: u64 = cstr_eq(a1, flag_tok.ptr, flag_tok.len)
     let is_dump_ir: u64 = cstr_eq(a1, flag_ir.ptr, flag_ir.len)
     let is_macho: u64 = cstr_eq(a1, flag_macho.ptr, flag_macho.len)
+    let is_obj: u64 = cstr_eq(a1, flag_obj.ptr, flag_obj.len)
     let is_linux: u64 = cstr_eq(a1, flag_linux.ptr, flag_linux.len)
 
     if is_dump_tok == 1 {
@@ -398,7 +400,7 @@ fun main(argc: u64, argv: **u8) -> u32 {
         out_init(o, fd, OUT_BUF, 65536)
         let target: u64 = TGT_MACOS
         if is_linux == 1 { target = TGT_LINUX }
-        codegen(o, target, prog, irhead)
+        codegen(o, target, is_obj, prog, irhead)
     }
     io_close(fd)
     return EXIT_OK

@@ -15,7 +15,7 @@ fun main() -> u32 {
 
     let o: *Out = E2E_STORAGE
     out_init(o, fd, E2E_BUF, 4096)
-    codegen(o, TGT_MACOS, prog, irhead)
+    codegen(o, TGT_MACOS, 0, prog, irhead)
     io_close(fd)
     return 0
 }

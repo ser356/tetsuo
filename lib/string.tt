@@ -18,3 +18,57 @@ fun string_find_byte(s: str, needle: u8) -> u64 {
     }
     return s.len
 }
+
+fun str_next_codepoint(p: *u8, len: u64, i: u64, out_cp: *u64) -> u64 {
+    if i >= len { return 0 }
+    let b0: u64 = p[i]
+    if b0 < 128 {
+        @out_cp = b0
+        return 1
+    }
+    if b0 < 194 { return 0 }
+    if b0 < 224 {
+        if i + 1 >= len { return 0 }
+        let b1: u64 = p[i + 1]
+        if b1 < 128 { return 0 }
+        if b1 > 191 { return 0 }
+        @out_cp = ((b0 & 31) << 6) | (b1 & 63)
+        return 2
+    }
+    if b0 < 240 {
+        if i + 2 >= len { return 0 }
+        let b1: u64 = p[i + 1]
+        let b2: u64 = p[i + 2]
+        if b1 < 128 { return 0 }
+        if b1 > 191 { return 0 }
+        if b2 < 128 { return 0 }
+        if b2 > 191 { return 0 }
+        if b0 == 224 {
+            if b1 < 160 { return 0 }
+        }
+        if b0 == 237 {
+            if b1 > 159 { return 0 }
+        }
+        @out_cp = ((b0 & 15) << 12) | ((b1 & 63) << 6) | (b2 & 63)
+        return 3
+    }
+    if b0 > 244 { return 0 }
+    if i + 3 >= len { return 0 }
+    let b1: u64 = p[i + 1]
+    let b2: u64 = p[i + 2]
+    let b3: u64 = p[i + 3]
+    if b1 < 128 { return 0 }
+    if b1 > 191 { return 0 }
+    if b2 < 128 { return 0 }
+    if b2 > 191 { return 0 }
+    if b3 < 128 { return 0 }
+    if b3 > 191 { return 0 }
+    if b0 == 240 {
+        if b1 < 144 { return 0 }
+    }
+    if b0 == 244 {
+        if b1 > 143 { return 0 }
+    }
+    @out_cp = ((b0 & 7) << 18) | ((b1 & 63) << 12) | ((b2 & 63) << 6) | (b3 & 63)
+    return 4
+}
