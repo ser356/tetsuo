@@ -15,7 +15,7 @@ src/            compilador stage1 en tetsuo puro
   parser.tt       parser descendente recursivo + AST + tipos
   ir.tt           lowering a IR lineal + regalloc lineal
   codegen.tt      emisión AArch64 textual (.s, target macos)
-  macho.tt        writer Mach-O binario (en curso, ver docs/MACHO-PLAN.md)
+  macho.tt        writer Mach-O binario + firma ad-hoc embebida
   main.tt         CLI argv-driven: preprocessor `import` + parse + lower + codegen
   runtime/
     io.tt         envoltorios de syscalls (target macos)
@@ -35,22 +35,21 @@ SELFHOST-STATE.md  bitácora del avance del autohospedaje
 
 ## Bootstrap
 
-El único artefacto externo que necesitas es `clang` (o cualquier `as`+`ld`
-capaz de ensamblar y enlazar AArch64 Mach-O). El compilador arranca desde la
-seed committeada en `bootstrap/tetsuoc.s`:
+El bootstrap nativo no necesita `gcc`, `clang`, `cc`, `as`, `ld`, `codesign`
+ni bibliotecas dinámicas. Arranca desde la seed Mach-O arm64 firmada y
+committeada en `bootstrap/tetsuoc.macho`. `tests/macos_build.sh` la copia a
+`build/main` cuando el compilador no existe.
 
-```bash
-clang -c bootstrap/tetsuoc.s -o build/main.o
-clang -e _tt_start -o build/main build/main.o
-```
-
-`build/main` es un compilador stage1 completo. Los scripts de `tests/` lo hacen
-solos si no existe.
+La seed compila fuentes tetsuo directamente a ejecutables Mach-O arm64 con
+firma ad-hoc embebida. La ruta histórica desde `bootstrap/tetsuoc.s` sigue
+disponible para verificar el backend textual, pero no forma parte del
+bootstrap autónomo.
 
 ## Uso del compilador
 
 ```bash
-build/main fuente.tt -o salida.s               # compila a asm
+build/main --emit=macho fuente.tt -o salida    # ejecutable Mach-O firmado
+build/main fuente.tt -o salida.s               # backend textual legado
 build/main --dump-tokens fuente.tt             # imprime tokens
 build/main --dump-ir     fuente.tt             # imprime IR lineal
 ```
@@ -60,7 +59,8 @@ El driver ejecuta primero el preprocessor `import` sobre el fuente (una línea
 paths ya vistos se saltan → sin ciclos ni duplicados). Después parsea, lowera
 y emite AArch64 Mach-O textual. Target hardcodeado a macOS.
 
-Enlace de la salida:
+El modo `--emit=macho` no requiere pasos posteriores. El backend textual puede
+ensamblarse externamente para depuración:
 
 ```bash
 clang -c salida.s -o salida.o
@@ -76,10 +76,9 @@ clang -e _tt_start -o salida salida.o
 bash tests/macos_build.sh tests/macos_hello.tt [args...]
 ```
 
-Concatena el runtime (`src/runtime/io.tt`, `lib/*.tt`, `src/lexer.tt`,
-`src/parser.tt`, `src/ir.tt`, `src/codegen.tt`) delante del fuente, invoca
-`build/main` para producir `.s`, ensambla y enlaza con `clang -e _tt_start`.
-El resultado se comprueba por su exit code.
+Genera un entry con imports del runtime y compilador, invoca `build/main
+--emit=macho` y ejecuta el Mach-O firmado resultante. No invoca ensamblador,
+linker ni firmador externo.
 
 ### Target virt (bare metal, QEMU)
 
@@ -132,8 +131,9 @@ Detalles y patrones idiomáticos en `LENGUAJE.md` e `idioms.md`.
 
 ## Estado
 
-Autohospedado 100%. `stage1(stage1) == seed` bit-a-bit sobre el combined del
-propio compilador. Siguiente frente: emisión Mach-O binaria + firma ad-hoc
-embebida sin `clang`/`as`/`ld`/`codesign` (ver `docs/MACHO-PLAN.md`). La
-bitácora detallada, con los tests que cubren cada hito, está en
-`SELFHOST-STATE.md`.
+Autohospedado 100%. La seed Mach-O produce un compilador idéntico a sí mismo y
+el compilador producido vuelve a reproducir exactamente el mismo binario:
+`seed == stage1 == stage2` bit a bit. La ruta `--emit=macho` incluye encoder
+AArch64, layout Mach-O, fixups, SHA-256 y firma ad-hoc; no depende de toolchain
+externo. Verificación nativa más reciente: 2026-09-03. La bitácora detallada
+está en `SELFHOST-STATE.md`.

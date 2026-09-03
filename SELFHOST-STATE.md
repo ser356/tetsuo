@@ -1,4 +1,23 @@
-# Estado del autohospedaje tetsuo (fixpoint cerrado 2026-08-25)
+# Estado del autohospedaje tetsuo (verificado 2026-09-03)
+
+## Verificación nativa sin toolchain externo — 2026-09-03
+
+Prueba ejecutada en macOS arm64 con `PATH=/nonexistent`, usando únicamente la
+seed committeada `bootstrap/tetsuoc.macho` como compilador inicial:
+
+1. seed emite stage1 con `--emit=macho`;
+2. stage1 emite stage2 con `--emit=macho`;
+3. `seed == stage1 == stage2` bit a bit, 115694 bytes, SHA-256
+   `362ad21cc18f74900f1381af6aa0b83986245f6831344b1dbb34c222cd00278b`;
+4. stage2 compila un smoke Mach-O firmado que ejecuta con rc=42;
+5. las firmas embebidas pasan la recomputación SHA-256 de todas sus páginas;
+6. `otool -L` no lista bibliotecas dinámicas.
+
+Conclusión: el bootstrap y la compilación nativa no invocan `gcc`, `clang`,
+`cc`, `as`, `ld` ni `codesign`. La batería completa `bootstrap/verify.sh`
+también terminó en `VERIFY OK`. Algunos tests del backend textual conservan
+invocaciones externas deliberadas; no pertenecen a la ruta autónoma
+`--emit=macho`.
 
 ## FIXPOINT COMPLETO ✅
 
