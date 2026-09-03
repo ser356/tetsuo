@@ -105,6 +105,7 @@ const IR_RET:         u64 = 15
 const IR_JMP:         u64 = 16
 const IR_JZ:          u64 = 17
 const IR_LABEL:       u64 = 18
+const IR_CAST:        u64 = 19
 
 // Una instruccion. Un solo struct para todos los opcodes: sin uniones ni
 // herencia, los campos que no aplican simplemente quedan a cero.
@@ -126,6 +127,7 @@ struct Ins {
     callee_len:   u64,
     args:         *u64,
     nargs:        u64,
+    is_signed:    u64,
     next:         *Ins,
 }
 
@@ -160,7 +162,7 @@ struct IrFn {
 // reutilizan tras un vec_push que creciera) y un campo con basura se
 // interpretaria como un slot o un label validos.
 fun mk_ins(ar: *Arena, op: u64) -> *Ins {
-    let i: *Ins = arena_take(ar, 120)
+    let i: *Ins = arena_take(ar, 128)
     i.op = op
     i.dst = 0
     i.a = 0
@@ -175,6 +177,7 @@ fun mk_ins(ar: *Arena, op: u64) -> *Ins {
     i.callee_len = 0
     i.args = nil
     i.nargs = 0
+    i.is_signed = 0
     i.next = nil
     return i
 }
@@ -226,11 +229,12 @@ struct B {
     slot_cap:    u64,
     next_label:  u64,
     break_stack: *u64,
+    continue_stack: *u64,
     break_top:   u64,
 }
 
 fun mk_builder(ar: *Arena, fn: *IrFn) -> *B {
-    let b: *B = arena_take(ar, 72)
+    let b: *B = arena_take(ar, 80)
     b.f = fn
     b.ar = ar
     b.next_slot = 0
@@ -241,6 +245,8 @@ fun mk_builder(ar: *Arena, fn: *IrFn) -> *B {
     b.next_label = 0
     let bs: *u64 = arena_take(ar, 128)
     b.break_stack = bs
+    let cs: *u64 = arena_take(ar, 128)
+    b.continue_stack = cs
     b.break_top = 0
     return b
 }
@@ -313,6 +319,7 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         l.local = e.var_index
         let sts: **Type = b.slot_types
         l.width = ir_width_of(sts[e.var_index], 8)
+        l.is_signed = type_is_signed(sts[e.var_index])
         ir_emit(b.f, l)
         return dst
     }
@@ -334,8 +341,20 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         op.b = lb
         op.binop = e.op
         op.width = ir_width_of(e.type, 4)
+        op.is_signed = type_is_signed(e.type)
         ir_emit(b.f, op)
         return dst
+    }
+    if e.kind == EX_CAST {
+        let src: u64 = lower_expr(b, e.inner)
+        let dstc: u64 = ir_new_slot(b, e.type)
+        let ci: *Ins = mk_ins(b.ar, IR_CAST)
+        ci.dst = dstc
+        ci.a = src
+        ci.width = ir_width_of(e.type, 8)
+        ci.is_signed = type_is_signed(e.type)
+        ir_emit(b.f, ci)
+        return dstc
     }
     if e.kind == EX_EQ { return lower_cmp(b, e, IR_CMPEQ) }
     if e.kind == EX_NE { return lower_cmp(b, e, IR_CMPNE) }
@@ -359,6 +378,7 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         ld.dst = dst3
         ld.a = addr
         ld.width = ir_width_of(e.type, 8)
+        ld.is_signed = type_is_signed(e.type)
         ir_emit(b.f, ld)
         return dst3
     }
@@ -440,6 +460,7 @@ fun lower_cmp(b: *B, e: *Expr, opk: u64) -> u64 {
     ci.b = lb
     let le: *Expr = e.lhs
     ci.width = ir_width_of(le.type, 4)
+    ci.is_signed = type_is_signed(le.type)
     ir_emit(b.f, ci)
     return dst
 }
@@ -579,7 +600,9 @@ fun lower_stmt(b: *B, s: *Stmt) {
         let c2: u64 = lower_expr(b, s.cond)
         ir_emit_jz(b, c2, l_end3)
         let bs: *u64 = b.break_stack
+        let cs: *u64 = b.continue_stack
         bs[b.break_top] = l_end3
+        cs[b.break_top] = l_top
         b.break_top = b.break_top + 1
         lower_block(b, s.body)
         b.break_top = b.break_top - 1
@@ -592,7 +615,9 @@ fun lower_stmt(b: *B, s: *Stmt) {
         let l_end4: u64 = ir_new_label(b)
         ir_emit_label(b, l_top2)
         let bs2: *u64 = b.break_stack
+        let cs2: *u64 = b.continue_stack
         bs2[b.break_top] = l_end4
+        cs2[b.break_top] = l_top2
         b.break_top = b.break_top + 1
         lower_block(b, s.body)
         b.break_top = b.break_top - 1
@@ -608,6 +633,16 @@ fun lower_stmt(b: *B, s: *Stmt) {
         let bs3: *u64 = b.break_stack
         let dst: u64 = bs3[b.break_top - 1]
         ir_emit_jmp(b, dst)
+        return
+    }
+    if s.kind == ST_CONTINUE {
+        if b.break_top == 0 {
+            let m90c: str = 'continue fuera de loop'
+            die_line(m90c.ptr, m90c.len, 0)
+        }
+        let cs3: *u64 = b.continue_stack
+        let dst2: u64 = cs3[b.break_top - 1]
+        ir_emit_jmp(b, dst2)
         return
     }
 }

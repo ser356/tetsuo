@@ -45,6 +45,7 @@
 
 const TGT_VIRT:  u64 = 0
 const TGT_MACOS: u64 = 1
+const TGT_LINUX: u64 = 2
 bss G_TARGET: 8
 
 fun set_target(t: u64) {
@@ -318,11 +319,14 @@ fun ensure_src_w(o: *Out, fn: *IrFn, slot: u64, scratch: u64) -> u64 {
     return scratch
 }
 
-fun out_binop_mnemonic(o: *Out, op: u64) {
+fun out_binop_mnemonic(o: *Out, op: u64, signed: u64) {
     if op == OP_ADD { let sa: str = 'add'; out_bytes(o, sa.ptr, sa.len); return }
     if op == OP_SUB { let sb: str = 'sub'; out_bytes(o, sb.ptr, sb.len); return }
     if op == OP_MUL { let sc: str = 'mul'; out_bytes(o, sc.ptr, sc.len); return }
-    if op == OP_DIV { let sd: str = 'udiv'; out_bytes(o, sd.ptr, sd.len); return }
+    if op == OP_DIV {
+        if signed == 1 { let ss: str = 'sdiv'; out_bytes(o, ss.ptr, ss.len); return }
+        let sd: str = 'udiv'; out_bytes(o, sd.ptr, sd.len); return
+    }
     if op == OP_AND { let se: str = 'and'; out_bytes(o, se.ptr, se.len); return }
     if op == OP_OR  { let sf: str = 'orr'; out_bytes(o, sf.ptr, sf.len); return }
     if op == OP_XOR { let sg: str = 'eor'; out_bytes(o, sg.ptr, sg.len); return }
@@ -355,19 +359,38 @@ fun emit_i_label_addr(o: *Out, fn: *IrFn, i: *Ins) {
         out_bytes(o, n0.ptr, n0.len)
         out_x_n(o, xd)
         let n1: str = ', _'
-        out_bytes(o, n1.ptr, n1.len)
+        if get_target() == TGT_LINUX {
+            let ln1: str = ', '
+            out_bytes(o, ln1.ptr, ln1.len)
+        } else {
+            out_bytes(o, n1.ptr, n1.len)
+        }
         let lx2: *Lexer = LX_STATE
         out_bytes(o, lx2.src + i.callee_start, i.callee_len)
         let n2: str = '@PAGE\n    add     '
-        out_bytes(o, n2.ptr, n2.len)
+        if get_target() == TGT_LINUX {
+            let ln2: str = '\n    add     '
+            out_bytes(o, ln2.ptr, ln2.len)
+        } else {
+            out_bytes(o, n2.ptr, n2.len)
+        }
         out_x_n(o, xd)
         let n3: str = ', '
         out_bytes(o, n3.ptr, n3.len)
         out_x_n(o, xd)
-        out_bytes(o, n1.ptr, n1.len)
+        if get_target() == TGT_LINUX {
+            let lo: str = ', :lo12:'
+            out_bytes(o, lo.ptr, lo.len)
+        } else {
+            out_bytes(o, n1.ptr, n1.len)
+        }
         out_bytes(o, lx2.src + i.callee_start, i.callee_len)
-        let n4: str = '@PAGEOFF\n'
-        out_bytes(o, n4.ptr, n4.len)
+        if get_target() == TGT_LINUX {
+            out_byte(o, 10)
+        } else {
+            let n4: str = '@PAGEOFF\n'
+            out_bytes(o, n4.ptr, n4.len)
+        }
         emit_spill_x(o, fn, i.dst, xd)
         return
     }
@@ -377,16 +400,30 @@ fun emit_i_label_addr(o: *Out, fn: *IrFn, i: *Ins) {
     let s1: str = ', L_str'
     out_bytes(o, s1.ptr, s1.len)
     out_u64(o, i.str_id)
-    let s2: str = '@PAGE\n    add     '
-    out_bytes(o, s2.ptr, s2.len)
+    if get_target() == TGT_LINUX {
+        let ls2: str = '\n    add     '
+        out_bytes(o, ls2.ptr, ls2.len)
+    } else {
+        let s2: str = '@PAGE\n    add     '
+        out_bytes(o, s2.ptr, s2.len)
+    }
     out_x_n(o, xd)
     let s3: str = ', '
     out_bytes(o, s3.ptr, s3.len)
     out_x_n(o, xd)
-    out_bytes(o, s1.ptr, s1.len)
+    if get_target() == TGT_LINUX {
+        let lo2: str = ', :lo12:L_str'
+        out_bytes(o, lo2.ptr, lo2.len)
+    } else {
+        out_bytes(o, s1.ptr, s1.len)
+    }
     out_u64(o, i.str_id)
-    let s4: str = '@PAGEOFF\n'
-    out_bytes(o, s4.ptr, s4.len)
+    if get_target() == TGT_LINUX {
+        out_byte(o, 10)
+    } else {
+        let s4: str = '@PAGEOFF\n'
+        out_bytes(o, s4.ptr, s4.len)
+    }
     emit_spill_x(o, fn, i.dst, xd)
 }
 
@@ -402,6 +439,17 @@ fun emit_i_addr_local(o: *Out, fn: *IrFn, i: *Ins) {
     emit_spill_x(o, fn, i.dst, xd)
 }
 
+fun emit_normalize(o: *Out, r: u64, width: u64, signed: u64) {
+    if width == 1 {
+        if signed == 1 { let s: str = '    sxtb    '; out_bytes(o, s.ptr, s.len); out_x_n(o, r); let c: str = ', '; out_bytes(o, c.ptr, c.len); out_w_n(o, r); out_byte(o, 10); return }
+        let s2: str = '    uxtb    '; out_bytes(o, s2.ptr, s2.len); out_w_n(o, r); let c2: str = ', '; out_bytes(o, c2.ptr, c2.len); out_w_n(o, r); out_byte(o, 10); return
+    }
+    if width == 4 {
+        if signed == 1 { let s3: str = '    sxtw    '; out_bytes(o, s3.ptr, s3.len); out_x_n(o, r); let c3: str = ', '; out_bytes(o, c3.ptr, c3.len); out_w_n(o, r); out_byte(o, 10); return }
+        emit_mov_w_w(o, r, r)
+    }
+}
+
 fun emit_i_load_local(o: *Out, fn: *IrFn, i: *Ins) {
     let xd: u64 = dst_x_reg(fn, i.dst)
     if i.width == 1 {
@@ -415,6 +463,7 @@ fun emit_i_load_local(o: *Out, fn: *IrFn, i: *Ins) {
     } else {
         emit_ldr_x(o, xd, i.local * 8)
     }
+    emit_normalize(o, xd, i.width, i.is_signed)
     emit_spill_x(o, fn, i.dst, xd)
 }
 
@@ -456,7 +505,16 @@ fun emit_i_load_mem(o: *Out, fn: *IrFn, i: *Ins) {
         out_x_n(o, xd)
         out_mem_tail(o, addr)
     }
+    emit_normalize(o, xd, i.width, i.is_signed)
     emit_spill_x(o, fn, i.dst, xd)
+}
+
+fun emit_i_cast(o: *Out, fn: *IrFn, i: *Ins) {
+    let src: u64 = ensure_src_x(o, fn, i.a, 16)
+    let dst: u64 = dst_x_reg(fn, i.dst)
+    if dst != src { emit_mov_x_x(o, dst, src) }
+    emit_normalize(o, dst, i.width, i.is_signed)
+    emit_spill_x(o, fn, i.dst, dst)
 }
 
 fun emit_i_store_mem(o: *Out, fn: *IrFn, i: *Ins) {
@@ -499,7 +557,7 @@ fun emit_i_binop(o: *Out, fn: *IrFn, i: *Ins) {
     let rd: u64 = dst_x_reg(fn, i.dst)
     let s0: str = '    '
     out_bytes(o, s0.ptr, s0.len)
-    out_binop_mnemonic(o, i.binop)
+    out_binop_mnemonic(o, i.binop, i.is_signed)
     let s1: str = '     '
     out_bytes(o, s1.ptr, s1.len)
     out_reg_wx(o, rd, wide)
@@ -524,9 +582,19 @@ fun out_cc(o: *Out, cc: u64) {
     if cc == 3 { let s: str = 'ls'; out_bytes(o, s.ptr, s.len); return }
     if cc == 4 { let s: str = 'hi'; out_bytes(o, s.ptr, s.len); return }
     if cc == 5 { let s: str = 'hs'; out_bytes(o, s.ptr, s.len); return }
+    if cc == 6 { let s: str = 'lt'; out_bytes(o, s.ptr, s.len); return }
+    if cc == 7 { let s: str = 'le'; out_bytes(o, s.ptr, s.len); return }
+    if cc == 8 { let s: str = 'gt'; out_bytes(o, s.ptr, s.len); return }
+    if cc == 9 { let s: str = 'ge'; out_bytes(o, s.ptr, s.len); return }
 }
 
 fun emit_i_cmp(o: *Out, fn: *IrFn, i: *Ins, cc: u64) {
+    if i.is_signed == 1 {
+        if cc == 2 { cc = 6 }
+        if cc == 3 { cc = 7 }
+        if cc == 4 { cc = 8 }
+        if cc == 5 { cc = 9 }
+    }
     let wide: u64 = 0
     if i.width == 8 { wide = 1 }
     let ra: u64 = 0
@@ -575,8 +643,13 @@ fun emit_i_syscall(o: *Out, fn: *IrFn, i: *Ins) {
         emit_load_slot_to_x(o, fn, args[k], k - 1)
         k = k + 1
     }
-    let sv: str = '    svc     #0x80\n'
-    out_bytes(o, sv.ptr, sv.len)
+    if get_target() == TGT_LINUX {
+        let lv: str = '    bl      tt_sys\n'
+        out_bytes(o, lv.ptr, lv.len)
+    } else {
+        let sv: str = '    svc     #0x80\n'
+        out_bytes(o, sv.ptr, sv.len)
+    }
     let dr: u64 = ro[i.dst]
     if dr < NREGS {
         emit_mov_x_x(o, dr + 9, 0)
@@ -686,6 +759,7 @@ fun emit_instr(o: *Out, fn: *IrFn, i: *Ins, epi_label: u64) {
     if op == IR_JMP         { emit_i_jmp(o, i);             return }
     if op == IR_JZ          { emit_i_jz(o, fn, i);          return }
     if op == IR_LABEL       { emit_i_label(o, i);           return }
+    if op == IR_CAST        { emit_i_cast(o, fn, i);        return }
 }
 
 // Escribe un nombre de simbolo, con guion bajo delante si el target es macOS.
@@ -752,6 +826,11 @@ fun emit_epilogue(o: *Out, fn: *IrFn, epi_label: u64) {
 fun emit_text_section(o: *Out) {
     if get_target() == TGT_MACOS {
         let s: str = '    .section __TEXT,__text\n'
+        out_bytes(o, s.ptr, s.len)
+        return
+    }
+    if get_target() == TGT_LINUX {
+        let s: str = '    .text\n'
         out_bytes(o, s.ptr, s.len)
         return
     }
@@ -826,8 +905,13 @@ fun emit_string_byte(o: *Out, v: u64) {
 // latente hasta que el compilador tuvo suficientes cadenas para dispararlo.
 fun emit_strings(o: *Out, prog: *Program) {
     if prog.strs == nil { return }
-    let s0: str = '\n    .section __TEXT,__cstring\n'
-    out_bytes(o, s0.ptr, s0.len)
+    if get_target() == TGT_LINUX {
+        let ls0: str = '\n    .section .rodata\n'
+        out_bytes(o, ls0.ptr, ls0.len)
+    } else {
+        let s0: str = '\n    .section __TEXT,__cstring\n'
+        out_bytes(o, s0.ptr, s0.len)
+    }
     let it: *StrLit = prog.strs
     while it != nil {
         let sb: str = '    .balign  8\nL_str'
@@ -859,6 +943,19 @@ fun emit_bsses(o: *Out, prog: *Program) {
     out_byte(o, 10)
     let it: *BssItem = prog.bsses
     while it != nil {
+        if get_target() == TGT_LINUX {
+            let ls: str = '    .comm '
+            out_bytes(o, ls.ptr, ls.len)
+            let llx: *Lexer = LX_STATE
+            out_bytes(o, llx.src + it.name_start, it.name_len)
+            let lc: str = ','
+            out_bytes(o, lc.ptr, lc.len)
+            out_u64(o, it.size)
+            let la: str = ',8\n'
+            out_bytes(o, la.ptr, la.len)
+            it = it.next
+            continue
+        }
         let s: str = '    .zerofill __DATA,__bss,_'
         out_bytes(o, s.ptr, s.len)
         let lx: *Lexer = LX_STATE

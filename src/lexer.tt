@@ -93,6 +93,8 @@ const TK_ARROW: u32   = 41
 const TK_AT: u32      = 42
 const TK_LSHIFT: u32  = 43
 const TK_RSHIFT: u32  = 44
+const TK_CONTINUE: u32 = 45
+const TK_AS: u32 = 46
 
 // Estado del lexer: cursor sobre el buffer de fuente mas el contador de linea
 // para los mensajes de error. No guarda nada mas; es totalmente reiniciable con
@@ -242,10 +244,12 @@ fun kw_kind(src: *u8, len: u64) -> u32 {
     let kw_loop: str   = 'loop'
     let kw_while: str  = 'while'
     let kw_break: str  = 'break'
+    let kw_continue: str = 'continue'
     let kw_struct: str = 'struct'
     let kw_bss: str    = 'bss'
     let kw_nil: str    = 'nil'
     let kw_sizeof: str = 'sizeof'
+    let kw_as: str = 'as'
     if len == 3 {
         if bytes_eq(src, kw_fun.ptr, 3) == 1 { return TK_FUN }
         if bytes_eq(src, kw_let.ptr, 3) == 1 { return TK_LET }
@@ -262,8 +266,12 @@ fun kw_kind(src: *u8, len: u64) -> u32 {
         if bytes_eq(src, kw_struct.ptr, 6) == 1 { return TK_STRUCT }
         if bytes_eq(src, kw_sizeof.ptr, 6) == 1 { return TK_SIZEOF }
     }
+    if len == 8 {
+        if bytes_eq(src, kw_continue.ptr, 8) == 1 { return TK_CONTINUE }
+    }
     if len == 2 {
         if bytes_eq(src, kw_if.ptr, 2) == 1 { return TK_IF }
+        if bytes_eq(src, kw_as.ptr, 2) == 1 { return TK_AS }
     }
     if len == 4 {
         if bytes_eq(src, kw_else.ptr, 4) == 1 { return TK_ELSE }

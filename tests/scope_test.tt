@@ -1,0 +1,11 @@
+fun main(argc: u32, argv: **u8) -> u32 {
+    let x: u64 = 4
+    if 1 == 1 {
+        let x: u64 = 9
+        if x != 9 { return 1 }
+    }
+    if x != 4 { return 2 }
+    let y: u64
+    y = 7
+    return y - 7
+}

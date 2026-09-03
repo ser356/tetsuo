@@ -1,0 +1,42 @@
+import 'lib/string.tt'
+import 'lib/parse.tt'
+
+fun main() -> u32 {
+    let a: str = 'tetsuo'
+    let b: str = 'tetsuo'
+    let c: str = 'tet'
+    let empty: str = ''
+    if string_eq(a, b) != 1 { return 1 }
+    if string_eq(a, c) != 0 { return 2 }
+    if string_has_prefix(a, c) != 1 { return 3 }
+    if string_has_prefix(c, a) != 0 { return 4 }
+    if string_has_prefix(a, empty) != 1 { return 5 }
+    if string_find_byte(a, 115) != 3 { return 6 }
+    if string_find_byte(a, 120) != a.len { return 7 }
+
+    let u: u64 = 0
+    let u42: str = '42'
+    let umax: str = '18446744073709551615'
+    let uoverflow: str = '18446744073709551616'
+    let invalid: str = '12x'
+    if parse_u64(u42, &u) != 1 { return 19 }
+    if u != 42 { return 20 }
+    if parse_u64(umax, &u) != 1 { return 8 }
+    if u != 18446744073709551615 { return 9 }
+    if parse_u64(uoverflow, &u) != 0 { return 10 }
+    if parse_u64(empty, &u) != 0 { return 11 }
+    if parse_u64(invalid, &u) != 0 { return 12 }
+
+    let i: i64 = 0
+    let imax: str = '9223372036854775807'
+    let imin: str = '-9223372036854775808'
+    let ioverflow: str = '9223372036854775808'
+    let minus: str = '-'
+    if parse_i64(imax, &i) != 1 { return 13 }
+    if i != 9223372036854775807 { return 14 }
+    if parse_i64(imin, &i) != 1 { return 15 }
+    if i != -9223372036854775807 - 1 { return 16 }
+    if parse_i64(ioverflow, &i) != 0 { return 17 }
+    if parse_i64(minus, &i) != 0 { return 18 }
+    return 0
+}

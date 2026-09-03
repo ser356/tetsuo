@@ -119,7 +119,12 @@ fun pp_mark(pth: *u8, plen: u64) {
 fun pp_out_append(bytes: *u8, n: u64) {
     let lp: *u64 = PP_OUT_LEN
     let cur: u64 = lp[0]
-    if cur + n > pp_out_cap() {
+    let cap: u64 = pp_out_cap()
+    if cur > cap {
+        let m: str = 'fuente expandida demasiado grande (PP_OUT)'
+        die_line(m.ptr, m.len, 0)
+    }
+    if n > cap - cur {
         let m: str = 'fuente expandida demasiado grande (PP_OUT)'
         die_line(m.ptr, m.len, 0)
     }
@@ -310,31 +315,38 @@ fun cstr_eq(a: *u8, lit: *u8, n: u64) -> u64 {
 // argv[argc-1] la salida) para que los flags opcionales del principio no
 // desplacen las posiciones.
 // ---------------------------------------------------------------------------
+const EXIT_OK: u32 = 0
+const EXIT_BAD_ARGS: u32 = 2
+const EXIT_READ_FAIL: u32 = 3
+const EXIT_OPEN_OUT_FAIL: u32 = 4
+
 fun main(argc: u64, argv: **u8) -> u32 {
-    if argc < 3 { return 2 }
+    if argc < 3 { return EXIT_BAD_ARGS }
 
     let a1: *u8 = argv[1]
     let flag_tok: str = '--dump-tokens'
     let flag_ir: str = '--dump-ir'
     let flag_macho: str = '--emit=macho'
+    let flag_linux: str = '--target=linux'
     let is_dump_tok: u64 = cstr_eq(a1, flag_tok.ptr, flag_tok.len)
     let is_dump_ir: u64 = cstr_eq(a1, flag_ir.ptr, flag_ir.len)
     let is_macho: u64 = cstr_eq(a1, flag_macho.ptr, flag_macho.len)
+    let is_linux: u64 = cstr_eq(a1, flag_linux.ptr, flag_linux.len)
 
     if is_dump_tok == 1 {
         let path: *u8 = argv[2]
         let n: u64 = read_all(path, SRC_BUF, 262144)
-        if n == 0 { return 3 }
+        if n == 0 { return EXIT_READ_FAIL }
         let o: *Out = OUT_STORAGE
         out_init(o, 1, OUT_BUF, 65536)
         dump_tokens(o, SRC_BUF, n)
         out_flush(o)
-        return 0
+        return EXIT_OK
     }
     if is_dump_ir == 1 {
         let path: *u8 = argv[2]
         let n: u64 = read_all(path, SRC_BUF, 262144)
-        if n == 0 { return 3 }
+        if n == 0 { return EXIT_READ_FAIL }
         let ast_ar: *Arena = ast_init()
         let ir_ar: *Arena = ir_init()
         let prog: *Program = parse(ast_ar, SRC_BUF, n)
@@ -343,10 +355,10 @@ fun main(argc: u64, argv: **u8) -> u32 {
         out_init(o, 1, OUT_BUF, 65536)
         dump_ir(o, irhead)
         out_flush(o)
-        return 0
+        return EXIT_OK
     }
 
-    if argc < 4 { return 2 }
+    if argc < 4 { return EXIT_BAD_ARGS }
     let input: *u8 = argv[argc - 3]
     let output: *u8 = argv[argc - 1]
 
@@ -359,7 +371,7 @@ fun main(argc: u64, argv: **u8) -> u32 {
     pp_expand(pp_ar, input, plen_in)
     let ppl: *u64 = PP_OUT_LEN
     let n: u64 = ppl[0]
-    if n == 0 { return 3 }
+    if n == 0 { return EXIT_READ_FAIL }
     let src: *u8 = PP_OUT
 
     let ast_ar: *Arena = ast_init()
@@ -368,7 +380,7 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let irhead: *IrFn = lower(ir_ar, prog)
 
     let fd: u64 = io_open_write(output)
-    if fd == 0 { return 4 }
+    if fd == 0 { return EXIT_OPEN_OUT_FAIL }
 
     // Camino --emit=macho: bytes en vez de texto.
     //
@@ -384,8 +396,10 @@ fun main(argc: u64, argv: **u8) -> u32 {
     } else {
         let o: *Out = OUT_STORAGE
         out_init(o, fd, OUT_BUF, 65536)
-        codegen(o, TGT_MACOS, prog, irhead)
+        let target: u64 = TGT_MACOS
+        if is_linux == 1 { target = TGT_LINUX }
+        codegen(o, target, prog, irhead)
     }
     io_close(fd)
-    return 0
+    return EXIT_OK
 }

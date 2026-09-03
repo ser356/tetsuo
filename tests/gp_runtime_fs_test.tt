@@ -1,0 +1,20 @@
+bss GP_FS_BUF: 8
+
+fun main() -> u32 {
+    let path: str = '/tmp/tetsuo_gp_file\0'
+    io_unlink(path.ptr)
+    let fd: u64 = io_open_write(path.ptr)
+    if fd == 0 { return 1 }
+    let data: str = 'general'
+    io_write(fd, data.ptr, data.len)
+    io_close(fd)
+    fd = io_open_read(path.ptr)
+    if fd == 0 { return 2 }
+    let n: u64 = io_read(fd, GP_FS_BUF, 8)
+    io_close(fd)
+    if n != 7 { return 3 }
+    if GP_FS_BUF[0] != 103 { return 4 }
+    if GP_FS_BUF[6] != 108 { return 5 }
+    io_unlink(path.ptr)
+    return 0
+}

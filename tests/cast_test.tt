@@ -1,0 +1,12 @@
+fun main(argc: u32, argv: **u8) -> u32 {
+    let a: u8 = 255
+    let b: i8 = a as i8
+    if b != -1 { return 1 }
+    let c: u8 = 300 as u8
+    if c != 44 { return 2 }
+    let d: i32 = 4294967295 as i32
+    if d as i64 != -1 { return 3 }
+    let e: u32 = b as u32
+    if e != 4294967295 { return 4 }
+    return 0
+}

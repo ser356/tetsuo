@@ -1,0 +1,53 @@
+bss STDOUT_STORE: 32
+bss STDOUT_BUF: 4096
+bss STDERR_STORE: 32
+bss STDERR_BUF: 4096
+
+fun stdio_init() {
+    let stdout: *Out = STDOUT_STORE
+    let stderr: *Out = STDERR_STORE
+    out_init(stdout, 1, STDOUT_BUF, 4096)
+    out_init(stderr, 2, STDERR_BUF, 4096)
+}
+
+fun print(s: str) {
+    let out: *Out = STDOUT_STORE
+    out_bytes(out, s.ptr, s.len)
+}
+
+fun println(s: str) {
+    let out: *Out = STDOUT_STORE
+    out_bytes(out, s.ptr, s.len)
+    out_byte(out, 10)
+}
+
+fun print_u64(value: u64) {
+    let out: *Out = STDOUT_STORE
+    out_u64(out, value)
+}
+
+fun eprint(s: str) {
+    let out: *Out = STDERR_STORE
+    out_bytes(out, s.ptr, s.len)
+}
+
+fun eprintln(s: str) {
+    let out: *Out = STDERR_STORE
+    out_bytes(out, s.ptr, s.len)
+    out_byte(out, 10)
+}
+
+fun eprint_u64(value: u64) {
+    let out: *Out = STDERR_STORE
+    out_u64(out, value)
+}
+
+fun flush() {
+    let out: *Out = STDOUT_STORE
+    out_flush(out)
+}
+
+fun eflush() {
+    let out: *Out = STDERR_STORE
+    out_flush(out)
+}

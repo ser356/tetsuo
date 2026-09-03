@@ -4,5 +4,9 @@ fun main() -> u32 {
     let t: *Type = mk_ptr(ar, inner)
     let w: u64 = type_width(t)
     let ik: u64 = t.inner.kind
-    return w + ik
+    let i8t: *Type = mk_prim(ar, T_I8)
+    let i32t: *Type = mk_prim(ar, T_I32)
+    let i64t: *Type = mk_prim(ar, T_I64)
+    let bt: *Type = mk_prim(ar, T_BOOL)
+    return w + ik + type_width(i8t) + type_width(i32t) + type_width(i64t) + type_width(bt)
 }

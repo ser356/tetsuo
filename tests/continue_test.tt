@@ -1,0 +1,18 @@
+fun main() -> u32 {
+    let i: u64 = 0
+    let n: u64 = 0
+    while i < 10 {
+        i = i + 1
+        if i == 5 { continue }
+        n = n + 1
+    }
+    let j: u64 = 0
+    loop {
+        j = j + 1
+        if j < 3 { continue }
+        break
+    }
+    if n != 9 { return 1 }
+    if j != 3 { return 2 }
+    return 0
+}

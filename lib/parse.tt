@@ -1,0 +1,54 @@
+fun parse_u64(s: str, out: *u64) -> u32 {
+    if s.len == 0 { return 0 }
+    let value: u64 = 0
+    let i: u64 = 0
+    while i < s.len {
+        let c: u8 = s.ptr[i]
+        if c < 48 { return 0 }
+        if c > 57 { return 0 }
+        let digit: u64 = c - 48
+        if value > 1844674407370955161 { return 0 }
+        if value == 1844674407370955161 {
+            if digit > 5 { return 0 }
+        }
+        value = value * 10 + digit
+        i = i + 1
+    }
+    @out = value
+    return 1
+}
+
+fun parse_i64(s: str, out: *i64) -> u32 {
+    if s.len == 0 { return 0 }
+    let negative: u32 = 0
+    let start: u64 = 0
+    if s.ptr[0] == 45 {
+        negative = 1
+        start = 1
+    }
+    if start == s.len { return 0 }
+    let value: u64 = 0
+    let i: u64 = start
+    while i < s.len {
+        let c: u8 = s.ptr[i]
+        if c < 48 { return 0 }
+        if c > 57 { return 0 }
+        let digit: u64 = c - 48
+        if value > 922337203685477580 { return 0 }
+        if value == 922337203685477580 {
+            if negative == 1 {
+                if digit > 8 { return 0 }
+            } else {
+                if digit > 7 { return 0 }
+            }
+        }
+        value = value * 10 + digit
+        i = i + 1
+    }
+    if negative == 1 {
+        @out = 0 - value as i64
+    } else {
+        @out = value as i64
+    }
+    return 1
+}

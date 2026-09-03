@@ -1,11 +1,13 @@
 # tetsuo
 
-Compilador de un lenguaje de sistemas minimalista ("tetsuo") **totalmente
-autohospedado**: escrito y compilado por sí mismo. Emite ensamblador AArch64
-para dos targets:
+Compilador de un lenguaje de propósito general mínimo para CLI y sistemas,
+**totalmente autohospedado**: escrito y compilado por sí mismo. Incluye enteros
+signed/unsigned, casts, funciones, control estructurado, scopes léxicos,
+punteros, structs, arrays locales, imports y archivos. Emite AArch64 para:
 
 - **virt** — bare metal sobre QEMU `-M virt` (Cortex-A72), E/S por UART PL011.
 - **macos** — ejecutable de usuario en macOS arm64, E/S por `syscall`.
+- **linux** — ensamblador ELF AArch64 mediante `--target=linux` y shim syscall.
 
 ## Estructura del repo
 
@@ -57,7 +59,8 @@ build/main --dump-ir     fuente.tt             # imprime IR lineal
 El driver ejecuta primero el preprocessor `import` sobre el fuente (una línea
 `import 'ruta/relativa.tt'` inlinea recursivamente el fichero citado; los
 paths ya vistos se saltan → sin ciclos ni duplicados). Después parsea, lowera
-y emite AArch64 Mach-O textual. Target hardcodeado a macOS.
+y emite AArch64. macOS es el target predeterminado; Linux se selecciona con
+`--target=linux`.
 
 El modo `--emit=macho` no requiere pasos posteriores. El backend textual puede
 ensamblarse externamente para depuración:
@@ -83,8 +86,36 @@ linker ni firmador externo.
 ### Target virt (bare metal, QEMU)
 
 Requiere `qemu-system-aarch64` y una toolchain cruzada `aarch64-elf-*`. Nota:
-`main.tt` actualmente hardcodea `TGT_MACOS`, así que la ruta virt está
-pausada hasta que soporte `--target=virt`.
+la CLI autónoma actual ofrece macOS y Linux; la ruta virt conserva su pipeline
+separado en `test.sh`.
+
+## Biblioteca primitiva
+
+Existe una biblioteca pequeña escrita en tetsuo, sin enlaces contra
+libc/libSystem. Para programas CLI basta el módulo paraguas:
+
+```text
+import 'lib/std.tt'
+```
+
+| módulo | equivalente aproximado | API actual |
+|---|---|---|
+| `src/runtime/io.tt` | `stdio` + parte de `stdlib` | `io_open_read`, `io_open_write`, `io_read`, `io_write`, `io_close`, `io_exit`, `io_getpid`, `io_unlink`, `io_chdir`, `io_mkdir`, `Arena`, `arena_init`, `arena_take` |
+| `lib/str.tt` | `string.h` mínimo | `bytes_eq`, `mem_copy` |
+| `lib/string.tt` | operaciones de `str` | `string_eq`, `string_has_prefix`, `string_find_byte` |
+| `lib/parse.tt` | conversión numérica | `parse_u64`, `parse_i64` con validación y detección de overflow |
+| `lib/fmt.tt` | formato/salida bufferizada | `Out`, `out_init`, `out_flush`, `out_byte`, `out_bytes`, `out_u64`, `out_hex4`, `die_line` |
+| `lib/stdio.tt` | stdout/stderr | `stdio_init`, `print`, `println`, `print_u64`, variantes `e*`, `flush`, `eflush` |
+| `lib/vec.tt` | contenedor dinámico | `Vec`, `vec_init`, `vec_push`, `vec_get` |
+| `lib/ast.tt` | soporte interno | arena global del AST mediante `ast_init` |
+
+`stdio_init` debe ejecutarse antes de escribir y los buffers requieren `flush`
+o `eflush`. `parse_u64`/`parse_i64` devuelven 1 en éxito y escriben por puntero;
+devuelven 0 sin modificar la salida ante entrada inválida o overflow.
+
+No existen aún `printf`, `malloc/free`, `fopen/FILE`, entrada tokenizada,
+sockets, procesos, entorno ni reloj. `arena_take` sustituye a `malloc` para
+cargas de vida única y libera todo al terminar el proceso.
 
 ### Batería de verificación
 
@@ -130,6 +161,10 @@ Reglas:
 Detalles y patrones idiomáticos en `LENGUAJE.md` e `idioms.md`.
 
 ## Estado
+
+Lenguaje de propósito general mínimo para programas CLI y de sistemas locales.
+No pretende sustituir aún a un entorno productivo completo: faltan namespaces,
+arrays/structs por valor, procesos hijo, red, entorno, reloj y build incremental.
 
 Autohospedado 100%. La seed Mach-O produce un compilador idéntico a sí mismo y
 el compilador producido vuelve a reproducir exactamente el mismo binario:

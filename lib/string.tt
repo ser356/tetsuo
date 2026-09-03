@@ -1,0 +1,20 @@
+import 'lib/str.tt'
+
+fun string_eq(a: str, b: str) -> u32 {
+    if a.len != b.len { return 0 }
+    return bytes_eq(a.ptr, b.ptr, a.len)
+}
+
+fun string_has_prefix(s: str, prefix: str) -> u32 {
+    if prefix.len > s.len { return 0 }
+    return bytes_eq(s.ptr, prefix.ptr, prefix.len)
+}
+
+fun string_find_byte(s: str, needle: u8) -> u64 {
+    let i: u64 = 0
+    while i < s.len {
+        if s.ptr[i] == needle { return i }
+        i = i + 1
+    }
+    return s.len
+}

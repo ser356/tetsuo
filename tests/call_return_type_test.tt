@@ -1,0 +1,11 @@
+fun caller() -> u64 { return callee() }
+fun callee() -> u64 { return 4294967297 }
+
+fun main() -> u32 {
+    let ar: *Arena = ast_init()
+    let src: str = 'fun a()->u64{return b()} fun b()->u64{return 1}'
+    let p: *Program = parse(ar, src.ptr, src.len)
+    let f: *Func = p.funcs
+    let s: *Stmt = f.body
+    return s.ret_val.type.kind
+}

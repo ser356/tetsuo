@@ -1,5 +1,24 @@
 # Estado del autohospedaje tetsuo (verificado 2026-09-03)
 
+## Biblioteca base para CLI — 2026-09-03
+
+Añadidos `lib/std.tt`, `lib/string.tt`, `lib/parse.tt` y `lib/stdio.tt`.
+`std.tt` reúne runtime, bytes, strings, parseo, formato, stdio y vector en orden
+de import correcto. Strings cubre igualdad, prefijo y búsqueda; parseo acepta
+`u64`/`i64` decimal con validación de overflow; stdio ofrece stdout/stderr
+bufferizados con inicialización y flush explícitos. `string_parse_build.sh` y
+`stdio_build.sh` forman parte de `bootstrap/verify.sh`; suite y fixpoints verdes.
+
+## Propósito general mínimo — 2026-09-03
+
+Tetsuo cruza el umbral de propósito general mínimo para CLI y sistemas locales:
+funciones, recursión, control estructurado, scopes léxicos, enteros signed y
+unsigned, casts, punteros, structs, arrays locales, imports y filesystem básico.
+`gp_acceptance.tt` combina estas capacidades y `gp_runtime_fs_test.tt` prueba
+escritura, lectura y borrado. Ambos backends, la suite y los fixpoints siguen
+verdes. Permanecen como evolución: namespaces, agregados por valor, procesos,
+red, entorno, reloj y build incremental.
+
 ## Verificación nativa sin toolchain externo — 2026-09-03
 
 Prueba ejecutada en macOS arm64 con `PATH=/nonexistent`, usando únicamente la

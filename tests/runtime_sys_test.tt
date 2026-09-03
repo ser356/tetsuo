@@ -1,0 +1,4 @@
+fun main() -> u32 {
+    if io_getpid() == 0 { return 1 }
+    return 0
+}

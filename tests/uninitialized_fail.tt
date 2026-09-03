@@ -1,0 +1,4 @@
+fun main(argc: u32, argv: **u8) -> u32 {
+    let x: u64
+    return x
+}

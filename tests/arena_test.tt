@@ -1,0 +1,10 @@
+fun main() -> u32 {
+    let a: *Arena = ast_init()
+    let p1: *u8 = arena_take(a, 1)
+    if p1 != a.base { return 1 }
+    if a.pos != 8 { return 2 }
+    let p2: *u8 = arena_take(a, 9)
+    if p2 != a.base + 8 { return 3 }
+    if a.pos != 24 { return 4 }
+    return 0
+}

@@ -251,6 +251,18 @@ fun b_strb(rt: u64, off: u64) {
     cb_word(enc_strb(rt, 31, off))
 }
 
+fun cgb_normalize(r: u64, width: u64, signed: u64) {
+    if width == 1 {
+        if signed == 1 { cb_word(enc_sxtb(r, r)) }
+        else { cb_word(enc_uxtb(r, r)) }
+        return
+    }
+    if width == 4 {
+        if signed == 1 { cb_word(enc_sxtw(r, r)) }
+        else { cb_word(enc_uxtw(r, r)) }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers de registro/slot (espejo exacto de los de codegen.tt)
 //
@@ -311,12 +323,15 @@ fun cgb_load_slot_x(fn: *IrFn, slot: u64, dx: u64) {
 //
 // Todo son operaciones sin signo: el lenguaje no tiene tipos con signo, asi que
 // la division es udiv y los desplazamientos a la derecha son logicos (lsrv).
-fun cgb_alu(binop: u64, rd: u64, ra: u64, rb: u64, wide: u64) {
+fun cgb_alu(binop: u64, rd: u64, ra: u64, rb: u64, wide: u64, signed: u64) {
     let e: u64 = 0
     if binop == OP_ADD { e = enc_add_reg(rd, ra, rb) }
     if binop == OP_SUB { e = enc_sub_reg(rd, ra, rb) }
     if binop == OP_MUL { e = enc_mul(rd, ra, rb) }
-    if binop == OP_DIV { e = enc_udiv(rd, ra, rb) }
+    if binop == OP_DIV {
+        if signed == 1 { e = enc_sdiv(rd, ra, rb) }
+        else { e = enc_udiv(rd, ra, rb) }
+    }
     if binop == OP_AND { e = enc_and(rd, ra, rb) }
     if binop == OP_OR  { e = enc_orr(rd, ra, rb) }
     if binop == OP_XOR { e = enc_eor(rd, ra, rb) }
@@ -338,7 +353,11 @@ fun cgb_invcond(cc: u64) -> u64 {
     if cc == 2 { return 2 }   // lo -> inv hs
     if cc == 3 { return 8 }   // ls -> inv hi
     if cc == 4 { return 9 }   // hi -> inv ls
-    return 3                  // hs -> inv lo
+    if cc == 5 { return 3 }   // hs -> inv lo
+    if cc == 6 { return 10 }  // lt -> inv ge
+    if cc == 7 { return 12 }  // le -> inv gt
+    if cc == 8 { return 13 }  // gt -> inv le
+    return 11                 // ge -> inv lt
 }
 
 // ---------------------------------------------------------------------------
@@ -372,6 +391,7 @@ fun cgb_i_load_local(fn: *IrFn, i: *Ins) {
     } else {
         b_ldr_x(xd, i.local * 8)
     }
+    cgb_normalize(xd, i.width, i.is_signed)
     cgb_spill(fn, i.dst, xd)
 }
 
@@ -400,7 +420,16 @@ fun cgb_i_load_mem(fn: *IrFn, i: *Ins) {
     } else {
         cb_word(enc_ldr_x(xd, addr, 0))
     }
+    cgb_normalize(xd, i.width, i.is_signed)
     cgb_spill(fn, i.dst, xd)
+}
+
+fun cgb_i_cast(fn: *IrFn, i: *Ins) {
+    let src: u64 = cgb_src_x(fn, i.a, 16)
+    let dst: u64 = cgb_dst_x(fn, i.dst)
+    if dst != src { b_mov_x(dst, src) }
+    cgb_normalize(dst, i.width, i.is_signed)
+    cgb_spill(fn, i.dst, dst)
 }
 
 fun cgb_i_store_mem(fn: *IrFn, i: *Ins) {
@@ -432,7 +461,7 @@ fun cgb_i_binop(fn: *IrFn, i: *Ins) {
         rb = cgb_src_w(fn, i.b, 17)
     }
     let rd: u64 = cgb_dst_x(fn, i.dst)
-    cgb_alu(i.binop, rd, ra, rb, wide)
+    cgb_alu(i.binop, rd, ra, rb, wide, i.is_signed)
     cgb_spill(fn, i.dst, rd)
 }
 
@@ -444,6 +473,12 @@ fun cgb_i_binop(fn: *IrFn, i: *Ins) {
 // simple cbz sobre ese 0/1. Cuesta una instruccion mas y ahorra tener que
 // preservar NZCV entre instrucciones del IR.
 fun cgb_i_cmp(fn: *IrFn, i: *Ins, cc: u64) {
+    if i.is_signed == 1 {
+        if cc == 2 { cc = 6 }
+        if cc == 3 { cc = 7 }
+        if cc == 4 { cc = 8 }
+        if cc == 5 { cc = 9 }
+    }
     let wide: u64 = 0
     if i.width == 8 { wide = 1 }
     let ra: u64 = 0
@@ -617,6 +652,7 @@ fun cgb_instr(fn: *IrFn, i: *Ins, epi_label: u64, funcs: *IrFn) {
     if op == IR_JMP         { cgb_i_jmp(i);                   return }
     if op == IR_JZ          { cgb_i_jz(fn, i);                return }
     if op == IR_LABEL       { lbl_set(i.label, cb_pos());     return }
+    if op == IR_CAST        { cgb_i_cast(fn, i);              return }
 }
 
 // ---------------------------------------------------------------------------

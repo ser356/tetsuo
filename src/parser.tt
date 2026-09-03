@@ -72,6 +72,11 @@ const T_U64: u64 = 2
 const T_PTR: u64 = 3
 const T_STR: u64 = 4
 const T_STRUCT: u64 = 5
+const T_I8: u64 = 6
+const T_I32: u64 = 7
+const T_I64: u64 = 8
+const T_BOOL: u64 = 9
+const T_ARRAY: u64 = 10
 
 // Un tipo. `inner` solo lo usan los punteros (el apuntado) y `decl` apunta al
 // StructDecl cuando kind es T_STRUCT.
@@ -83,6 +88,7 @@ struct Type {
     kind:  u64,
     inner: *Type,
     decl:  *u8,
+    arr_len: u64,
 }
 
 struct Field {
@@ -101,18 +107,29 @@ struct StructDecl {
 }
 
 fun mk_prim(ar: *Arena, kind: u64) -> *Type {
-    let t: *Type = arena_take(ar, 24)
+    let t: *Type = arena_take(ar, 32)
     t.kind = kind
     t.inner = nil
     t.decl = nil
+    t.arr_len = 0
     return t
 }
 
 fun mk_ptr(ar: *Arena, inner: *Type) -> *Type {
-    let t: *Type = arena_take(ar, 24)
+    let t: *Type = arena_take(ar, 32)
     t.kind = T_PTR
     t.inner = inner
     t.decl = nil
+    t.arr_len = 0
+    return t
+}
+
+fun mk_array(ar: *Arena, inner: *Type, n: u64) -> *Type {
+    let t: *Type = arena_take(ar, 32)
+    t.kind = T_ARRAY
+    t.inner = inner
+    t.decl = nil
+    t.arr_len = n
     return t
 }
 
@@ -128,13 +145,26 @@ fun type_width(t: *Type) -> u64 {
     if t.kind == T_U8  { return 1 }
     if t.kind == T_U32 { return 4 }
     if t.kind == T_U64 { return 8 }
+    if t.kind == T_I8  { return 1 }
+    if t.kind == T_I32 { return 4 }
+    if t.kind == T_I64 { return 8 }
+    if t.kind == T_BOOL { return 1 }
     if t.kind == T_PTR { return 8 }
     if t.kind == T_STR { return 16 }
+    if t.kind == T_ARRAY { return t.arr_len * type_width(t.inner) }
     if t.kind == T_STRUCT {
         let d: *StructDecl = t.decl
         if d != nil { return d.nfields * 8 }
     }
     return 8
+}
+
+fun type_is_signed(t: *Type) -> u64 {
+    if t == nil { return 0 }
+    if t.kind == T_I8 { return 1 }
+    if t.kind == T_I32 { return 1 }
+    if t.kind == T_I64 { return 1 }
+    return 0
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +188,20 @@ const EX_GE:     u64 = 10
 const EX_STRLIT: u64 = 11
 const EX_ADDR:   u64 = 12
 const EX_EXTERN: u64 = 13
+const EX_CAST:   u64 = 14
+
+fun type_is_scalar(t: *Type) -> u64 {
+    if t == nil { return 0 }
+    if t.kind == T_U8 { return 1 }
+    if t.kind == T_U32 { return 1 }
+    if t.kind == T_U64 { return 1 }
+    if t.kind == T_I8 { return 1 }
+    if t.kind == T_I32 { return 1 }
+    if t.kind == T_I64 { return 1 }
+    if t.kind == T_BOOL { return 1 }
+    if t.kind == T_PTR { return 1 }
+    return 0
+}
 
 // Operadores binarios aritmeticos y de bits. Las comparaciones no estan aqui:
 // son kinds de expresion propios (EX_EQ, EX_LT, ...).
@@ -258,6 +302,8 @@ struct Local {
     name_start: u64,
     name_len:   u64,
     type:       *Type,
+    active:     u64,
+    initialized: u64,
 }
 
 struct Func {
@@ -334,16 +380,25 @@ fun bytes_eq_off(a_off: u64, a_len: u64, b_off: u64, b_len: u64) -> u32 {
 // numero de argumento.
 fun add_local(ar: *Arena, f: *Func, ns: u64, nl: u64, ty: *Type) -> u64 {
     let idx: u64 = f.nlocals
-    let loc: *Local = arena_take(ar, 24)
+    let loc: *Local = arena_take(ar, 40)
     loc.name_start = ns
     loc.name_len = nl
     loc.type = ty
+    loc.active = 1
+    loc.initialized = 0
     let arr: **Local = f.locals
     arr[idx] = loc
     f.nlocals = idx + 1
     let extras: u64 = 0
     if ty != nil {
         if ty.kind == T_STR { extras = 1 }
+        if ty.kind == T_ARRAY {
+            if type_width(ty.inner) != 8 {
+                let ma: str = 'array local requiere elementos de 8 bytes'
+                die_line(ma.ptr, ma.len, 0)
+            }
+            if ty.arr_len > 0 { extras = ty.arr_len - 1 }
+        }
         if ty.kind == T_STRUCT {
             let d: *StructDecl = ty.decl
             if d != nil {
@@ -353,14 +408,17 @@ fun add_local(ar: *Arena, f: *Func, ns: u64, nl: u64, ty: *Type) -> u64 {
     }
     let k: u64 = 0
     while k < extras {
-        let loc2: *Local = arena_take(ar, 24)
+        let loc2: *Local = arena_take(ar, 40)
         loc2.name_start = 0
         loc2.name_len = 0
         loc2.type = mk_prim(ar, T_U64)
+        if ty.kind == T_ARRAY { loc2.type = ty.inner }
         if ty.kind == T_STRUCT {
             let ft: *Type = struct_field_type(ty.decl, k + 1)
             if ft != nil { loc2.type = ft }
         }
+        loc2.active = 1
+        loc2.initialized = 0
         arr[f.nlocals] = loc2
         f.nlocals = f.nlocals + 1
         k = k + 1
@@ -383,9 +441,27 @@ fun lookup_local(f: *Func, ns: u64, nl: u64) -> u64 {
         i = i - 1
         let arr: **Local = f.locals
         let loc: *Local = arr[i]
-        if bytes_eq_off(loc.name_start, loc.name_len, ns, nl) == 1 { return i }
+        if loc.active == 1 {
+            if bytes_eq_off(loc.name_start, loc.name_len, ns, nl) == 1 { return i }
+        }
     }
     return n
+}
+
+fun mark_local_initialized(f: *Func, idx: u64) {
+    let arr: **Local = f.locals
+    let loc: *Local = arr[idx]
+    let slots: u64 = 1
+    if loc.type != nil {
+        let w: u64 = type_width(loc.type)
+        if w > 8 { slots = w / 8 }
+    }
+    let i: u64 = 0
+    while i < slots {
+        let part: *Local = arr[idx + i]
+        part.initialized = 1
+        i = i + 1
+    }
 }
 
 fun lookup_const(pg: *Program, ns: u64, nl: u64) -> *ConstItem {
@@ -666,10 +742,9 @@ fun parse_primary(ar: *Arena) -> *Expr {
                 return e
             }
         }
-        let e: *Expr = mk_expr(ar, EX_VAR)
-        e.var_start = name_start
-        e.var_len = name_len
-        return e
+        let m96: str = 'identificador no resuelto'
+        die_here(m96.ptr, m96.len)
+        return nil
     }
     if k == TK_STRING {
         let t2: *Tok = TOK_CUR
@@ -795,7 +870,22 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                 die_here(mh.ptr, mh.len)
             }
         } else {
-            if k == TK_LBRACK {
+            if k == TK_AS {
+                ps_advance()
+                let target: *Type = parse_type(ar)
+                if type_is_scalar(e.type) == 0 {
+                    let mc1: str = 'cast requiere origen escalar'
+                    die_here(mc1.ptr, mc1.len)
+                }
+                if type_is_scalar(target) == 0 {
+                    let mc2: str = 'cast requiere destino escalar'
+                    die_here(mc2.ptr, mc2.len)
+                }
+                let ce: *Expr = mk_expr(ar, EX_CAST)
+                ce.inner = e
+                ce.type = target
+                e = ce
+            } else if k == TK_LBRACK {
                 ps_advance()
                 let idx: *Expr = parse_expr(ar, 1)
                 ps_expect(TK_RBRACK)
@@ -803,6 +893,17 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                 if bty == nil {
                     let mb1: str = 'deref sobre expresion sin tipo'
                     die_here(mb1.ptr, mb1.len)
+                }
+                if bty.kind == T_ARRAY {
+                    if e.kind != EX_VAR {
+                        let mba: str = 'indexacion de array requiere local'
+                        die_here(mba.ptr, mba.len)
+                    }
+                    let ae: *Expr = mk_expr(ar, EX_ADDR)
+                    ae.inner = e
+                    ae.type = mk_ptr(ar, bty.inner)
+                    e = ae
+                    bty = ae.type
                 }
                 if bty.kind != T_PTR {
                     let mb2: str = 'deref sobre no-puntero'
@@ -843,6 +944,19 @@ fun parse_postfix(ar: *Arena) -> *Expr {
 // `@(p[0])`.
 fun parse_unary(ar: *Arena) -> *Expr {
     let k: u32 = ps_kind()
+    if k == TK_MINUS {
+        ps_advance()
+        let inner0: *Expr = parse_unary(ar)
+        let zero: *Expr = mk_expr(ar, EX_INT)
+        zero.ival = 0
+        zero.type = inner0.type
+        let neg: *Expr = mk_expr(ar, EX_BIN)
+        neg.op = OP_SUB
+        neg.lhs = zero
+        neg.rhs = inner0
+        neg.type = inner0.type
+        return neg
+    }
     if k == TK_AT {
         ps_advance()
         let inner: *Expr = parse_unary(ar)
@@ -948,6 +1062,7 @@ const ST_IF:     u64 = 5
 const ST_BREAK:  u64 = 6
 const ST_RETURN: u64 = 7
 const ST_EXPR:   u64 = 8
+const ST_CONTINUE: u64 = 9
 
 fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
     let s: *Stmt = arena_take(ar, 96)
@@ -991,6 +1106,23 @@ fun bytes_eq_at(src_off: u64, tlen: u64, kw: *u8, kwlen: u64) -> u32 {
 // Los punteros se anidan a la izquierda, asi que `**u8` es puntero a puntero a
 // byte.
 fun parse_type(ar: *Arena) -> *Type {
+    if ps_kind() == TK_LBRACK {
+        ps_advance()
+        let nt: *Tok = TOK_CUR
+        if ps_kind() != TK_NUM {
+            let ma2: str = 'array requiere longitud constante'
+            die_here(ma2.ptr, ma2.len)
+        }
+        let n: u64 = nt.ival
+        if n == 0 {
+            let ma3: str = 'array vacio no soportado'
+            die_here(ma3.ptr, ma3.len)
+        }
+        ps_advance()
+        ps_expect(TK_RBRACK)
+        let elem: *Type = parse_type(ar)
+        return mk_array(ar, elem, n)
+    }
     if ps_kind() == TK_STAR {
         ps_advance()
         let inner: *Type = parse_type(ar)
@@ -1004,11 +1136,19 @@ fun parse_type(ar: *Arena) -> *Type {
     let u8kw:  str = 'u8'
     let u32kw: str = 'u32'
     let u64kw: str = 'u64'
+    let i8kw:  str = 'i8'
+    let i32kw: str = 'i32'
+    let i64kw: str = 'i64'
+    let boolkw: str = 'bool'
     let strkw: str = 'str'
     let result: *Type = nil
     if bytes_eq_at(t.start, t.tlen, u8kw.ptr, 2) == 1 { result = mk_prim(ar, T_U8) }
     if bytes_eq_at(t.start, t.tlen, u32kw.ptr, 3) == 1 { result = mk_prim(ar, T_U32) }
     if bytes_eq_at(t.start, t.tlen, u64kw.ptr, 3) == 1 { result = mk_prim(ar, T_U64) }
+    if bytes_eq_at(t.start, t.tlen, i8kw.ptr, 2) == 1 { result = mk_prim(ar, T_I8) }
+    if bytes_eq_at(t.start, t.tlen, i32kw.ptr, 3) == 1 { result = mk_prim(ar, T_I32) }
+    if bytes_eq_at(t.start, t.tlen, i64kw.ptr, 3) == 1 { result = mk_prim(ar, T_I64) }
+    if bytes_eq_at(t.start, t.tlen, boolkw.ptr, 4) == 1 { result = mk_prim(ar, T_BOOL) }
     if bytes_eq_at(t.start, t.tlen, strkw.ptr, 3) == 1 { result = mk_prim(ar, T_STR) }
     if result == nil {
         result = mk_prim(ar, T_STRUCT)
@@ -1023,6 +1163,9 @@ fun parse_type(ar: *Arena) -> *Type {
 }
 
 fun parse_block(ar: *Arena) -> *Stmt {
+    let fn: *Func = cur_func()
+    let scope_start: u64 = 0
+    if fn != nil { scope_start = fn.nlocals }
     ps_expect(TK_LBRACE)
     let head: *Stmt = nil
     let tail: *Stmt = nil
@@ -1033,7 +1176,39 @@ fun parse_block(ar: *Arena) -> *Stmt {
         while ps_kind() == TK_SEMI { ps_advance() }
     }
     ps_expect(TK_RBRACE)
+    if fn != nil {
+        let arr: **Local = fn.locals
+        let i: u64 = scope_start
+        while i < fn.nlocals {
+            let loc: *Local = arr[i]
+            loc.active = 0
+            i = i + 1
+        }
+    }
     return head
+}
+
+fun require_initialized(e: *Expr) {
+    if e == nil { return }
+    if e.kind == EX_ADDR { return }
+    if e.kind == EX_VAR {
+        let fn: *Func = cur_func()
+        let arr: **Local = fn.locals
+        let loc: *Local = arr[e.var_index]
+        if loc.initialized == 0 {
+            let mu: str = 'lectura de local no inicializado'
+            die_here(mu.ptr, mu.len)
+        }
+        return
+    }
+    require_initialized(e.inner)
+    require_initialized(e.lhs)
+    require_initialized(e.rhs)
+    if e.kind == EX_CALL {
+        let args: **Expr = e.args
+        let i: u64 = 0
+        while i < e.nargs { require_initialized(args[i]); i = i + 1 }
+    }
 }
 
 // Una sentencia. No hay punto y coma obligatorio: el final de una sentencia se
@@ -1060,11 +1235,21 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
             s.type = parse_type(ar)
         }
         if ps_accept(TK_EQ) == 1 {
+            if s.type != nil {
+                if s.type.kind == T_ARRAY {
+                    let ma4: str = 'inicializador de array no soportado'
+                    die_here(ma4.ptr, ma4.len)
+                }
+            }
             s.init = parse_expr(ar, 1)
+            require_initialized(s.init)
         }
         let fn: *Func = cur_func()
         if fn != nil {
             s.local_index = add_local(ar, fn, s.name_start, s.name_len, s.type)
+            if s.init != nil {
+                mark_local_initialized(fn, s.local_index)
+            }
         }
         return s
     }
@@ -1074,6 +1259,7 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
         if ps_kind() != TK_SEMI {
             if ps_kind() != TK_RBRACE {
                 s.ret_val = parse_expr(ar, 1)
+                require_initialized(s.ret_val)
             }
         }
         return s
@@ -1083,6 +1269,7 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
         let had_paren: u32 = ps_accept(TK_LPAREN)
         let s: *Stmt = mk_stmt(ar, ST_IF)
         s.cond = parse_expr(ar, 1)
+        require_initialized(s.cond)
         if had_paren == 1 { ps_expect(TK_RPAREN) }
         s.body = parse_block(ar)
         if ps_kind() == TK_ELSE {
@@ -1100,6 +1287,7 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
         let had_paren: u32 = ps_accept(TK_LPAREN)
         let s: *Stmt = mk_stmt(ar, ST_WHILE)
         s.cond = parse_expr(ar, 1)
+        require_initialized(s.cond)
         if had_paren == 1 { ps_expect(TK_RPAREN) }
         s.body = parse_block(ar)
         return s
@@ -1114,9 +1302,20 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
         ps_advance()
         return mk_stmt(ar, ST_BREAK)
     }
+    if k == TK_CONTINUE {
+        ps_advance()
+        return mk_stmt(ar, ST_CONTINUE)
+    }
     let e: *Expr = parse_expr(ar, 1)
     if ps_accept(TK_EQ) == 1 {
+        if e.type != nil {
+            if e.type.kind == T_ARRAY {
+                let ma5: str = 'asignacion de array no soportada'
+                die_here(ma5.ptr, ma5.len)
+            }
+        }
         let rhs: *Expr = parse_expr(ar, 1)
+        require_initialized(rhs)
         if e.kind == EX_DEREF {
             let s2: *Stmt = mk_stmt(ar, ST_STORE)
             s2.expr = e.inner
@@ -1126,9 +1325,14 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
         let s: *Stmt = mk_stmt(ar, ST_ASSIGN)
         s.expr = e
         s.init = rhs
-        if e.kind == EX_VAR { s.local_index = e.var_index }
+        if e.kind == EX_VAR {
+            s.local_index = e.var_index
+            let fn: *Func = cur_func()
+            mark_local_initialized(fn, e.var_index)
+        } else { require_initialized(e) }
         return s
     }
+    require_initialized(e)
     let s: *Stmt = mk_stmt(ar, ST_EXPR)
     s.expr = e
     return s
@@ -1193,7 +1397,8 @@ fun parse_fun(ar: *Arena) -> *Func {
         } else {
             f.nparams = f.nparams + 1
         }
-        add_local(ar, f, p.name_start, p.name_len, p.type)
+        let pidx: u64 = add_local(ar, f, p.name_start, p.name_len, p.type)
+        mark_local_initialized(f, pidx)
         if ps_kind() != TK_RPAREN { ps_expect(TK_COMMA) }
     }
     ps_expect(TK_RPAREN)
@@ -1316,6 +1521,45 @@ fun parse_struct_decl(ar: *Arena) -> *StructDecl {
     return sd
 }
 
+fun resolve_call_types_expr(pg: *Program, e: *Expr) {
+    if e == nil { return }
+    if e.kind == EX_CALL {
+        let syskw: str = 'syscall'
+        if bytes_eq_at(e.callee_start, e.callee_len, syskw.ptr, 7) == 0 {
+            let f: *Func = pg.funcs
+            while f != nil {
+                if bytes_eq_off(f.name_start, f.name_len, e.callee_start, e.callee_len) == 1 {
+                    if f.ret_type != nil { e.type = f.ret_type }
+                    break
+                }
+                f = f.next
+            }
+        }
+        let i: u64 = 0
+        while i < e.nargs {
+            let args: **Expr = e.args
+            resolve_call_types_expr(pg, args[i])
+            i = i + 1
+        }
+    }
+    resolve_call_types_expr(pg, e.inner)
+    resolve_call_types_expr(pg, e.lhs)
+    resolve_call_types_expr(pg, e.rhs)
+}
+
+fun resolve_call_types_stmt(pg: *Program, s: *Stmt) {
+    let it: *Stmt = s
+    while it != nil {
+        resolve_call_types_expr(pg, it.init)
+        resolve_call_types_expr(pg, it.cond)
+        resolve_call_types_expr(pg, it.ret_val)
+        resolve_call_types_expr(pg, it.expr)
+        resolve_call_types_stmt(pg, it.body)
+        resolve_call_types_stmt(pg, it.else_body)
+        it = it.next
+    }
+}
+
 // Punto de entrada: parsea un fichero entero y devuelve el Program.
 //
 // A nivel superior solo hay cinco cosas posibles: fun, const, bss, struct y el
@@ -1355,5 +1599,10 @@ fun parse(ar: *Arena, src: *u8, srclen: u64) -> *Program {
     let cc: *u64 = STR_COUNT
     p.strs = hh[0]
     p.nstrs = cc[0]
+    let rf: *Func = p.funcs
+    while rf != nil {
+        resolve_call_types_stmt(p, rf.body)
+        rf = rf.next
+    }
     return p
 }

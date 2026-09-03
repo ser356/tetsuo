@@ -193,6 +193,10 @@ fun enc_udiv(rd: u64, rn: u64, rm: u64) -> u64 {
     return 2596276224 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
 }
 
+fun enc_sdiv(rd: u64, rn: u64, rm: u64) -> u64 {
+    return 2596277248 | (m5(rm) << 16) | (m5(rn) << 5) | m5(rd)
+}
+
 // ---------------------------------------------------------------------------
 // Logicas y desplazamientos (hito 24.a)
 // ---------------------------------------------------------------------------
@@ -257,6 +261,22 @@ fun enc_str_w(rt: u64, rn: u64, imm12: u64) -> u64 {
 
 fun enc_strb(rt: u64, rn: u64, imm12: u64) -> u64 {
     return 956301312 | (m12(imm12) << 10) | (m5(rn) << 5) | m5(rt)
+}
+
+fun enc_sxtb(rd: u64, rn: u64) -> u64 {
+    return 2470452224 | (m5(rn) << 5) | m5(rd)
+}
+
+fun enc_sxtw(rd: u64, rn: u64) -> u64 {
+    return 2470476800 | (m5(rn) << 5) | m5(rd)
+}
+
+fun enc_uxtb(rd: u64, rn: u64) -> u64 {
+    return 1392516096 | (m5(rn) << 5) | m5(rd)
+}
+
+fun enc_uxtw(rd: u64, rn: u64) -> u64 {
+    return enc_mov_reg(rd, rn) & 2147483647
 }
 
 // ---------------------------------------------------------------------------

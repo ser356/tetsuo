@@ -1,5 +1,7 @@
     .text
+    .globl tt_sys
     .globl _tt_sys
+tt_sys:
 _tt_sys:
     cmp x16, #1
     b.eq .Lsys_exit
@@ -42,6 +44,14 @@ _tt_sys:
     mov x8, #57
     svc #0
     ret
+
+    .globl tt_start
+tt_start:
+    ldr x0, [sp]
+    add x1, sp, #8
+    bl main
+    mov x8, #93
+    svc #0
 
     .globl _linux_start
 _linux_start:

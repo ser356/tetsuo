@@ -1,0 +1,7 @@
+import 'src/runtime/io.tt'
+import 'lib/str.tt'
+import 'lib/string.tt'
+import 'lib/parse.tt'
+import 'lib/fmt.tt'
+import 'lib/stdio.tt'
+import 'lib/vec.tt'

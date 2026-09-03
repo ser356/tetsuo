@@ -1,0 +1,13 @@
+fun half(v: i64) -> i64 {
+    return v / 2
+}
+
+fun main() -> u32 {
+    let n: i64 = -9
+    let h: i64 = half(n)
+    if h != -4 { return 1 }
+    if n >= 0 { return 2 }
+    if h <= n { return 3 }
+    if n > h { return 4 }
+    return 0
+}

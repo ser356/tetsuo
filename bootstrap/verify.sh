@@ -41,10 +41,12 @@ check "nil2.tt (keyword)"               7   bash tests/macos_build.sh tests/nil2
 check "parens.tt (if/while opt)"        9   bash tests/macos_build.sh tests/parens.tt a b c
 check "sizeof.tt"                       16  bash tests/macos_build.sh tests/sizeof.tt
 check "str_test.tt (mem_copy)"          3   bash tests/macos_build.sh tests/str_test.tt
+check "string + parse primitives"       0   bash tests/string_parse_build.sh
+check "stdio + std umbrella"            0   bash tests/stdio_build.sh
 check "fmt_test.tt (out_u64)"           4   bash tests/macos_build.sh tests/fmt_test.tt
 check "vec_test.tt (arena grow)"        20  bash tests/macos_build.sh tests/vec_test.tt
 check "ast_test.tt (arena AST)"         33  bash tests/macos_build.sh tests/ast_test.tt
-check "type_test.tt (Type,mk_prim)"     9   bash tests/macos_build.sh tests/type_test.tt
+check "type_test.tt (Type,mk_prim)"     23  bash tests/macos_build.sh tests/type_test.tt
 check "primary_test.tt"                 42  bash tests/macos_build.sh tests/primary_test.tt
 check "expr_test1.tt (Pratt)"           146 bash tests/macos_build.sh tests/expr_test1.tt
 check "stmt_test.tt (parse_stmt LET)"   5   bash tests/macos_build.sh tests/stmt_test.tt
@@ -64,6 +66,17 @@ check "lower_prog_test.tt (driver)"     2  bash tests/macos_build.sh tests/lower
 check "lower_regalloc_test.tt"          3  bash tests/macos_build.sh tests/lower_regalloc_test.tt
 check "lower_str_test.tt (EX_STRLIT)"   7  bash tests/macos_build.sh tests/lower_str_test.tt
 check "parse_locals_test.tt (var_idx)"  1  bash tests/macos_build.sh tests/parse_locals_test.tt
+check "call_return_type_test.tt"        2   bash tests/macos_build.sh tests/call_return_type_test.tt
+check "continue_test.tt"                0   bash tests/macos_build.sh tests/continue_test.tt
+check "arena_test.tt"                   0   bash tests/macos_build.sh tests/arena_test.tt
+check "runtime_sys_test.tt (getpid)"    0   bash tests/macos_build.sh tests/runtime_sys_test.tt
+check "array_test.tt ([N]u64)"          46  bash tests/macos_build.sh tests/array_test.tt
+check "signed_test.tt (i64)"            0   bash tests/macos_build.sh tests/signed_test.tt
+check "cast_test.tt (i8/i32)"           0   bash tests/macos_build.sh tests/cast_test.tt
+check "scope_test.tt"                   0   bash tests/macos_build.sh tests/scope_test.tt
+check "uninitialized_fail.tt"           2   bash tests/macos_build.sh tests/uninitialized_fail.tt
+check "gp_acceptance.tt"                0   bash tests/macos_build.sh tests/gp_acceptance.tt
+check "gp_runtime_fs_test.tt"           0   bash tests/macos_build.sh tests/gp_runtime_fs_test.tt
 
 section "Codegen textual + driver (hitos 17-18)"
 check "hex4_test.tt (out_hex4)"         4   bash tests/macos_build.sh tests/hex4_test.tt

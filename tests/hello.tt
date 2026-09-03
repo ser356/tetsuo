@@ -1,3 +1,5 @@
+bss HEAP_BASE: 4096
+
 fun main() {
     let saludo: str = 'hola\n'
     print(saludo)

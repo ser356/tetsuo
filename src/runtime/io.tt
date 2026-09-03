@@ -39,6 +39,8 @@
 
 bss IO_BUF: 16777216
 
+const EXIT_ARENA_OOM: u64 = 70
+
 // ---------------------------------------------------------------------------
 // Arena: asignador de bump. `base` apunta a un bloque bss, `pos` es el primer
 // byte libre y `cap` el tamano total. No hay free individual.
@@ -67,10 +69,12 @@ fun arena_init(a: *Arena, base: *u8, cap: u64) {
 // llamada a comprobarlo y el compilador no tiene ninguna forma sensata de
 // recuperarse. El codigo de salida 70 identifica el caso al depurar.
 fun arena_take(a: *Arena, n: u64) -> *u8 {
+    if n + 7 < n { io_exit(EXIT_ARENA_OOM) }
     let aligned: u64 = ((n + 7) / 8) * 8
-    if a.pos + aligned > a.cap {
-        io_exit(70)
-    }
+    let pos: u64 = a.pos
+    let cap: u64 = a.cap
+    if pos > cap { io_exit(EXIT_ARENA_OOM) }
+    if aligned > cap - pos { io_exit(EXIT_ARENA_OOM) }
     let p: *u8 = a.base + a.pos
     a.pos = a.pos + aligned
     return p
@@ -113,6 +117,22 @@ fun io_write(fd: u64, buf: *u8, len: u64) {
 
 fun io_close(fd: u64) {
     syscall(6, fd, 0, 0)
+}
+
+fun io_getpid() -> u64 {
+    return syscall(20, 0, 0, 0)
+}
+
+fun io_unlink(path: *u8) -> u64 {
+    return syscall(10, path, 0, 0)
+}
+
+fun io_chdir(path: *u8) -> u64 {
+    return syscall(12, path, 0, 0)
+}
+
+fun io_mkdir(path: *u8, mode: u64) -> u64 {
+    return syscall(136, path, mode, 0)
 }
 
 // exit(code). No retorna. El codigo de salida es el contrato de casi todos los

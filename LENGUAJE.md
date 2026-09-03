@@ -12,7 +12,7 @@ mal, se marca con **⚠**. Para patrones idiomáticos ver `idioms.md`.
   `-1` no existe como literal (el `-` es siempre operador binario).
 - Cadenas: comillas **simples** `'hola\n'`. Escapes: `\n \t \\ \' \0 \xNN`.
 - Palabras reservadas: `fun let const return if else loop while break struct
-  bss nil sizeof`.
+  bss nil sizeof continue as`.
 - `;` es opcional y se ignora como separador.
 
 ## Tipos
@@ -22,15 +22,18 @@ mal, se marca con **⚠**. Para patrones idiomáticos ver `idioms.md`.
 | `u8`    | 1     | byte sin signo                                |
 | `u32`   | 4     | entero sin signo de 32 bits                   |
 | `u64`   | 8     | entero sin signo de 64 bits                   |
+| `i8`    | 1     | entero con signo de 8 bits                    |
+| `i32`   | 4     | entero con signo de 32 bits                   |
+| `i64`   | 8     | entero con signo de 64 bits                   |
+| `bool`  | 1     | booleano almacenado como 0/1                  |
 | `*T`    | 8     | puntero a `T` (anidable: `**Expr`)            |
 | `str`   | 16    | par (puntero, longitud); dos slots de 8       |
 | structs | 8·n   | declarados con `struct`; cada campo ocupa 8   |
 
-- **No hay tipos con signo**, ni booleanos (las comparaciones devuelven
-  `u32` 0/1), ni arrays `[N]T`, ni casts (`as`, `u8(x)` no existen).
-- Todas las comparaciones son **sin signo** (`lo/ls/hi/hs`). ⚠ `p < 0` es
-  siempre falso; `x - 1` con `x == 0` da `0xFFFF…`, no −1. Para centinelas
-  usa `0` e índices base 1 (ver `idioms.md`).
+- Los tipos con signo usan división y comparaciones signed. La negación unaria
+  y los casts postfix `expr as T` normalizan `i8/i32/u8/u32`.
+- `[N]T` declara arrays locales fijos. Actualmente exige elementos de 8 bytes.
+- Las comparaciones devuelven `u32` 0/1.
 - El ancho de un literal entero lo decide el contexto (`let`/parámetro que lo
   recibe).
 
@@ -85,8 +88,9 @@ fun add(a: u64, b: u64) -> u64 { return a + b }
 
 - Máximo 8 parámetros efectivos (un parámetro `str` cuenta como 2).
 - ⚠ El tipo de retorno declarado decide el ancho del `return`; una llamada en
-  expresión se tipa hoy como `u32` salvo `syscall` (`u64`). Si necesitas los
-  64 bits de un retorno, pásalo por `let` con tipo explícito.
+- El tipo de retorno declarado decide el ancho del `return` y se propaga a las
+  llamadas, incluidas llamadas adelantadas y recursivas. `syscall` devuelve
+  `u64`.
 
 ## Sentencias
 
@@ -101,9 +105,8 @@ return                  // o return expr
 expr                    // llamada como sentencia
 ```
 
-- ⚠ `let` **sin** inicializador deja el slot con basura de pila: inicialízalo
-  antes de leerlo. El compilador no lo detecta.
-- No hay `continue`: envuelve el cuerpo del bucle en un `if`.
+- `let` sin inicializador puede asignarse después; leerlo antes falla al compilar.
+- `continue` salta a la siguiente iteración del bucle más interno.
 - `break` solo sale del bucle más interno (`loop` o `while`).
 
 ### Shadowing de `let`
@@ -117,10 +120,8 @@ if k == TK_NUM  { let e: *Expr = mk_expr(ar, EX_INT); e.ival = t.ival; return e 
 if k == TK_IDENT { let e: *Expr = mk_expr(ar, EX_VAR); e.var_start = s; return e }
 ```
 
-⚠ No hay ámbito de bloque: un `let` dentro de un `if` sigue haciendo sombra
-al nombre en el resto de la función, aunque su rama no se haya ejecutado (y su
-slot estará sin inicializar en ese caso). Tras un bloque con `let x` interno,
-no reutilices `x` esperando ver la declaración externa.
+Los bloques crean ámbitos léxicos. Un nombre interno tapa al externo dentro del
+bloque y deja de ser visible al salir.
 
 (Histórico: hasta el fix de `lookup_local`, los usos resolvían a la *primera*
 declaración del nombre — un `let e` en la rama IDENT escribía su propio slot
@@ -134,7 +135,7 @@ Precedencias, de mayor a menor:
 | nivel | operadores                       |
 |-------|----------------------------------|
 | unario| `@expr` (deref), `&var` (dirección) |
-| postfijo | `f(args)`, `.campo`, `[i]`    |
+| postfijo | `f(args)`, `.campo`, `[i]`, `as T` |
 | 6     | `*` `/`                          |
 | 5     | `+` `-`                          |
 | 4     | `&` (AND bit a bit)              |
@@ -149,6 +150,8 @@ Precedencias, de mayor a menor:
 - `&` solo sobre variable local; `@` solo sobre expresión de tipo puntero.
 - `p[i]` sobre `p: *T` escala por `sizeof(T)` y desreferencia: equivale a
   `@(p + i*sizeof(T))`. Como lvalue: `p[i] = v`.
+- `[N]T` declara un array local fijo. El MVP admite elementos de 8 bytes,
+  indexación y escritura por índice; no admite copia ni inicializador agregado.
 - `.campo`:
   - sobre `s: str` → `.ptr` (`*u8`) y `.len` (`u64`), **solo sobre locales**;
   - sobre struct local → acceso directo al slot;
@@ -158,11 +161,50 @@ Precedencias, de mayor a menor:
 
 ## Intrínsecos
 
-- `syscall(n, a, b, c)` — única puerta al sistema (target macos). Envuélvelo
+- `syscall(n, a, b, c)` — única puerta al sistema. En macOS emite el trap BSD;
+  con `--target=linux` llama al shim ELF. Envuélvelo
   en funciones con nombre (`io_write`, `io_exit`, …). ⚠ **Nunca** en código
   para `--target=virt`: compila pero `svc` sin handler cuelga la máquina.
 - `@` sobre un `const` puntero es el acceso MMIO (target virt). Hoy compila a
   ldr/str simples; es "volátil" solo porque no hay optimizador.
+
+## Biblioteca primitiva
+
+Tetsuo no enlaza libc y no tiene cabeceras `stdio.h` o `stdlib.h`. Su biblioteca
+actual son módulos `.tt` importables:
+
+- `src/runtime/io.tt`: syscalls de archivos y proceso básico; también `Arena`,
+  `arena_init` y `arena_take`. La arena es bump-only: no existe `free`.
+- `lib/str.tt`: `bytes_eq` y `mem_copy`; `str` sigue siendo solo `(ptr, len)`.
+- `lib/string.tt`: igualdad, prefijo y búsqueda de byte sobre `str`.
+- `lib/parse.tt`: `parse_u64` y `parse_i64`, con rechazo de vacío, caracteres
+  inválidos y overflow. Devuelven 1 en éxito y 0 en error.
+- `lib/fmt.tt`: salida bufferizada `Out`, bytes, decimal `u64`, hexadecimal de
+  cuatro dígitos y errores fatales.
+- `lib/stdio.tt`: stdout/stderr mediante `print`, `println`, `print_u64` y
+  variantes `e*`. Exige `stdio_init` y vaciado explícito.
+- `lib/vec.tt`: vector de elementos opacos sobre arena, sin bounds checking.
+- `lib/ast.tt`: arena especializada usada por el compilador, no API general.
+
+`lib/std.tt` importa en orden runtime, bytes, strings, parseo, formato, stdio y
+vector. Es la entrada recomendada para CLI; `ast.tt` queda fuera por ser interna.
+
+Equivalencias prácticas:
+
+| necesidad | API tetsuo |
+|---|---|
+| reservar memoria | `arena_take` |
+| comparar/copiar bytes | `bytes_eq`, `mem_copy` |
+| comparar/buscar strings | `string_eq`, `string_has_prefix`, `string_find_byte` |
+| convertir enteros | `parse_u64`, `parse_i64` |
+| abrir/leer/escribir/cerrar | `io_open_*`, `io_read`, `io_write`, `io_close` |
+| stdout/stderr | `stdio_init`, `print*`, `eprint*`, `flush`, `eflush` |
+| vector dinámico | `Vec` + `vec_*` |
+| terminar proceso | `io_exit` |
+
+Faltan `printf`, `malloc/free`, streams `FILE`, sort, red, procesos hijo,
+entorno y reloj. La API de syscall devuelve valores crudos y aún no expone
+`errno` de forma tipada.
 
 ## Modelo de compilación
 
@@ -186,8 +228,14 @@ Precedencias, de mayor a menor:
   fichero ya expandido en el flujo del preprocessor.
 - Convenciones: constantes en MAYÚSCULAS; funciones y campos en snake_case;
   prefijo de "módulo" manual en los nombres (`io_`, `arena_`, `lex_`).
+- Máximo 32 rutas importadas. Los símbolos son globales; no hay namespaces,
+  visibilidad pública/privada ni build incremental.
 
 ## Errores del compilador
+
+Códigos públicos: `0` éxito, `2` argumentos o sintaxis, `3` entrada vacía o
+no legible, `4` salida no abrible y `70` arena agotada/desbordada. Los códigos
+`90` en adelante quedan reservados para scripts y harnesses.
 
 El compilador para en el primer error con `parser: linea N: mensaje` (o
 `lexer:`/`ir:`). Los mensajes de `ir:` marcan límites de hito (p. ej. "arg
@@ -196,9 +244,15 @@ El compilador para en el primer error con `parser: linea N: mensaje` (o
 
 ## Límites conocidos (resumen ⚠)
 
-- Sin comprobación de desbordamiento de arena (`arena_take` no mira `cap`).
-- Sin comprobación de uso de local sin inicializar.
-- Llamadas tipadas `u32` en expresión (ver `fun` arriba).
+- `arena_take` comprueba capacidad y desbordamiento aritmético; agotar el arena
+  termina con código 70.
+- El análisis de inicialización es conservador y escalar; tomar `&array` permite
+  inicialización posterior por índice.
 - `[]` y `.` requieren que el tipo del receptor sea conocido; no hay
   inferencia.
+- Arrays: solo locales `[N]T` con `sizeof(T) == 8`; sin copia por valor ni
+  inicializadores agregados.
 - Máximo 8 argumentos/parámetros; bucles anidados ≤ 16 (`break_stack`).
+
+El runtime macOS ofrece archivos básicos, `getpid`, `mkdir`, `chdir` y
+`unlink`. Red, procesos hijo, entorno y reloj aún no tienen API estable.
