@@ -90,7 +90,7 @@ check str_test            3   tests/str_test.tt
 check fmt_test            4   tests/fmt_test.tt
 check vec_test            20  tests/vec_test.tt
 check ast_test            33  tests/ast_test.tt
-check type_test           9   tests/type_test.tt
+check type_test           23  tests/type_test.tt
 check primary_test        42  tests/primary_test.tt
 check expr_test1          146 tests/expr_test1.tt
 check stmt_test           5   tests/stmt_test.tt
@@ -121,6 +121,7 @@ check asm_test            0   tests/asm_test.tt
 check sha256_test         0   tests/sha256_test.tt
 check write_test          0   tests/write_test.tt
 check macos_hello         0   tests/macos_hello.tt
+check syscall_checked     0   tests/syscall_checked_test.tt
 
 # Reproductor minimo: __TEXT de 7 paginas + ~50MB de __bss con apenas 40
 # instrucciones de codigo. Aisla el layout del volumen de codigo.

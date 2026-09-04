@@ -11,6 +11,10 @@ BUILD=build
 HARNESS=bootstrap/linux
 mkdir -p "$BUILD/linux"
 
+for tool in qemu-aarch64 aarch64-linux-gnu-as aarch64-linux-gnu-ld; do
+    command -v "$tool" >/dev/null || { echo "falta dependencia: $tool" >&2; exit 127; }
+done
+
 [[ -f "$BUILD/linux/shim.o" ]] || \
     aarch64-linux-gnu-as "$HARNESS/shim.s" -o "$BUILD/linux/shim.o"
 

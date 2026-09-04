@@ -99,13 +99,14 @@ let x: u64 = 0          // anotación de tipo SIEMPRE obligatoria; init opcional
 x = x + 1               // asignación a local
 @p = v                  // almacenamiento a través de puntero
 if cond { } else if c2 { } else { }
-while cond { }          // paréntesis opcionales en if/while
+while cond { }
 loop { ... break ... }
 return                  // o return expr
 expr                    // llamada como sentencia
 ```
 
 - `let` sin inicializador puede asignarse después; leerlo antes falla al compilar.
+- Tomar `&x` marca `x` inicializado para permitir out-params; no se comprueba que el callee escriba.
 - `continue` salta a la siguiente iteración del bucle más interno.
 - `break` solo sale del bucle más interno (`loop` o `while`).
 
@@ -246,10 +247,11 @@ Códigos públicos: `0` éxito, `2` argumentos o sintaxis, `3` entrada vacía o
 no legible, `4` salida no abrible y `70` arena agotada/desbordada. Los códigos
 `90` en adelante quedan reservados para scripts y harnesses.
 
-El compilador para en el primer error con `parser: linea N: mensaje` (o
-`lexer:`/`ir:`). Los mensajes de `ir:` marcan límites de hito (p. ej. "arg
-'str' solo desde local"). Los binarios stage1 señalan errores de parseo con
-`io_exit(80..91)`.
+El parser acumula hasta 20 errores, recuperándose en límites de sentencia,
+bloque o declaración superior. Tras expandir imports conserva ruta y línea
+originales y muestra columna, token, fuente y cursor:
+`ruta:línea:columna: error: mensaje`. Si existe algún error no ejecuta el
+lowering y termina con código 2.
 
 ## Límites conocidos (resumen ⚠)
 

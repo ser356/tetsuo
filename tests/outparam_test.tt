@@ -1,0 +1,22 @@
+struct S { a: u64, b: u64 }
+
+fun s_init(s: *S) {
+    s.a = 20
+    s.b = 22
+}
+
+fun pair(a: *u64, b: *u64) {
+    @a = 19
+    @b = 23
+}
+
+fun main() -> u32 {
+    let s: S
+    s_init(&s)
+    if s.a + s.b != 42 { return 1 }
+    let a: u64
+    let b: u64
+    pair(&a, &b)
+    if a + b != 42 { return 2 }
+    return 0
+}

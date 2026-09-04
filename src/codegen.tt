@@ -658,10 +658,24 @@ fun emit_i_syscall(o: *Out, fn: *IrFn, i: *Ins) {
     emit_str_x(o, 0, i.dst * 8)
 }
 
+fun emit_i_syscall_checked(o: *Out, fn: *IrFn, i: *Ins) {
+    emit_i_syscall(o, fn, i)
+    let cs: str = '    cset    x17, cs\n'
+    out_bytes(o, cs.ptr, cs.len)
+    emit_load_slot_to_x(o, fn, i.args[4], 16)
+    let st: str = '    str     x17, [x16]\n'
+    out_bytes(o, st.ptr, st.len)
+}
+
 fun emit_i_call(o: *Out, fn: *IrFn, i: *Ins) {
     let syskw: str = 'syscall'
     if bytes_eq_at(i.callee_start, i.callee_len, syskw.ptr, 7) == 1 {
         emit_i_syscall(o, fn, i)
+        return
+    }
+    let sysck: str = 'syscall_checked'
+    if bytes_eq_at(i.callee_start, i.callee_len, sysck.ptr, 15) == 1 {
+        emit_i_syscall_checked(o, fn, i)
         return
     }
     let args: *u64 = i.args

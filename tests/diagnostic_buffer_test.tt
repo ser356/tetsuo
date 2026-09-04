@@ -1,0 +1,23 @@
+fun main() -> u32 {
+    diagnostics_reset()
+    let site: DiagnosticSite
+    let path: str = 'test.tt'
+    let msg: str = 'fallo'
+    site.path = path.ptr
+    site.plen = path.len
+    site.line = 1
+    site.col = 1
+    site.src = msg.ptr
+    site.slen = msg.len
+    site.tok = msg.ptr
+    site.tlen = 1
+    let i: u64 = 0
+    while i < 25 {
+        diagnostics_add(msg.ptr, msg.len, &site)
+        i = i + 1
+    }
+    if diagnostics_count() != 20 { return 1 }
+    diagnostics_reset()
+    if diagnostics_count() != 0 { return 2 }
+    return 0
+}

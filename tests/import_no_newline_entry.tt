@@ -1,0 +1,2 @@
+import 'tests/import_no_newline.tt'
+fun main() -> u32 { return imported() + 1 }

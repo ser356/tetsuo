@@ -1,0 +1,6 @@
+const A: u64 = )
+const B u64 = 1
+bss : 8
+struct { x: u64 }
+fun () -> u32 { return 0 }
+fun main() -> u32 { return 0 }

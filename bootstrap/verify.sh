@@ -25,7 +25,7 @@ check() {
 section() { printf '\n%s%s%s\n' "$BOLD" "$1" "$RESET"; }
 
 # Forzar rebuild del binario stage1: macos_build.sh cachea build/main.
-rm -f build/main
+rm -f build/main build/main_mp
 
 # Sonda de aislamiento: mismo contenedor Mach-O que los binarios de abajo
 # (__TEXT de 7 paginas + ~50MB de __bss) pero con apenas 40 instrucciones de
@@ -39,12 +39,14 @@ check "argv.tt (argc)"                  4   bash tests/macos_build.sh tests/argv
 check "nil.tt (literal 0)"              7   bash tests/macos_build.sh tests/nil.tt
 check "nil2.tt (keyword)"               7   bash tests/macos_build.sh tests/nil2.tt
 check "parens.tt (if/while opt)"        9   bash tests/macos_build.sh tests/parens.tt a b c
+check "paren_cond_test.tt"              0   bash tests/macos_build.sh tests/paren_cond_test.tt
 check "sizeof.tt"                       16  bash tests/macos_build.sh tests/sizeof.tt
 check "str_test.tt (mem_copy)"          3   bash tests/macos_build.sh tests/str_test.tt
 check "string + parse primitives"       0   bash tests/string_parse_build.sh
 check "utf8 decoder"                     0   bash tests/macos_build.sh tests/utf8_test.tt
 check "stdio + std umbrella"            0   bash tests/stdio_build.sh
 check "fmt_test.tt (out_u64)"           4   bash tests/macos_build.sh tests/fmt_test.tt
+check "diagnostic buffer cap"           0   bash tests/macos_build.sh tests/diagnostic_buffer_test.tt
 check "vec_test.tt (arena grow)"        20  bash tests/macos_build.sh tests/vec_test.tt
 check "ast_test.tt (arena AST)"         33  bash tests/macos_build.sh tests/ast_test.tt
 check "type_test.tt (Type,mk_prim)"     23  bash tests/macos_build.sh tests/type_test.tt
@@ -71,11 +73,13 @@ check "call_return_type_test.tt"        2   bash tests/macos_build.sh tests/call
 check "continue_test.tt"                0   bash tests/macos_build.sh tests/continue_test.tt
 check "arena_test.tt"                   0   bash tests/macos_build.sh tests/arena_test.tt
 check "runtime_sys_test.tt (getpid)"    0   bash tests/macos_build.sh tests/runtime_sys_test.tt
+check "syscall_checked_test.tt"         0   bash tests/macos_build.sh tests/syscall_checked_test.tt
 check "array_test.tt ([N]u64)"          46  bash tests/macos_build.sh tests/array_test.tt
 check "signed_test.tt (i64)"            0   bash tests/macos_build.sh tests/signed_test.tt
 check "cast_test.tt (i8/i32)"           0   bash tests/macos_build.sh tests/cast_test.tt
 check "scope_test.tt"                   0   bash tests/macos_build.sh tests/scope_test.tt
 check "uninitialized_fail.tt"           2   bash tests/macos_build.sh tests/uninitialized_fail.tt
+check "outparam_test.tt"                0   bash tests/macos_build.sh tests/outparam_test.tt
 check "gp_acceptance.tt"                0   bash tests/macos_build.sh tests/gp_acceptance.tt
 check "gp_runtime_fs_test.tt"           0   bash tests/macos_build.sh tests/gp_runtime_fs_test.tt
 
@@ -92,6 +96,10 @@ check "release parser ABI"                 0   bash tests/release_name_abi_build
 
 section "Preprocessor + Mach-O nativo (hitos 23-24)"
 check "import_build.sh (pp inline)"     42  bash tests/import_build.sh
+check "import without final newline"    42  bash tests/macos_build.sh tests/import_no_newline_entry.tt
+check "diagnostic import origin"         0   bash tests/diagnostic_import_build.sh
+check "diagnostic multi-error"           0   bash tests/diagnostic_multi_build.sh
+check "diagnostic top-level recovery"    0   bash tests/diagnostic_top_multi_build.sh
 check "shifts_test.tt (<< >>)"          0   bash tests/macos_build.sh tests/shifts_test.tt
 check "operators_test.tt (% !)"          0   bash tests/macos_build.sh tests/operators_test.tt
 check "logical_test.tt (&& ||)"           0   bash tests/macos_build.sh tests/logical_test.tt

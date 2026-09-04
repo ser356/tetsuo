@@ -523,6 +523,13 @@ fun cgb_i_syscall(fn: *IrFn, i: *Ins) {
     b_str_x(0, i.dst * 8)
 }
 
+fun cgb_i_syscall_checked(fn: *IrFn, i: *Ins) {
+    cgb_i_syscall(fn, i)
+    cb_word(enc_cset(17, 3))
+    cgb_load_slot_x(fn, i.args[4], 16)
+    cb_word(enc_str_x(17, 16, 0))
+}
+
 // Llamada a funcion.
 //
 // `syscall` se intercepta por NOMBRE: no es una funcion de verdad sino un
@@ -538,6 +545,11 @@ fun cgb_i_call(fn: *IrFn, i: *Ins, funcs: *IrFn) {
     let syskw: str = 'syscall'
     if bytes_eq_at(i.callee_start, i.callee_len, syskw.ptr, 7) == 1 {
         cgb_i_syscall(fn, i)
+        return
+    }
+    let sysck: str = 'syscall_checked'
+    if bytes_eq_at(i.callee_start, i.callee_len, sysck.ptr, 15) == 1 {
+        cgb_i_syscall_checked(fn, i)
         return
     }
     let args: *u64 = i.args

@@ -1,0 +1,10 @@
+fun main() -> u32 {
+    let err: u64 = 99
+    let pid: u64 = syscall_checked(20, 0, 0, 0, &err)
+    if pid == 0 { return 1 }
+    if err != 0 { return 2 }
+    let missing: str = '/tetsuo-no-such-file'
+    let fd: u64 = syscall_checked(5, missing.ptr, 0, 0, &err)
+    if err == 0 { return 3 }
+    return 0
+}

@@ -164,3 +164,153 @@ fun die_line(msg: *u8, mlen: u64, line: u64) {
     out_flush(o)
     io_exit(2)
 }
+
+fun die_path_line(msg: *u8, mlen: u64, path: *u8, plen: u64, line: u64) {
+    let o: *Out = ERR_STORAGE
+    out_init(o, 2, ERR_BUF, 4096)
+    out_bytes(o, path, plen)
+    out_byte(o, 58)
+    out_u64(o, line)
+    let s: str = ': error: '
+    out_bytes(o, s.ptr, s.len)
+    out_bytes(o, msg, mlen)
+    out_byte(o, 10)
+    out_flush(o)
+    io_exit(2)
+}
+
+struct DiagnosticSite {
+    path: *u8,
+    plen: u64,
+    line: u64,
+    col: u64,
+    src: *u8,
+    slen: u64,
+    tok: *u8,
+    tlen: u64,
+}
+
+bss DIAGNOSTIC_COUNT: 8
+bss DIAGNOSTIC_MSGS: 160
+bss DIAGNOSTIC_MLENS: 160
+bss DIAGNOSTIC_PATHS: 160
+bss DIAGNOSTIC_PLENS: 160
+bss DIAGNOSTIC_LINES: 160
+bss DIAGNOSTIC_COLS: 160
+bss DIAGNOSTIC_SRCS: 160
+bss DIAGNOSTIC_SLENS: 160
+bss DIAGNOSTIC_TOKS: 160
+bss DIAGNOSTIC_TLENS: 160
+
+fun diagnostics_reset() {
+    let count: *u64 = DIAGNOSTIC_COUNT
+    count[0] = 0
+}
+
+fun diagnostics_count() -> u64 {
+    let count: *u64 = DIAGNOSTIC_COUNT
+    return count[0]
+}
+
+fun diagnostics_add(msg: *u8, mlen: u64, site: *DiagnosticSite) {
+    let count: *u64 = DIAGNOSTIC_COUNT
+    let n: u64 = count[0]
+    if n == 20 { return }
+    let msgs: **u8 = DIAGNOSTIC_MSGS
+    let mlens: *u64 = DIAGNOSTIC_MLENS
+    let paths: **u8 = DIAGNOSTIC_PATHS
+    let plens: *u64 = DIAGNOSTIC_PLENS
+    let lines: *u64 = DIAGNOSTIC_LINES
+    let cols: *u64 = DIAGNOSTIC_COLS
+    let srcs: **u8 = DIAGNOSTIC_SRCS
+    let slens: *u64 = DIAGNOSTIC_SLENS
+    let toks: **u8 = DIAGNOSTIC_TOKS
+    let tlens: *u64 = DIAGNOSTIC_TLENS
+    msgs[n] = msg
+    mlens[n] = mlen
+    paths[n] = site.path
+    plens[n] = site.plen
+    lines[n] = site.line
+    cols[n] = site.col
+    srcs[n] = site.src
+    slens[n] = site.slen
+    toks[n] = site.tok
+    tlens[n] = site.tlen
+    count[0] = n + 1
+}
+
+fun diagnostic_print(o: *Out, msg: *u8, mlen: u64, site: *DiagnosticSite) {
+    out_bytes(o, site.path, site.plen)
+    out_byte(o, 58)
+    out_u64(o, site.line)
+    out_byte(o, 58)
+    out_u64(o, site.col)
+    let s: str = ': error: '
+    out_bytes(o, s.ptr, s.len)
+    out_bytes(o, msg, mlen)
+    if site.tlen > 0 {
+        let f: str = ', encontrado \''
+        out_bytes(o, f.ptr, f.len)
+        out_bytes(o, site.tok, site.tlen)
+        out_byte(o, 39)
+    }
+    out_byte(o, 10)
+    out_u64(o, site.line)
+    let bar: str = ' | '
+    out_bytes(o, bar.ptr, bar.len)
+    out_bytes(o, site.src, site.slen)
+    out_byte(o, 10)
+    let pad: u64 = site.line
+    while pad > 0 {
+        out_byte(o, 32)
+        pad = pad / 10
+    }
+    out_bytes(o, bar.ptr, bar.len)
+    let i: u64 = 1
+    while i < site.col { out_byte(o, 32)  i = i + 1 }
+    let marks: u64 = site.tlen
+    if marks == 0 { marks = 1 }
+    let j: u64 = 0
+    while j < marks { out_byte(o, 94)  j = j + 1 }
+    out_byte(o, 10)
+}
+
+fun diagnostics_flush() {
+    let o: *Out = ERR_STORAGE
+    out_init(o, 2, ERR_BUF, 4096)
+    let msgs: **u8 = DIAGNOSTIC_MSGS
+    let mlens: *u64 = DIAGNOSTIC_MLENS
+    let paths: **u8 = DIAGNOSTIC_PATHS
+    let plens: *u64 = DIAGNOSTIC_PLENS
+    let lines: *u64 = DIAGNOSTIC_LINES
+    let cols: *u64 = DIAGNOSTIC_COLS
+    let srcs: **u8 = DIAGNOSTIC_SRCS
+    let slens: *u64 = DIAGNOSTIC_SLENS
+    let toks: **u8 = DIAGNOSTIC_TOKS
+    let tlens: *u64 = DIAGNOSTIC_TLENS
+    let n: u64 = diagnostics_count()
+    let i: u64 = 0
+    while i < n {
+        let site: DiagnosticSite
+        site.path = paths[i]
+        site.plen = plens[i]
+        site.line = lines[i]
+        site.col = cols[i]
+        site.src = srcs[i]
+        site.slen = slens[i]
+        site.tok = toks[i]
+        site.tlen = tlens[i]
+        diagnostic_print(o, msgs[i], mlens[i], &site)
+        i = i + 1
+    }
+    out_flush(o)
+    io_exit(2)
+}
+
+fun die_source_line(msg: *u8, mlen: u64, site: *DiagnosticSite) {
+    let o: *Out = ERR_STORAGE
+    out_init(o, 2, ERR_BUF, 4096)
+    diagnostic_print(o, msg, mlen, site)
+    out_flush(o)
+    io_exit(2)
+}
