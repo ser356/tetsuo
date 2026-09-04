@@ -95,6 +95,7 @@ struct Field {
     name_start: u64,
     name_len:   u64,
     type:       *Type,
+    offset:     u64,
     next:       *Field,
 }
 
@@ -103,11 +104,13 @@ struct StructDecl {
     name_len:   u64,
     fields:     *Field,
     nfields:    u64,
+    size:       u64,
+    align:      u64,
     next:       *StructDecl,
 }
 
 fun mk_prim(ar: *Arena, kind: u64) -> *Type {
-    let t: *Type = arena_take(ar, 32)
+    let t: *Type = arena_take(ar, sizeof(Type))
     t.kind = kind
     t.inner = nil
     t.decl = nil
@@ -116,7 +119,7 @@ fun mk_prim(ar: *Arena, kind: u64) -> *Type {
 }
 
 fun mk_ptr(ar: *Arena, inner: *Type) -> *Type {
-    let t: *Type = arena_take(ar, 32)
+    let t: *Type = arena_take(ar, sizeof(Type))
     t.kind = T_PTR
     t.inner = inner
     t.decl = nil
@@ -125,7 +128,7 @@ fun mk_ptr(ar: *Arena, inner: *Type) -> *Type {
 }
 
 fun mk_array(ar: *Arena, inner: *Type, n: u64) -> *Type {
-    let t: *Type = arena_take(ar, 32)
+    let t: *Type = arena_take(ar, sizeof(Type))
     t.kind = T_ARRAY
     t.inner = inner
     t.decl = nil
@@ -154,7 +157,7 @@ fun type_width(t: *Type) -> u64 {
     if t.kind == T_ARRAY { return t.arr_len * type_width(t.inner) }
     if t.kind == T_STRUCT {
         let d: *StructDecl = t.decl
-        if d != nil { return d.nfields * 8 }
+        if d != nil { return d.size }
     }
     return 8
 }
@@ -251,6 +254,9 @@ struct Expr {
     str_len:      u64,
     var_index:    u64,
     str_id:       u64,
+    source_start: u64,
+    source_len:   u64,
+    is_volatile:  u64,
 }
 
 // Estado global del parser.
@@ -369,6 +375,7 @@ struct Stmt {
     expr:        *Expr,
     next:        *Stmt,
     local_index: u64,
+    is_volatile: u64,
 }
 
 struct Param {
@@ -460,7 +467,7 @@ fun bytes_eq_off(a_off: u64, a_len: u64, b_off: u64, b_len: u64) -> u32 {
 // numero de argumento.
 fun add_local(ar: *Arena, f: *Func, ns: u64, nl: u64, ty: *Type) -> u64 {
     let idx: u64 = f.nlocals
-    let loc: *Local = arena_take(ar, 40)
+    let loc: *Local = arena_take(ar, sizeof(Local))
     loc.name_start = ns
     loc.name_len = nl
     loc.type = ty
@@ -473,30 +480,23 @@ fun add_local(ar: *Arena, f: *Func, ns: u64, nl: u64, ty: *Type) -> u64 {
     if ty != nil {
         if ty.kind == T_STR { extras = 1 }
         if ty.kind == T_ARRAY {
-            if type_width(ty.inner) != 8 {
-                let ma: str = 'array local requiere elementos de 8 bytes'
-                die_line(ma.ptr, ma.len, 0)
-            }
-            if ty.arr_len > 0 { extras = ty.arr_len - 1 }
+            let slots0: u64 = (type_width(ty) + 7) / 8
+            if slots0 > 0 { extras = slots0 - 1 }
         }
         if ty.kind == T_STRUCT {
             let d: *StructDecl = ty.decl
             if d != nil {
-                if d.nfields > 0 { extras = d.nfields - 1 }
+                let slots: u64 = (d.size + 7) / 8
+                if slots > 0 { extras = slots - 1 }
             }
         }
     }
     let k: u64 = 0
     while k < extras {
-        let loc2: *Local = arena_take(ar, 40)
+        let loc2: *Local = arena_take(ar, sizeof(Local))
         loc2.name_start = 0
         loc2.name_len = 0
         loc2.type = mk_prim(ar, T_U64)
-        if ty.kind == T_ARRAY { loc2.type = ty.inner }
-        if ty.kind == T_STRUCT {
-            let ft: *Type = struct_field_type(ty.decl, k + 1)
-            if ft != nil { loc2.type = ft }
-        }
         loc2.active = 1
         loc2.initialized = 0
         arr[f.nlocals] = loc2
@@ -593,6 +593,17 @@ fun struct_field_type(d: *StructDecl, idx: u64) -> *Type {
     return nil
 }
 
+fun struct_field_offset(d: *StructDecl, idx: u64) -> u64 {
+    let i: u64 = 0
+    let fd: *Field = d.fields
+    while fd != nil {
+        if i == idx { return fd.offset }
+        i = i + 1
+        fd = fd.next
+    }
+    return 0
+}
+
 fun str_table_init() {
     let h: **StrLit = STR_HEAD
     let c: *u64 = STR_COUNT
@@ -614,7 +625,7 @@ fun str_table_init() {
 fun str_table_add(ar: *Arena, bytes: *u8, slen: u64) -> u64 {
     let c: *u64 = STR_COUNT
     let id: u64 = c[0]
-    let s: *StrLit = arena_take(ar, 32)
+    let s: *StrLit = arena_take(ar, sizeof(StrLit))
     s.id = id
     s.bytes = bytes
     s.slen = slen
@@ -692,7 +703,7 @@ fun ps_kind() -> u32 {
 }
 
 fun mk_expr(ar: *Arena, kind: u64) -> *Expr {
-    let e: *Expr = arena_take(ar, 136)
+    let e: *Expr = arena_take(ar, sizeof(Expr))
     e.kind = kind
     e.type = nil
     e.ival = 0
@@ -710,6 +721,9 @@ fun mk_expr(ar: *Arena, kind: u64) -> *Expr {
     e.str_len = 0
     e.var_index = 0
     e.str_id = 0
+    e.source_start = 0
+    e.source_len = 0
+    e.is_volatile = 0
     return e
 }
 
@@ -730,6 +744,8 @@ fun parse_primary(ar: *Arena) -> *Expr {
     let k: u32 = t.kind
     if k == TK_NUM {
         let e: *Expr = mk_expr(ar, EX_INT)
+        e.source_start = t.start
+        e.source_len = t.tlen
         e.ival = t.ival
         e.type = mk_prim(ar, T_U64)
         ps_advance()
@@ -737,12 +753,16 @@ fun parse_primary(ar: *Arena) -> *Expr {
     }
     if k == TK_NIL {
         let e: *Expr = mk_expr(ar, EX_INT)
+        e.source_start = t.start
+        e.source_len = t.tlen
         e.ival = 0
         e.type = mk_prim(ar, T_U64)
         ps_advance()
         return e
     }
     if k == TK_SIZEOF {
+        let sizeof_start: u64 = t.start
+        let sizeof_len: u64 = t.tlen
         ps_advance()
         ps_expect(TK_LPAREN)
         if parser_failed() == 1 { return nil }
@@ -751,6 +771,8 @@ fun parse_primary(ar: *Arena) -> *Expr {
         ps_expect(TK_RPAREN)
         if parser_failed() == 1 { return nil }
         let e: *Expr = mk_expr(ar, EX_INT)
+        e.source_start = sizeof_start
+        e.source_len = sizeof_len
         e.ival = type_width(ty)
         e.type = mk_prim(ar, T_U64)
         return e
@@ -770,26 +792,26 @@ fun parse_primary(ar: *Arena) -> *Expr {
         if ps_kind() == TK_LPAREN {
             ps_advance()
             let e: *Expr = mk_expr(ar, EX_CALL)
+            e.source_start = name_start
+            e.source_len = name_len
             e.callee_start = name_start
             e.callee_len   = name_len
-            let args: **Expr = arena_take(ar, 64)
-            e.args = args
+            let av: Vec
+            let first_arg: *u8 = arena_take(ar, 64)
+            vec_init(&av, 8, first_arg, 8)
             let n: u64 = 0
             while ps_kind() != TK_RPAREN {
                 let arg: *Expr = parse_expr(ar, 1)
                 if arg == nil { return nil }
-                if n < 8 { args[n] = arg }
+                let argp: *Expr = arg
+                vec_push(ar, &av, &argp)
                 n = n + 1
                 if ps_kind() != TK_RPAREN { ps_expect(TK_COMMA) }
                 if parser_failed() == 1 { return nil }
             }
             ps_expect(TK_RPAREN)
             if parser_failed() == 1 { return nil }
-            if n > 8 {
-                let m93: str = 'demasiados args (>8)'
-                die_here(m93.ptr, m93.len)
-                return nil
-            }
+            e.args = av.data
             e.nargs = n
             let syskw: str = 'syscall'
             let sysck: str = 'syscall_checked'
@@ -807,6 +829,8 @@ fun parse_primary(ar: *Arena) -> *Expr {
             let idx: u64 = lookup_local(fn, name_start, name_len)
             if idx < fn.nlocals {
                 let e: *Expr = mk_expr(ar, EX_VAR)
+                e.source_start = name_start
+                e.source_len = name_len
                 e.var_start = name_start
                 e.var_len = name_len
                 e.var_index = idx
@@ -821,6 +845,8 @@ fun parse_primary(ar: *Arena) -> *Expr {
             let ci: *ConstItem = lookup_const(pg, name_start, name_len)
             if ci != nil {
                 let e: *Expr = mk_expr(ar, EX_INT)
+                e.source_start = name_start
+                e.source_len = name_len
                 e.ival = ci.value
                 e.type = ci.type
                 return e
@@ -828,6 +854,8 @@ fun parse_primary(ar: *Arena) -> *Expr {
             let bi: *BssItem = lookup_bss(pg, name_start, name_len)
             if bi != nil {
                 let e: *Expr = mk_expr(ar, EX_EXTERN)
+                e.source_start = name_start
+                e.source_len = name_len
                 e.callee_start = name_start
                 e.callee_len = name_len
                 e.type = mk_ptr(ar, mk_prim(ar, T_U8))
@@ -842,6 +870,8 @@ fun parse_primary(ar: *Arena) -> *Expr {
         let t2: *Tok = TOK_CUR
         let lx: *Lexer = LX_STATE
         let e: *Expr = mk_expr(ar, EX_STRLIT)
+        e.source_start = t2.start
+        e.source_len = t2.tlen
         str_unescape(ar, e, lx.src + t2.start + 1, t2.tlen - 2)
         e.str_id = str_table_add(ar, e.str_bytes, e.str_len)
         e.type = mk_prim(ar, T_STR)
@@ -891,6 +921,8 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                         let ptrkw: str = 'ptr'
                         if bytes_eq_at(fstart, flen, ptrkw.ptr, 3) == 1 {
                             let fe: *Expr = mk_expr(ar, EX_VAR)
+                            fe.source_start = e.source_start
+                            fe.source_len = e.source_len
                             fe.var_index = e.var_index
                             fe.type = mk_ptr(ar, mk_prim(ar, T_U8))
                             e = fe
@@ -900,6 +932,8 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                             let lenkw: str = 'len'
                             if bytes_eq_at(fstart, flen, lenkw.ptr, 3) == 1 {
                                 let fe2: *Expr = mk_expr(ar, EX_VAR)
+                                fe2.source_start = e.source_start
+                                fe2.source_len = e.source_len
                                 fe2.var_index = e.var_index + 1
                                 fe2.type = mk_prim(ar, T_U64)
                                 e = fe2
@@ -919,11 +953,51 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                                     die_here(m95a.ptr, m95a.len)
                                     return nil
                                 }
-                                let fe3: *Expr = mk_expr(ar, EX_VAR)
-                                fe3.var_index = e.var_index + fi
-                                fe3.type = struct_field_type(d, fi)
-                                e = fe3
+                                let ft0: *Type = struct_field_type(d, fi)
+                                let ae0: *Expr = mk_expr(ar, EX_ADDR)
+                                ae0.inner = e
+                                ae0.type = mk_ptr(ar, ty)
+                                let oe0: *Expr = mk_expr(ar, EX_INT)
+                                oe0.ival = struct_field_offset(d, fi)
+                                oe0.type = mk_prim(ar, T_U64)
+                                let pe0: *Expr = mk_expr(ar, EX_BIN)
+                                pe0.op = OP_ADD
+                                pe0.lhs = ae0
+                                pe0.rhs = oe0
+                                pe0.type = mk_ptr(ar, ft0)
+                                let de0: *Expr = mk_expr(ar, EX_DEREF)
+                                de0.inner = pe0
+                                de0.type = ft0
+                                de0.source_start = e.source_start
+                                de0.source_len = e.source_len
+                                e = de0
                                 handled = 1
+                            }
+                            if handled == 0 {
+                            if e.kind == EX_DEREF {
+                                let fi0: u64 = struct_field_index(d, fstart, flen)
+                                if fi0 >= d.nfields {
+                                    let mf0: str = 'campo desconocido en struct'
+                                    die_here(mf0.ptr, mf0.len)
+                                    return nil
+                                }
+                                let ft1: *Type = struct_field_type(d, fi0)
+                                let oe1: *Expr = mk_expr(ar, EX_INT)
+                                oe1.ival = struct_field_offset(d, fi0)
+                                oe1.type = mk_prim(ar, T_U64)
+                                let pe1: *Expr = mk_expr(ar, EX_BIN)
+                                pe1.op = OP_ADD
+                                pe1.lhs = e.inner
+                                pe1.rhs = oe1
+                                pe1.type = mk_ptr(ar, ft1)
+                                let de1: *Expr = mk_expr(ar, EX_DEREF)
+                                de1.inner = pe1
+                                de1.type = ft1
+                                de1.source_start = e.source_start
+                                de1.source_len = e.source_len
+                                e = de1
+                                handled = 1
+                            }
                             }
                         }
                     }
@@ -943,7 +1017,7 @@ fun parse_postfix(ar: *Arena) -> *Expr {
                                     }
                                     let ft: *Type = struct_field_type(d2, fi2)
                                     let off_e: *Expr = mk_expr(ar, EX_INT)
-                                    off_e.ival = fi2 * 8
+                                    off_e.ival = struct_field_offset(d2, fi2)
                                     off_e.type = mk_prim(ar, T_U64)
                                     let ptr_e: *Expr = mk_expr(ar, EX_BIN)
                                     ptr_e.op = OP_ADD
@@ -1082,6 +1156,7 @@ fun parse_unary(ar: *Arena) -> *Expr {
         if inner == nil { return nil }
         let e: *Expr = mk_expr(ar, EX_DEREF)
         e.inner = inner
+        e.is_volatile = 1
         let ity: *Type = inner.type
         if ity != nil {
             if ity.kind == T_PTR { e.type = ity.inner }
@@ -1198,7 +1273,7 @@ const ST_EXPR:   u64 = 8
 const ST_CONTINUE: u64 = 9
 
 fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
-    let s: *Stmt = arena_take(ar, 96)
+    let s: *Stmt = arena_take(ar, sizeof(Stmt))
     s.kind = kind
     s.name_start = 0
     s.name_len = 0
@@ -1211,6 +1286,7 @@ fun mk_stmt(ar: *Arena, kind: u64) -> *Stmt {
     s.expr = nil
     s.next = nil
     s.local_index = 0
+    s.is_volatile = 0
     return s
 }
 
@@ -1504,6 +1580,7 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
             let s2: *Stmt = mk_stmt(ar, ST_STORE)
             s2.expr = e.inner
             s2.init = rhs
+            s2.is_volatile = e.is_volatile
             return s2
         }
         let s: *Stmt = mk_stmt(ar, ST_ASSIGN)
@@ -1525,7 +1602,7 @@ fun parse_stmt(ar: *Arena) -> *Stmt {
 }
 
 fun mk_program(ar: *Arena) -> *Program {
-    let p: *Program = arena_take(ar, 48)
+    let p: *Program = arena_take(ar, sizeof(Program))
     p.funcs = nil
     p.consts = nil
     p.bsses = nil
@@ -1549,7 +1626,7 @@ fun parse_fun(ar: *Arena) -> *Func {
         return nil
     }
     let t: *Tok = TOK_CUR
-    let f: *Func = arena_take(ar, 72)
+    let f: *Func = arena_take(ar, sizeof(Func))
     f.name_start = t.start
     f.name_len = t.tlen
     f.params = nil
@@ -1557,7 +1634,7 @@ fun parse_fun(ar: *Arena) -> *Func {
     f.ret_type = nil
     f.body = nil
     f.next = nil
-    f.locals = arena_take(ar, 2048)
+    f.locals = arena_take(ar, 32768)
     f.nlocals = 0
     cur_func_set(f)
     ps_advance()
@@ -1573,7 +1650,7 @@ fun parse_fun(ar: *Arena) -> *Func {
             return nil
         }
         let pt: *Tok = TOK_CUR
-        let p: *Param = arena_take(ar, 32)
+        let p: *Param = arena_take(ar, sizeof(Param))
         p.name_start = pt.start
         p.name_len = pt.tlen
         p.next = nil
@@ -1617,7 +1694,7 @@ fun parse_const_decl(ar: *Arena) -> *ConstItem {
         return nil
     }
     let t: *Tok = TOK_CUR
-    let c: *ConstItem = arena_take(ar, 40)
+    let c: *ConstItem = arena_take(ar, sizeof(ConstItem))
     c.name_start = t.start
     c.name_len = t.tlen
     c.next = nil
@@ -1656,7 +1733,7 @@ fun parse_bss_decl(ar: *Arena) -> *BssItem {
         return nil
     }
     let t: *Tok = TOK_CUR
-    let b: *BssItem = arena_take(ar, 32)
+    let b: *BssItem = arena_take(ar, sizeof(BssItem))
     b.name_start = t.start
     b.name_len = t.tlen
     b.next = nil
@@ -1685,11 +1762,13 @@ fun parse_struct_decl(ar: *Arena) -> *StructDecl {
         return nil
     }
     let t: *Tok = TOK_CUR
-    let sd: *StructDecl = arena_take(ar, 40)
+    let sd: *StructDecl = arena_take(ar, sizeof(StructDecl))
     sd.name_start = t.start
     sd.name_len = t.tlen
     sd.fields = nil
     sd.nfields = 0
+    sd.size = 0
+    sd.align = 1
     sd.next = nil
     ps_advance()
     let pg: *Program = cur_prog()
@@ -1713,15 +1792,22 @@ fun parse_struct_decl(ar: *Arena) -> *StructDecl {
             return nil
         }
         let ft: *Tok = TOK_CUR
-        let fd: *Field = arena_take(ar, 32)
+        let fd: *Field = arena_take(ar, sizeof(Field))
         fd.name_start = ft.start
         fd.name_len = ft.tlen
+        fd.offset = 0
         fd.next = nil
         ps_advance()
         ps_expect(TK_COLON)
         if parser_failed() == 1 { return nil }
         fd.type = parse_type(ar)
         if fd.type == nil { return nil }
+        let field_align: u64 = type_width(fd.type)
+        if field_align > 8 { field_align = 8 }
+        if field_align > sd.align { sd.align = field_align }
+        sd.size = ((sd.size + field_align - 1) / field_align) * field_align
+        fd.offset = sd.size
+        sd.size = sd.size + type_width(fd.type)
         if fhead == nil { fhead = fd } else { ftail.next = fd }
         ftail = fd
         sd.nfields = sd.nfields + 1
@@ -1731,6 +1817,7 @@ fun parse_struct_decl(ar: *Arena) -> *StructDecl {
     ps_expect(TK_RBRACE)
     if parser_failed() == 1 { return nil }
     sd.fields = fhead
+    sd.size = ((sd.size + sd.align - 1) / sd.align) * sd.align
     return sd
 }
 

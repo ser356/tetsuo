@@ -1,0 +1,33 @@
+fun bench_bytes(p: *u8, n: u64) -> u64 {
+    let sum: u64 = 0
+    let i: u64 = 0
+    while i < n {
+        sum = sum + p[i]
+        i = i + 1
+    }
+    return sum
+}
+
+fun bench_arith(n: u64) -> u64 {
+    let x: u64 = 1
+    let i: u64 = 0
+    while i < n {
+        x = (x * 1664525 + 1013904223) & 4294967295
+        i = i + 1
+    }
+    return x
+}
+
+fun bench_step3(x: u64) -> u64 { return x * 3 + 1 }
+fun bench_step2(x: u64) -> u64 { return bench_step3(x) + 2 }
+fun bench_step1(x: u64) -> u64 { return bench_step2(x) + 3 }
+
+fun bench_calls(n: u64) -> u64 {
+    let x: u64 = 0
+    let i: u64 = 0
+    while i < n {
+        x = bench_step1(x) & 65535
+        i = i + 1
+    }
+    return x
+}

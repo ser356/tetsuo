@@ -63,13 +63,13 @@
 // consumen exactamente esta estructura, y por eso producen codigo equivalente.
 // ============================================================================
 
-bss IR_BUF: 16777216      // arena propio del IR, separado del AST
+bss IR_BUF: 268435456      // arena propio del IR, separado del AST
 bss IR_ARENA_STORE: 24
 bss IR_NEXT_LABEL: 8      // contador GLOBAL de labels, ver ir_new_label
 
 fun ir_init() -> *Arena {
     let a: *Arena = IR_ARENA_STORE
-    arena_init(a, IR_BUF, 16777216)
+    arena_init(a, IR_BUF, 268435456)
     return a
 }
 
@@ -128,6 +128,7 @@ struct Ins {
     args:         *u64,
     nargs:        u64,
     is_signed:    u64,
+    is_volatile:  u64,
     next:         *Ins,
 }
 
@@ -155,6 +156,9 @@ struct IrFn {
     head:        *Ins,
     tail:        *Ins,
     next:        *IrFn,
+    callee_count: u64,
+    stack_of:    *u64,
+    spill_slots: u64,
 }
 
 // Reserva e inicializa una instruccion. Poner TODOS los campos a cero
@@ -162,7 +166,7 @@ struct IrFn {
 // reutilizan tras un vec_push que creciera) y un campo con basura se
 // interpretaria como un slot o un label validos.
 fun mk_ins(ar: *Arena, op: u64) -> *Ins {
-    let i: *Ins = arena_take(ar, 128)
+    let i: *Ins = arena_take(ar, sizeof(Ins))
     i.op = op
     i.dst = 0
     i.a = 0
@@ -178,12 +182,13 @@ fun mk_ins(ar: *Arena, op: u64) -> *Ins {
     i.args = nil
     i.nargs = 0
     i.is_signed = 0
+    i.is_volatile = 0
     i.next = nil
     return i
 }
 
 fun mk_ir_fn(ar: *Arena, name_start: u64, name_len: u64) -> *IrFn {
-    let f: *IrFn = arena_take(ar, 112)
+    let f: *IrFn = arena_take(ar, sizeof(IrFn))
     f.name_start = name_start
     f.name_len = name_len
     f.nparams = 0
@@ -198,6 +203,9 @@ fun mk_ir_fn(ar: *Arena, name_start: u64, name_len: u64) -> *IrFn {
     f.head = nil
     f.tail = nil
     f.next = nil
+    f.callee_count = 0
+    f.stack_of = nil
+    f.spill_slots = 0
     return f
 }
 
@@ -231,10 +239,11 @@ struct B {
     break_stack: *u64,
     continue_stack: *u64,
     break_top:   u64,
+    loop_cap:    u64,
 }
 
 fun mk_builder(ar: *Arena, fn: *IrFn) -> *B {
-    let b: *B = arena_take(ar, 80)
+    let b: *B = arena_take(ar, sizeof(B))
     b.f = fn
     b.ar = ar
     b.next_slot = 0
@@ -243,12 +252,31 @@ fun mk_builder(ar: *Arena, fn: *IrFn) -> *B {
     let st: **Type = arena_take(ar, 32768)
     b.slot_types = st
     b.next_label = 0
-    let bs: *u64 = arena_take(ar, 128)
+    let bs: *u64 = arena_take(ar, 8)
     b.break_stack = bs
-    let cs: *u64 = arena_take(ar, 128)
+    let cs: *u64 = arena_take(ar, 8)
     b.continue_stack = cs
     b.break_top = 0
+    b.loop_cap = 1
     return b
+}
+
+fun lower_push_loop(b: *B, break_label: u64, continue_label: u64) {
+    if b.break_top == b.loop_cap {
+        let new_cap: u64 = b.loop_cap * 2
+        let new_break: *u64 = arena_take(b.ar, new_cap * 8)
+        let new_continue: *u64 = arena_take(b.ar, new_cap * 8)
+        mem_copy(new_break, b.break_stack, b.break_top * 8)
+        mem_copy(new_continue, b.continue_stack, b.break_top * 8)
+        b.break_stack = new_break
+        b.continue_stack = new_continue
+        b.loop_cap = new_cap
+    }
+    let bs: *u64 = b.break_stack
+    let cs: *u64 = b.continue_stack
+    bs[b.break_top] = break_label
+    cs[b.break_top] = continue_label
+    b.break_top = b.break_top + 1
 }
 
 // Reserva un slot temporal.
@@ -334,6 +362,38 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
     if e.kind == EX_LOGAND { return lower_logical(b, e, 0) }
     if e.kind == EX_LOGOR { return lower_logical(b, e, 1) }
     if e.kind == EX_BIN {
+        if e.lhs.kind == EX_INT {
+            if e.rhs.kind == EX_INT {
+                let can_fold: u64 = 1
+                let value: u64 = 0
+                if e.type == nil { can_fold = 0 }
+                else if e.type.kind != T_U64 { can_fold = 0 }
+                if e.op == OP_ADD { value = e.lhs.ival + e.rhs.ival }
+                else if e.op == OP_SUB { value = e.lhs.ival - e.rhs.ival }
+                else if e.op == OP_MUL { value = e.lhs.ival * e.rhs.ival }
+                else if e.op == OP_AND { value = e.lhs.ival & e.rhs.ival }
+                else if e.op == OP_OR { value = e.lhs.ival | e.rhs.ival }
+                else if e.op == OP_XOR { value = e.lhs.ival ^ e.rhs.ival }
+                else if e.op == OP_SHL {
+                    if e.rhs.ival >= 64 { can_fold = 0 }
+                    else { value = e.lhs.ival << e.rhs.ival }
+                }
+                else if e.op == OP_SHR {
+                    if e.rhs.ival >= 64 { can_fold = 0 }
+                    else { value = e.lhs.ival >> e.rhs.ival }
+                }
+                else if e.rhs.ival == 0 { can_fold = 0 }
+                else if e.op == OP_DIV { value = e.lhs.ival / e.rhs.ival }
+                else if e.op == OP_MOD { value = e.lhs.ival % e.rhs.ival }
+                else { can_fold = 0 }
+                if can_fold == 1 {
+                    let folded: *Expr = mk_expr(b.ar, EX_INT)
+                    folded.ival = value
+                    folded.type = e.type
+                    return lower_expr(b, folded)
+                }
+            }
+        }
         let la: u64 = lower_expr(b, e.lhs)
         let lb: u64 = lower_expr(b, e.rhs)
         if e.op == OP_MOD {
@@ -413,6 +473,7 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         ld.a = addr
         ld.width = ir_width_of(e.type, 8)
         ld.is_signed = type_is_signed(e.type)
+        ld.is_volatile = e.is_volatile
         ir_emit(b.f, ld)
         return dst3
     }
@@ -464,10 +525,6 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
                 actual = actual + 1
             }
             i = i + 1
-        }
-        if actual > 8 {
-            let m94: str = 'demasiados params (>8)'
-            die_line(m94.ptr, m94.len, 0)
         }
         let dst4: u64 = ir_new_slot(b, e.type)
         let ci: *Ins = mk_ins(b.ar, IR_CALL)
@@ -617,6 +674,7 @@ fun lower_stmt(b: *B, s: *Stmt) {
         sm.a = addr
         sm.b = val
         sm.width = 8
+        sm.is_volatile = s.is_volatile
         let pe: *Expr = s.expr
         let pty: *Type = pe.type
         if pty != nil {
@@ -667,11 +725,7 @@ fun lower_stmt(b: *B, s: *Stmt) {
         ir_emit_label(b, l_top)
         let c2: u64 = lower_expr(b, s.cond)
         ir_emit_jz(b, c2, l_end3)
-        let bs: *u64 = b.break_stack
-        let cs: *u64 = b.continue_stack
-        bs[b.break_top] = l_end3
-        cs[b.break_top] = l_top
-        b.break_top = b.break_top + 1
+        lower_push_loop(b, l_end3, l_top)
         lower_block(b, s.body)
         b.break_top = b.break_top - 1
         ir_emit_jmp(b, l_top)
@@ -682,11 +736,7 @@ fun lower_stmt(b: *B, s: *Stmt) {
         let l_top2: u64 = ir_new_label(b)
         let l_end4: u64 = ir_new_label(b)
         ir_emit_label(b, l_top2)
-        let bs2: *u64 = b.break_stack
-        let cs2: *u64 = b.continue_stack
-        bs2[b.break_top] = l_end4
-        cs2[b.break_top] = l_top2
-        b.break_top = b.break_top + 1
+        lower_push_loop(b, l_end4, l_top2)
         lower_block(b, s.body)
         b.break_top = b.break_top - 1
         ir_emit_jmp(b, l_top2)
@@ -783,7 +833,12 @@ fun lower_one_fn(ar: *Arena, sf: *Func) -> *IrFn {
 //
 // No es un asignador bueno; es un asignador correcto y predecible, que es lo
 // que hace falta para que los dos backends coincidan byte a byte.
-const NREGS: u64 = 7
+const NREGS: u64 = 17
+
+fun ir_phys_reg(r: u64) -> u64 {
+    if r < 7 { return r + 9 }
+    return r + 12
+}
 
 fun ir_count_ins(fn: *IrFn) -> u64 {
     let n: u64 = 0
@@ -914,12 +969,14 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
     if ns_bytes == 0 { ns_bytes = 8 }
     let last_use: *u64 = arena_take(ar, ns_bytes)
     let def_idx: *u64 = arena_take(ar, ns_bytes)
-    let cross: *u64 = arena_take(ar, ns_bytes)
+    let call_cross: *u64 = arena_take(ar, ns_bytes)
+    let flow_cross: *u64 = arena_take(ar, ns_bytes)
     let s: u64 = 0
     while s < nslots {
         last_use[s] = n
         def_idx[s] = n
-        cross[s] = 0
+        call_cross[s] = 0
+        flow_cross[s] = 0
         s = s + 1
     }
 
@@ -944,7 +1001,15 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
         j = j + 1
     }
 
-    let uses: *u64 = arena_take(ar, 128)
+    let uses_cap: u64 = 3
+    j = 0
+    while j < n {
+        if arr[j].op == IR_CALL {
+            if arr[j].nargs > uses_cap { uses_cap = arr[j].nargs }
+        }
+        j = j + 1
+    }
+    let uses: *u64 = arena_take(ar, uses_cap * 8)
     j = n
     while j > 0 {
         j = j - 1
@@ -975,7 +1040,10 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
                 while c < nbarriers {
                     let ci: u64 = barriers[c]
                     if ci > def_idx[s] {
-                        if ci < last_use[s] { cross[s] = 1 }
+                        if ci < last_use[s] {
+                            if arr[ci].op == IR_CALL { call_cross[s] = 1 }
+                            else { flow_cross[s] = 1 }
+                        }
                     }
                     c = c + 1
                 }
@@ -994,7 +1062,7 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
     fn.last_use = last_use
 
     let nlocals: u64 = fn.nlocals
-    let is_free: *u64 = arena_take(ar, 64)
+    let is_free: *u64 = arena_take(ar, NREGS * 8)
     let r: u64 = 0
     while r < NREGS {
         is_free[r] = 1
@@ -1008,8 +1076,9 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
             let d2: u64 = ii2.dst
             if d2 >= nlocals {
                 if last_use[d2] < n {
-                    if cross[d2] == 0 {
+                    if flow_cross[d2] == 0 {
                         let rr: u64 = 0
+                        if call_cross[d2] != 0 { rr = 7 }
                         let found: u64 = NREGS
                         while rr < NREGS {
                             if is_free[rr] != 0 {
@@ -1020,6 +1089,10 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
                         if found < NREGS {
                             reg_of[d2] = found
                             is_free[found] = 0
+                            if found >= 7 {
+                                let used: u64 = found - 6
+                                if used > fn.callee_count { fn.callee_count = used }
+                            }
                         }
                     }
                 }
@@ -1037,6 +1110,22 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
         }
         j = j + 1
     }
+    let stack_of: *u64 = def_idx
+    let spill_slots: u64 = 0
+    s = 0
+    while s < nslots {
+        stack_of[s] = nslots
+        if s < nlocals {
+            stack_of[s] = spill_slots
+            spill_slots = spill_slots + 1
+        } else if reg_of[s] >= NREGS {
+            stack_of[s] = spill_slots
+            spill_slots = spill_slots + 1
+        }
+        s = s + 1
+    }
+    fn.stack_of = stack_of
+    fn.spill_slots = spill_slots
 }
 
 // Fija el tamano del frame: un hueco de 8 bytes por slot, redondeado a 16.
@@ -1046,11 +1135,32 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
 // desalineado. Como el prologo hace `sub sp, sp, #frame_bytes`, si frame_bytes
 // no fuera multiplo de 16 toda la funcion correria con SP invalido.
 fun finalize_frame(fn: *IrFn) {
-    let raw: u64 = fn.nslots * 8
+    let raw: u64 = fn.spill_slots * 8
     let fb: u64 = raw + 15
     fb = fb / 16
     fb = fb * 16
     fn.frame_bytes = fb
+}
+
+fun peephole(fn: *IrFn) {
+    let prev: *Ins = nil
+    let it: *Ins = fn.head
+    while it != nil {
+        let next: *Ins = it.next
+        if next != nil {
+            if it.op == IR_STORE_LOCAL {
+                if next.op == IR_STORE_LOCAL {
+                    if it.local == next.local {
+                        if prev == nil { fn.head = next } else { prev.next = next }
+                        it = next
+                        next = it.next
+                    }
+                }
+            }
+        }
+        prev = it
+        it = next
+    }
 }
 
 // Driver: baja todas las funciones del programa, y para cada una asigna
@@ -1064,6 +1174,7 @@ fun lower(ar: *Arena, prog: *Program) -> *IrFn {
     let sf: *Func = prog.funcs
     while sf != nil {
         let f: *IrFn = lower_one_fn(ar, sf)
+        peephole(f)
         regalloc(ar, f)
         finalize_frame(f)
         if head == nil {

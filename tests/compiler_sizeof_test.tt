@@ -1,0 +1,19 @@
+fun main() -> u64 {
+    if sizeof(Type) != 32 { return 1 }
+    if sizeof(Field) != 40 { return 2 }
+    if sizeof(StructDecl) != 56 { return 3 }
+    if sizeof(Expr) != 160 { return 4 }
+    if sizeof(StrLit) != 32 { return 5 }
+    if sizeof(Stmt) != 104 { return 6 }
+    if sizeof(Param) != 32 { return 7 }
+    if sizeof(Local) != 40 { return 8 }
+    if sizeof(Func) != 72 { return 9 }
+    if sizeof(ConstItem) != 40 { return 10 }
+    if sizeof(BssItem) != 32 { return 11 }
+    if sizeof(Program) != 48 { return 12 }
+    if sizeof(DiagnosticSite) != 64 { return 13 }
+    if sizeof(Ins) != 136 { return 14 }
+    if sizeof(IrFn) != 136 { return 15 }
+    if sizeof(B) != 88 { return 16 }
+    return 0
+}

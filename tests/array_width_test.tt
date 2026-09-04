@@ -1,0 +1,17 @@
+struct AWPair { a: u8, b: u32 }
+
+fun main() -> u64 {
+    let bytes: [5]u8
+    bytes[0] = 1
+    bytes[4] = 5
+    if bytes[0] + bytes[4] != 6 { return 1 }
+    let words: [3]u32
+    words[0] = 7
+    words[2] = 9
+    if words[0] + words[2] != 16 { return 2 }
+    let pairs: [2]AWPair
+    pairs[0].a = 3
+    pairs[1].b = 39
+    if pairs[0].a as u64 + pairs[1].b as u64 != 42 { return 3 }
+    return 0
+}

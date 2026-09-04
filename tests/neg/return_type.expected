@@ -1,0 +1,3 @@
+2
+tests/neg/return_type.tt:3:12:
+error: tipo de retorno incompatible

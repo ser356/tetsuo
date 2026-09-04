@@ -14,7 +14,7 @@ fun main() -> u32 {
     let ret_stmt: *Stmt = mk_stmt(ar, ST_RETURN)
     ret_stmt.ret_val = sum
 
-    let sf: *Func = arena_take(ar, 56)
+    let sf: *Func = arena_take(ar, sizeof(Func))
     sf.name_start = 0
     sf.name_len = 0
     sf.params = nil

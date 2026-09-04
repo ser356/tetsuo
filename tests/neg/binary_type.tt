@@ -1,0 +1,4 @@
+fun main() -> u64 {
+    let p: *u8 = nil
+    return p * 2
+}

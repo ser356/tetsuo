@@ -1,0 +1,284 @@
+fun lookup_func(prog: *Program, name_start: u64, name_len: u64) -> *Func {
+    let f: *Func = prog.funcs
+    while f != nil {
+        if bytes_eq_off(f.name_start, f.name_len, name_start, name_len) == 1 { return f }
+        f = f.next
+    }
+    return nil
+}
+
+fun check_func_arity(f: *Func) -> u64 {
+    let n: u64 = 0
+    let p: *Param = f.params
+    while p != nil {
+        n = n + 1
+        p = p.next
+    }
+    return n
+}
+
+fun check_site(start: u64, len: u64, site: *DiagnosticSite) -> u64 {
+    let lx: *Lexer = LX_STATE
+    let expanded_line: u64 = 1
+    let i: u64 = 0
+    while i < start {
+        if lx.src[i] == 10 { expanded_line = expanded_line + 1 }
+        i = i + 1
+    }
+    let begin: u64 = start
+    while begin > 0 {
+        if lx.src[begin - 1] == 10 { break }
+        begin = begin - 1
+    }
+    let end: u64 = start
+    while end < lx.len {
+        if lx.src[end] == 10 { break }
+        end = end + 1
+    }
+    let cp: *u64 = SRC_ORIGIN_COUNT
+    if expanded_line > cp[0] { return 0 }
+    let paths: **u8 = SRC_ORIGIN_PATHS
+    let lens: *u64 = SRC_ORIGIN_LENS
+    let lines: *u64 = SRC_ORIGIN_LINES
+    let oi: u64 = expanded_line - 1
+    site.path = paths[oi]
+    site.plen = lens[oi]
+    site.line = lines[oi]
+    site.col = start - begin + 1
+    site.src = lx.src + begin
+    site.slen = end - begin
+    site.tok = lx.src + start
+    site.tlen = len
+    return 1
+}
+
+fun check_error(start: u64, len: u64, msg: str) {
+    let site: DiagnosticSite
+    if check_site(start, len, &site) == 1 {
+        diagnostics_add(msg.ptr, msg.len, &site)
+        return
+    }
+    die_line(msg.ptr, msg.len, 0)
+}
+
+fun check_expr_start(e: *Expr) -> u64 {
+    if e == nil { return 0 }
+    if e.source_len > 0 { return e.source_start }
+    if e.kind == EX_CALL { return e.callee_start }
+    if e.kind == EX_VAR { return e.var_start }
+    if e.kind == EX_EXTERN { return e.callee_start }
+    if e.inner != nil { return check_expr_start(e.inner) }
+    if e.lhs != nil { return check_expr_start(e.lhs) }
+    return 0
+}
+
+fun check_expr_len(e: *Expr) -> u64 {
+    if e == nil { return 1 }
+    if e.source_len > 0 { return e.source_len }
+    if e.kind == EX_CALL { return e.callee_len }
+    if e.kind == EX_VAR { return e.var_len }
+    if e.kind == EX_EXTERN { return e.callee_len }
+    if e.inner != nil { return check_expr_len(e.inner) }
+    if e.lhs != nil { return check_expr_len(e.lhs) }
+    return 1
+}
+
+fun check_type_class(t: *Type) -> u64 {
+    if t == nil { return 0 }
+    if type_is_scalar(t) == 1 {
+        if t.kind == T_PTR { return 2 }
+        return 1
+    }
+    if t.kind == T_STR { return 3 }
+    if t.kind == T_STRUCT { return 4 }
+    if t.kind == T_ARRAY { return 5 }
+    return 0
+}
+
+fun check_compatible(expected: *Type, actual: *Type, value: *Expr) -> u64 {
+    if expected == nil { return 0 }
+    if actual == nil { return 0 }
+    if value != nil {
+        if value.kind == EX_INT {
+            if expected.kind == T_PTR {
+                if value.ival == 0 { return 1 }
+            }
+            if check_type_class(expected) == 1 {
+                if type_width(expected) == 1 {
+                    if value.ival < 128 { return 1 }
+                    if expected.kind == T_U8 {
+                        if value.ival < 256 { return 1 }
+                    }
+                }
+                if type_width(expected) == 4 {
+                    if value.ival < 2147483648 { return 1 }
+                    if expected.kind == T_U32 {
+                        if value.ival < 4294967296 { return 1 }
+                    }
+                }
+                if type_width(expected) == 8 { return 1 }
+            }
+        }
+    }
+    let expected_class: u64 = check_type_class(expected)
+    let actual_class: u64 = check_type_class(actual)
+    if expected_class != actual_class { return 0 }
+    if expected_class == 1 { return 1 }
+    if type_width(expected) != type_width(actual) { return 0 }
+    return 1
+}
+
+fun check_call(prog: *Program, e: *Expr) {
+    let syscall_name: str = 'syscall'
+    let checked_name: str = 'syscall_checked'
+    let expected: u64 = 0
+    let intrinsic: u64 = 0
+    if bytes_eq_at(e.callee_start, e.callee_len, syscall_name.ptr, syscall_name.len) == 1 {
+        expected = 4
+        intrinsic = 1
+    }
+    if bytes_eq_at(e.callee_start, e.callee_len, checked_name.ptr, checked_name.len) == 1 {
+        expected = 5
+        intrinsic = 1
+    }
+    if intrinsic == 0 {
+        let f: *Func = lookup_func(prog, e.callee_start, e.callee_len)
+        if f == nil {
+            let m: str = 'funcion no declarada'
+            check_error(e.callee_start, e.callee_len, m)
+            return
+        }
+        expected = check_func_arity(f)
+        if e.nargs == expected {
+            let p: *Param = f.params
+            let args: **Expr = e.args
+            let i: u64 = 0
+            while p != nil {
+                if check_compatible(p.type, args[i].type, args[i]) == 0 {
+                    let mt: str = 'tipo de argumento incompatible'
+                    check_error(check_expr_start(args[i]), check_expr_len(args[i]), mt)
+                }
+                p = p.next
+                i = i + 1
+            }
+        }
+    }
+    if e.nargs != expected {
+        let m2: str = 'aridad de llamada incorrecta'
+        check_error(e.callee_start, e.callee_len, m2)
+    }
+}
+
+fun check_binary(e: *Expr) {
+    let lc: u64 = check_type_class(e.lhs.type)
+    let rc: u64 = check_type_class(e.rhs.type)
+    if lc == 1 {
+        if rc == 1 { return }
+    }
+    if lc == 2 {
+        if rc == 1 {
+            if e.op == OP_ADD { return }
+            if e.op == OP_SUB { return }
+        }
+    }
+    let m: str = 'operandos aritmeticos incompatibles'
+    if lc == 2 {
+        if rc != 1 {
+            check_error(check_expr_start(e.rhs), check_expr_len(e.rhs), m)
+            return
+        }
+    }
+    check_error(check_expr_start(e.lhs), check_expr_len(e.lhs), m)
+}
+
+fun check_expr(prog: *Program, e: *Expr) {
+    if e == nil { return }
+    if diagnostics_count() == 20 { return }
+    if e.kind == EX_CALL {
+        check_call(prog, e)
+        let args: **Expr = e.args
+        let i: u64 = 0
+        while i < e.nargs {
+            check_expr(prog, args[i])
+            i = i + 1
+        }
+    }
+    check_expr(prog, e.inner)
+    check_expr(prog, e.lhs)
+    check_expr(prog, e.rhs)
+    if e.kind == EX_DEREF {
+        if check_type_class(e.inner.type) != 2 {
+            let md: str = 'deref requiere puntero'
+            check_error(check_expr_start(e.inner), check_expr_len(e.inner), md)
+        }
+    }
+    if e.kind == EX_BIN { check_binary(e) }
+}
+
+fun check_stmt(prog: *Program, f: *Func, s: *Stmt) {
+    let it: *Stmt = s
+    while it != nil {
+        if diagnostics_count() == 20 { return }
+        check_expr(prog, it.init)
+        check_expr(prog, it.cond)
+        check_expr(prog, it.ret_val)
+        check_expr(prog, it.expr)
+        if it.kind == ST_RETURN {
+            if it.ret_val != nil {
+                if check_compatible(f.ret_type, it.ret_val.type, it.ret_val) == 0 {
+                    let mr: str = 'tipo de retorno incompatible'
+                    check_error(check_expr_start(it.ret_val), check_expr_len(it.ret_val), mr)
+                }
+            } else if f.ret_type != nil {
+                let mv: str = 'retorno requiere valor'
+                check_error(f.name_start, f.name_len, mv)
+            }
+        }
+        if it.kind == ST_LET {
+            if it.type != nil {
+                if it.init != nil {
+                    if check_compatible(it.type, it.init.type, it.init) == 0 {
+                        let ml: str = 'tipo de inicializador incompatible'
+                        check_error(it.name_start, it.name_len, ml)
+                    }
+                }
+            }
+        }
+        if it.kind == ST_ASSIGN {
+            if it.expr.kind != EX_VAR {
+                let mw: str = 'destino de asignacion invalido'
+                check_error(check_expr_start(it.expr), check_expr_len(it.expr), mw)
+            } else if check_compatible(it.expr.type, it.init.type, it.init) == 0 {
+                let ma: str = 'tipo de asignacion incompatible'
+                check_error(check_expr_start(it.expr), check_expr_len(it.expr), ma)
+            }
+        }
+        if it.kind == ST_STORE {
+            let pty: *Type = it.expr.type
+            if pty == nil {
+                let mp0: str = 'store requiere puntero'
+                check_error(check_expr_start(it.expr), check_expr_len(it.expr), mp0)
+            } else if pty.kind != T_PTR {
+                let mp: str = 'store requiere puntero'
+                check_error(check_expr_start(it.expr), check_expr_len(it.expr), mp)
+            } else {
+                    if check_compatible(pty.inner, it.init.type, it.init) == 0 {
+                        let ms: str = 'tipo de asignacion incompatible'
+                        check_error(check_expr_start(it.expr), check_expr_len(it.expr), ms)
+                    }
+            }
+        }
+        check_stmt(prog, f, it.body)
+        check_stmt(prog, f, it.else_body)
+        it = it.next
+    }
+}
+
+fun check(ar: *Arena, prog: *Program) -> u64 {
+    let f: *Func = prog.funcs
+    while f != nil {
+        check_stmt(prog, f, f.body)
+        f = f.next
+    }
+    return diagnostics_count()
+}

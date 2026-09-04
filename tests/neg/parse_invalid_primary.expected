@@ -1,0 +1,3 @@
+2
+tests/neg/parse_invalid_primary.tt:2:12:
+error: expresion primaria invalida

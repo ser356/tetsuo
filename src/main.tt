@@ -57,17 +57,29 @@ bss SRC_BUF: 262144       // fuente cruda, solo para los modos --dump-*
 bss OUT_BUF: 65536        // buffer de salida del backend textual
 bss OUT_STORAGE: 64       // el struct Out (no cabe en un local por el retorno)
 bss DUMP_TOK_STORE: 40    // el Tok de --dump-tokens
-bss PP_OUT: 1048576       // fuente ya expandida: lo que ve el parser
+bss PP_OUT: 4194304       // fuente ya expandida: lo que ve el parser
 bss PP_OUT_LEN: 8
 bss PP_ARENA_STORE: 24
-bss PP_ARENA_BUF: 16777216  // arena del preprocesador: rutas y ficheros leidos
-bss PP_SEEN_COUNT: 8
-bss PP_SEEN_PTRS: 256     // 32 rutas ya incluidas (guarda de inclusion)
-bss PP_SEEN_LENS: 256
+bss PP_ARENA_BUF: 268435456  // arena del preprocesador: rutas y ficheros leidos
+bss PP_SEEN_VEC: 8
+
+struct PPSeen {
+    path: *u8,
+    len: u64,
+}
 
 fun pp_arena_init() -> *Arena {
     let a: *Arena = PP_ARENA_STORE
-    arena_init(a, PP_ARENA_BUF, 16777216)
+    arena_init(a, PP_ARENA_BUF, 268435456)
+    let out_len: *u64 = PP_OUT_LEN
+    out_len[0] = 0
+    let origin_count: *u64 = SRC_ORIGIN_COUNT
+    origin_count[0] = 0
+    let v: *Vec = arena_take(a, sizeof(Vec))
+    let first: *u8 = arena_take(a, sizeof(PPSeen))
+    vec_init(v, sizeof(PPSeen), first, 1)
+    let vp: **Vec = PP_SEEN_VEC
+    vp[0] = v
     return a
 }
 
@@ -77,9 +89,7 @@ fun pp_file_cap() -> u64 {
     return 1048576
 }
 
-fun pp_out_cap() -> u64 {
-    return 1048576
-}
+fun pp_out_cap() -> u64 { return 4194304 }
 
 // Guarda de inclusion: 1 si esta ruta ya se incluyo.
 //
@@ -88,32 +98,25 @@ fun pp_out_cap() -> u64 {
 // incluirian dos veces y darian funciones duplicadas. En la practica todos los
 // entries usan rutas canonicas desde la raiz del repo.
 fun pp_seen(pth: *u8, plen: u64) -> u64 {
-    let cnt_p: *u64 = PP_SEEN_COUNT
-    let cnt: u64 = cnt_p[0]
-    let paths: **u8 = PP_SEEN_PTRS
-    let lens: *u64 = PP_SEEN_LENS
+    let vp: **Vec = PP_SEEN_VEC
+    let v: *Vec = vp[0]
     let i: u64 = 0
-    while i < cnt {
-        if lens[i] == plen {
-            if bytes_eq(paths[i], pth, plen) == 1 { return 1 }
+    while i < v.len {
+        let seen: *PPSeen = vec_get(v, i)
+        if seen.len == plen {
+            if bytes_eq(seen.path, pth, plen) == 1 { return 1 }
         }
         i = i + 1
     }
     return 0
 }
 
-fun pp_mark(pth: *u8, plen: u64) {
-    let cnt_p: *u64 = PP_SEEN_COUNT
-    let cnt: u64 = cnt_p[0]
-    if cnt == 32 {
-        let m: str = 'demasiados import (max 32)'
-        die_line(m.ptr, m.len, 0)
-    }
-    let paths: **u8 = PP_SEEN_PTRS
-    let lens: *u64 = PP_SEEN_LENS
-    paths[cnt] = pth
-    lens[cnt] = plen
-    cnt_p[0] = cnt + 1
+fun pp_mark(ar: *Arena, pth: *u8, plen: u64) {
+    let seen: PPSeen
+    seen.path = pth
+    seen.len = plen
+    let vp: **Vec = PP_SEEN_VEC
+    vec_push(ar, vp[0], &seen)
 }
 
 fun pp_out_append(bytes: *u8, n: u64) {
@@ -171,7 +174,7 @@ fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
         pi = pi + 1
     }
     pcopy[plen] = 0
-    pp_mark(pcopy, plen)
+    pp_mark(ar, pcopy, plen)
     // El buffer se reserva al maximo y luego se devuelve el sobrante al arena:
     // leer con un tope fijo y sin comprobarlo truncaba el fichero en silencio y
     // el error salia mucho despues, como un fallo de sintaxis en mitad del .tt.
@@ -237,6 +240,21 @@ fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
                             pp_out_append(nl.ptr, 1)
                         }
                     }
+                }
+            }
+            if q1 == line_end {
+                let m3: str = 'import sin comillas'
+                die_path_line(m3.ptr, m3.len, pcopy, plen, source_line)
+            }
+            if q1 < line_end {
+                let q3: u64 = q1 + 1
+                while q3 < line_end {
+                    if src[q3] == 39 { break }
+                    q3 = q3 + 1
+                }
+                if q3 == line_end {
+                    let m4: str = 'import sin comilla final'
+                    die_path_line(m4.ptr, m4.len, pcopy, plen, source_line)
                 }
             }
         } else {
@@ -365,11 +383,20 @@ fun main(argc: u64, argv: **u8) -> u32 {
     }
     if is_dump_ir == 1 {
         let path: *u8 = argv[2]
-        let n: u64 = read_all(path, SRC_BUF, 262144)
+        let pp_ar: *Arena = pp_arena_init()
+        let plen: u64 = 0
+        loop {
+            if path[plen] == 0 { break }
+            plen = plen + 1
+        }
+        pp_expand(pp_ar, path, plen)
+        let ppl: *u64 = PP_OUT_LEN
+        let n: u64 = ppl[0]
         if n == 0 { return EXIT_READ_FAIL }
         let ast_ar: *Arena = ast_init()
         let ir_ar: *Arena = ir_init()
-        let prog: *Program = parse(ast_ar, SRC_BUF, n)
+        let prog: *Program = parse(ast_ar, PP_OUT, n)
+        if check(ast_ar, prog) != 0 { diagnostics_flush() }
         let irhead: *IrFn = lower(ir_ar, prog)
         let o: *Out = OUT_STORAGE
         out_init(o, 1, OUT_BUF, 65536)
@@ -397,6 +424,7 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let ast_ar: *Arena = ast_init()
     let ir_ar: *Arena = ir_init()
     let prog: *Program = parse(ast_ar, src, n)
+    if check(ast_ar, prog) != 0 { diagnostics_flush() }
     let irhead: *IrFn = lower(ir_ar, prog)
 
     let out_err: u64 = 0

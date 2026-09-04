@@ -1,0 +1,3 @@
+2
+tests/neg/binary_type.tt:3:12:
+error: operandos aritmeticos incompatibles

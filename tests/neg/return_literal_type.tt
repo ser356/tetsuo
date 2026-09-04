@@ -1,0 +1,4 @@
+fun bad() -> *u8 {
+    return 7
+}
+fun main() -> u64 { return 0 }

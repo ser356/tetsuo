@@ -1,0 +1,22 @@
+fun main() -> u64 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+    let b: *B = mk_builder(ar, fn)
+    let l: *Expr = mk_expr(ar, EX_INT)
+    l.ival = 6
+    l.type = mk_prim(ar, T_U64)
+    let r: *Expr = mk_expr(ar, EX_INT)
+    r.ival = 7
+    r.type = mk_prim(ar, T_U64)
+    let e: *Expr = mk_expr(ar, EX_BIN)
+    e.lhs = l
+    e.rhs = r
+    e.op = OP_MUL
+    e.type = mk_prim(ar, T_U64)
+    lower_expr(b, e)
+    if fn.head == nil { return 1 }
+    if fn.head.next != nil { return 2 }
+    if fn.head.op != IR_MOVI { return 3 }
+    if fn.head.imm != 42 { return 4 }
+    return 0
+}

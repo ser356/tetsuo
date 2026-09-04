@@ -21,7 +21,7 @@
 // El struct Arena y arena_take viven en src/runtime/io.tt.
 // ============================================================================
 
-bss AST_BUF: 16777216
+bss AST_BUF: 268435456
 bss AST_ARENA_STORE: 24
 
 // Devuelve el arena del AST, ya inicializado. AST_ARENA_STORE es un bss de 24
@@ -30,6 +30,6 @@ bss AST_ARENA_STORE: 24
 // local seria devolver un puntero a la pila ya liberada.
 fun ast_init() -> *Arena {
     let a: *Arena = AST_ARENA_STORE
-    arena_init(a, AST_BUF, 16777216)
+    arena_init(a, AST_BUF, 268435456)
     return a
 }

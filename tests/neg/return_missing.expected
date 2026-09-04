@@ -1,0 +1,3 @@
+2
+tests/neg/return_missing.tt:1:5:
+error: retorno requiere valor

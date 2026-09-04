@@ -1,0 +1,11 @@
+fun main() -> u64 {
+    let src: str = 'fun f(a:u64,b:u64,c:u64,d:u64,e:u64,f:u64,g:u64,h:u64,i:u64,j:u64,k:u64,l:u64)->u64{return l} fun m()->u64{return f(1,2,3,4,5,6,7,8,9,10,11,12)}'
+    let aa: *Arena = ast_init()
+    let ia: *Arena = ir_init()
+    let prog: *Program = parse(aa, src.ptr, src.len)
+    let m: *Func = prog.funcs.next
+    if m.body.ret_val.nargs != 12 { return 1 }
+    let funcs: *IrFn = lower(ia, prog)
+    if funcs.next == nil { return 2 }
+    return 0
+}

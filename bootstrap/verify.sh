@@ -50,6 +50,10 @@ check "diagnostic buffer cap"           0   bash tests/macos_build.sh tests/diag
 check "vec_test.tt (arena grow)"        20  bash tests/macos_build.sh tests/vec_test.tt
 check "ast_test.tt (arena AST)"         33  bash tests/macos_build.sh tests/ast_test.tt
 check "type_test.tt (Type,mk_prim)"     23  bash tests/macos_build.sh tests/type_test.tt
+check "compiler struct sizeof"           0   bash tests/macos_build.sh tests/compiler_sizeof_test.tt
+check "struct layout metadata"           0   bash tests/macos_build.sh tests/struct_layout_meta_test.tt
+check "struct field offsets"             0   bash tests/macos_build.sh tests/struct_field_offset_test.tt
+check "struct mixed runtime"             0   bash tests/macos_build.sh tests/struct_mixed_runtime_test.tt
 check "primary_test.tt"                 42  bash tests/macos_build.sh tests/primary_test.tt
 check "expr_test1.tt (Pratt)"           146 bash tests/macos_build.sh tests/expr_test1.tt
 check "stmt_test.tt (parse_stmt LET)"   5   bash tests/macos_build.sh tests/stmt_test.tt
@@ -58,23 +62,35 @@ check "prog_test.tt (parse driver)"     42  bash tests/macos_build.sh tests/prog
 section "IR + lowering (hito 16)"
 check "ir_test.tt (mk_ins+ir_emit)"     3  bash tests/macos_build.sh tests/ir_test.tt
 check "lower_int_test.tt (EX_BIN)"      3  bash tests/macos_build.sh tests/lower_int_test.tt
+check "lower constant folding"          0  bash tests/macos_build.sh tests/lower_constfold_test.tt
+check "peephole + volatile IR"          0  bash tests/macos_build.sh tests/peephole_volatile_test.tt
 check "lower_ret_test.tt (ST_RETURN)"   2  bash tests/macos_build.sh tests/lower_ret_test.tt
 check "lower_let_test.tt (LET+VAR)"     4  bash tests/macos_build.sh tests/lower_let_test.tt
 check "lower_if_test.tt (ST_IF else)"   9  bash tests/macos_build.sh tests/lower_if_test.tt
 check "lower_while_test.tt (BREAK)"     6  bash tests/macos_build.sh tests/lower_while_test.tt
 check "lower_cmp_test.tt (EX_LT)"       4  bash tests/macos_build.sh tests/lower_cmp_test.tt
 check "lower_call_test.tt (EX_CALL)"    2  bash tests/macos_build.sh tests/lower_call_test.tt
+check "call parse >8 args"              0  bash tests/macos_build.sh tests/call_many_parse_test.tt
+check "call textual >8 args"             0  bash tests/call_many_text_build.sh
+check "call Mach-O >8 args"             78  bash tests/macos_build.sh tests/call_many_runtime_test.tt
+check "call stack >4095 bytes"           0  bash tests/call_many_large_build.sh
 check "lower_mem_test.tt (ADDR/DEREF)"  8  bash tests/macos_build.sh tests/lower_mem_test.tt
 check "lower_prog_test.tt (driver)"     2  bash tests/macos_build.sh tests/lower_prog_test.tt
-check "lower_regalloc_test.tt"          3  bash tests/macos_build.sh tests/lower_regalloc_test.tt
+check "lower_regalloc_test.tt"          1  bash tests/macos_build.sh tests/lower_regalloc_test.tt
+check "register physical map"           0  bash tests/macos_build.sh tests/reg_map_test.tt
+check "callee-saved regalloc"           0  bash tests/macos_build.sh tests/regalloc_callee_test.tt
+check "compact stack map"               0  bash tests/macos_build.sh tests/stack_map_test.tt
 check "lower_str_test.tt (EX_STRLIT)"   7  bash tests/macos_build.sh tests/lower_str_test.tt
 check "parse_locals_test.tt (var_idx)"  1  bash tests/macos_build.sh tests/parse_locals_test.tt
 check "call_return_type_test.tt"        2   bash tests/macos_build.sh tests/call_return_type_test.tt
 check "continue_test.tt"                0   bash tests/macos_build.sh tests/continue_test.tt
+check "loop nesting >16"                0   bash tests/macos_build.sh tests/loop_depth_test.tt
 check "arena_test.tt"                   0   bash tests/macos_build.sh tests/arena_test.tt
 check "runtime_sys_test.tt (getpid)"    0   bash tests/macos_build.sh tests/runtime_sys_test.tt
 check "syscall_checked_test.tt"         0   bash tests/macos_build.sh tests/syscall_checked_test.tt
+check "syscall compact stack"           0   bash tests/macos_build.sh tests/syscall_compact_test.tt
 check "array_test.tt ([N]u64)"          46  bash tests/macos_build.sh tests/array_test.tt
+check "array element widths"             0   bash tests/macos_build.sh tests/array_width_test.tt
 check "signed_test.tt (i64)"            0   bash tests/macos_build.sh tests/signed_test.tt
 check "cast_test.tt (i8/i32)"           0   bash tests/macos_build.sh tests/cast_test.tt
 check "scope_test.tt"                   0   bash tests/macos_build.sh tests/scope_test.tt
@@ -91,6 +107,7 @@ check "emit_instr_test.tt"              59  bash tests/macos_build.sh tests/emit
 check "codegen_e2e (stage1 -> bin)"     42  bash tests/codegen_e2e_build.sh
 check "main_e2e (argv-driven driver)"   42  bash tests/main_e2e_build.sh
 check "emit=obj (C ABI link)"             0   bash tests/obj_link_build.sh
+check "struct mixed C ABI"                0   env TETSUOC=build/main bash tests/struct_c_abi_build.sh
 check "freestanding (2 pthreads)"          0   bash tests/freestanding_build.sh
 check "release parser ABI"                 0   bash tests/release_name_abi_build.sh
 
@@ -111,6 +128,12 @@ check "codegen_bytes_bss (Session A)"   42  bash tests/codegen_bytes_bss_build.s
 check "codegen_bytes_bigtext (Sess B)"  65  bash tests/codegen_bytes_bigtext_build.sh
 check "emit_macho_build.sh (Sess C1)"   42  bash tests/emit_macho_build.sh
 check "fixpoint_macho (Sess C2 bytes)"  0   bash tests/fixpoint_macho_build.sh
+check "PP_OUT expandido (>1MB)"          0   env TETSUOC=build/main_macho_s1.macho bash tests/pp_large_build.sh
+check "imports dinamicos (>32)"          0   env TETSUOC=build/main_macho_s1.macho bash tests/import_many_build.sh
+check "BSS order deterministic"          0   env TETSUOC=build/main_macho_s1.macho bash tests/bss_order_build.sh
+
+section "Compilacion negativa"
+check "tests/neg (rc + stderr)"          0   env TETSUOC=build/main_macho_s1.macho bash tests/neg_run.sh
 
 section "Runtime IO + fixpoint (hito 19.b)"
 rm -f /tmp/tetsuo_write_test.txt

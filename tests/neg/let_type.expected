@@ -1,0 +1,3 @@
+2
+tests/neg/let_type.tt:3:9:
+error: tipo de inicializador incompatible

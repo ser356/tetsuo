@@ -1,0 +1,5 @@
+fun use_ptr(p: *u8) -> u64 { return 0 }
+fun main() -> u64 {
+    let n: u64 = 1
+    return use_ptr(n)
+}

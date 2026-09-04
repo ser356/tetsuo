@@ -1,0 +1,26 @@
+fun main() -> u64 {
+    let ar: *Arena = ir_init()
+    let fn: *IrFn = mk_ir_fn(ar, 0, 0)
+    let a: *Ins = mk_ins(ar, IR_STORE_LOCAL)
+    a.local = 3
+    let b: *Ins = mk_ins(ar, IR_STORE_LOCAL)
+    b.local = 3
+    ir_emit(fn, a)
+    ir_emit(fn, b)
+    peephole(fn)
+    if fn.head != b { return 1 }
+    let src: str = 'fun read(p: *u64) -> u64 { return @p }'
+    let aa: *Arena = ast_init()
+    let ia: *Arena = ir_init()
+    let prog: *Program = parse(aa, src.ptr, src.len)
+    let funcs: *IrFn = lower(ia, prog)
+    let it: *Ins = funcs.head
+    while it != nil {
+        if it.op == IR_LOAD_MEM {
+            if it.is_volatile != 1 { return 2 }
+            return 0
+        }
+        it = it.next
+    }
+    return 3
+}

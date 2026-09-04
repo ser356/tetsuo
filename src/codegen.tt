@@ -67,12 +67,12 @@ fun get_target() -> u64 {
 // argumentos y retorno. 120 = 'x', 119 = 'w'.
 fun out_reg_x(o: *Out, r: u64) {
     out_byte(o, 120)
-    out_u64(o, r + 9)
+    out_u64(o, ir_phys_reg(r))
 }
 
 fun out_reg_w(o: *Out, r: u64) {
     out_byte(o, 119)
-    out_u64(o, r + 9)
+    out_u64(o, ir_phys_reg(r))
 }
 
 fun out_x_n(o: *Out, n: u64) {
@@ -221,6 +221,7 @@ fun get_src() -> *u8 {
 // ---------------------------------------------------------------------------
 
 fun slot_off(fn: *IrFn, slot: u64) -> u64 {
+    if fn.stack_of != nil { return fn.stack_of[slot] * 8 }
     return slot * 8
 }
 
@@ -233,7 +234,7 @@ fun in_reg(fn: *IrFn, slot: u64) -> u64 {
 fun dst_x_reg(fn: *IrFn, slot: u64) -> u64 {
     let ro: *u64 = fn.reg_of
     let r: u64 = ro[slot]
-    if r < NREGS { return r + 9 }
+    if r < NREGS { return ir_phys_reg(r) }
     return 16
 }
 
@@ -289,16 +290,16 @@ fun emit_load_slot_to_x(o: *Out, fn: *IrFn, slot: u64, dx: u64) {
     let ro: *u64 = fn.reg_of
     let r: u64 = ro[slot]
     if r < NREGS {
-        emit_mov_x_x(o, dx, r + 9)
+        emit_mov_x_x(o, dx, ir_phys_reg(r))
         return
     }
-    emit_ldr_x(o, dx, slot * 8)
+    emit_ldr_x(o, dx, slot_off(fn, slot))
 }
 
 fun emit_spill_x(o: *Out, fn: *IrFn, slot: u64, xreg: u64) {
     let ro: *u64 = fn.reg_of
     if ro[slot] < NREGS { return }
-    emit_str_x(o, xreg, slot * 8)
+    emit_str_x(o, xreg, slot_off(fn, slot))
 }
 
 // Devuelve el registro del que leer un slot, emitiendo el load a `scratch` si
@@ -306,16 +307,16 @@ fun emit_spill_x(o: *Out, fn: *IrFn, slot: u64, xreg: u64) {
 fun ensure_src_x(o: *Out, fn: *IrFn, slot: u64, scratch: u64) -> u64 {
     let ro: *u64 = fn.reg_of
     let r: u64 = ro[slot]
-    if r < NREGS { return r + 9 }
-    emit_ldr_x(o, scratch, slot * 8)
+    if r < NREGS { return ir_phys_reg(r) }
+    emit_ldr_x(o, scratch, slot_off(fn, slot))
     return scratch
 }
 
 fun ensure_src_w(o: *Out, fn: *IrFn, slot: u64, scratch: u64) -> u64 {
     let ro: *u64 = fn.reg_of
     let r: u64 = ro[slot]
-    if r < NREGS { return r + 9 }
-    emit_ldr_w(o, scratch, slot * 8)
+    if r < NREGS { return ir_phys_reg(r) }
+    emit_ldr_w(o, scratch, slot_off(fn, slot))
     return scratch
 }
 
@@ -434,7 +435,7 @@ fun emit_i_addr_local(o: *Out, fn: *IrFn, i: *Ins) {
     out_x_n(o, xd)
     let s1: str = ', sp, #'
     out_bytes(o, s1.ptr, s1.len)
-    out_u64(o, i.local * 8)
+    out_u64(o, slot_off(fn, i.local))
     out_byte(o, 10)
     emit_spill_x(o, fn, i.dst, xd)
 }
@@ -455,13 +456,13 @@ fun emit_i_load_local(o: *Out, fn: *IrFn, i: *Ins) {
     if i.width == 1 {
         out_mn(o, 2)
         out_w_n(o, xd)
-        out_sp_tail(o, i.local * 8)
+        out_sp_tail(o, slot_off(fn, i.local))
     } else if i.width == 4 {
         out_mn(o, 0)
         out_w_n(o, xd)
-        out_sp_tail(o, i.local * 8)
+        out_sp_tail(o, slot_off(fn, i.local))
     } else {
-        emit_ldr_x(o, xd, i.local * 8)
+        emit_ldr_x(o, xd, slot_off(fn, i.local))
     }
     emit_normalize(o, xd, i.width, i.is_signed)
     emit_spill_x(o, fn, i.dst, xd)
@@ -472,20 +473,20 @@ fun emit_i_store_local(o: *Out, fn: *IrFn, i: *Ins) {
     let r: u64 = ro[i.a]
     let sreg: u64 = 16
     if r < NREGS {
-        sreg = r + 9
+        sreg = ir_phys_reg(r)
     } else {
-        emit_ldr_x(o, 16, i.a * 8)
+        emit_ldr_x(o, 16, slot_off(fn, i.a))
     }
     if i.width == 1 {
         out_mn(o, 3)
         out_w_n(o, sreg)
-        out_sp_tail(o, i.local * 8)
+        out_sp_tail(o, slot_off(fn, i.local))
     } else if i.width == 4 {
         out_mn(o, 1)
         out_w_n(o, sreg)
-        out_sp_tail(o, i.local * 8)
+        out_sp_tail(o, slot_off(fn, i.local))
     } else {
-        emit_str_x(o, sreg, i.local * 8)
+        emit_str_x(o, sreg, slot_off(fn, i.local))
     }
 }
 
@@ -523,9 +524,9 @@ fun emit_i_store_mem(o: *Out, fn: *IrFn, i: *Ins) {
     let r: u64 = ro[i.b]
     let val: u64 = 16
     if r < NREGS {
-        val = r + 9
+        val = ir_phys_reg(r)
     } else {
-        emit_ldr_x(o, 16, i.b * 8)
+        emit_ldr_x(o, 16, slot_off(fn, i.b))
     }
     if i.width == 1 {
         out_mn(o, 3)
@@ -634,9 +635,9 @@ fun emit_i_syscall(o: *Out, fn: *IrFn, i: *Ins) {
     let s0: u64 = args[0]
     let r0: u64 = ro[s0]
     if r0 < NREGS {
-        emit_mov_x_x(o, 16, r0 + 9)
+        emit_mov_x_x(o, 16, ir_phys_reg(r0))
     } else {
-        emit_ldr_x(o, 16, s0 * 8)
+        emit_ldr_x(o, 16, slot_off(fn, s0))
     }
     let k: u64 = 1
     while k < i.nargs {
@@ -652,10 +653,10 @@ fun emit_i_syscall(o: *Out, fn: *IrFn, i: *Ins) {
     }
     let dr: u64 = ro[i.dst]
     if dr < NREGS {
-        emit_mov_x_x(o, dr + 9, 0)
+        emit_mov_x_x(o, ir_phys_reg(dr), 0)
         return
     }
-    emit_str_x(o, 0, i.dst * 8)
+    emit_str_x(o, 0, slot_off(fn, i.dst))
 }
 
 fun emit_i_syscall_checked(o: *Out, fn: *IrFn, i: *Ins) {
@@ -681,20 +682,69 @@ fun emit_i_call(o: *Out, fn: *IrFn, i: *Ins) {
     let args: *u64 = i.args
     let k: u64 = 0
     while k < i.nargs {
+        if k == 8 { break }
         emit_load_slot_to_x(o, fn, args[k], k)
         k = k + 1
+    }
+    let stack_bytes: u64 = 0
+    if i.nargs > 8 {
+        stack_bytes = ((i.nargs - 8) * 8 + 15) / 16 * 16
+        let save: str = '    mov     x17, sp\n'
+        out_bytes(o, save.ptr, save.len)
+        if stack_bytes <= 4095 {
+            let sub: str = '    sub     sp, sp, #'
+            out_bytes(o, sub.ptr, sub.len)
+            out_u64(o, stack_bytes)
+            out_byte(o, 10)
+        } else {
+            emit_movi(o, 16, stack_bytes)
+            let subr: str = '    sub     sp, sp, x16\n'
+            out_bytes(o, subr.ptr, subr.len)
+        }
+        k = 8
+        while k < i.nargs {
+            let ro0: *u64 = fn.reg_of
+            let rr: u64 = ro0[args[k]]
+            if rr < NREGS {
+                emit_mov_x_x(o, 16, ir_phys_reg(rr))
+            } else {
+                let ld: str = '    ldr     x16, [x17, #'
+                out_bytes(o, ld.ptr, ld.len)
+                out_u64(o, slot_off(fn, args[k]))
+                let end: str = ']\n'
+                out_bytes(o, end.ptr, end.len)
+            }
+            let st: str = '    str     x16, [sp, #'
+            out_bytes(o, st.ptr, st.len)
+            out_u64(o, (k - 8) * 8)
+            let end2: str = ']\n'
+            out_bytes(o, end2.ptr, end2.len)
+            k = k + 1
+        }
     }
     let s0: str = '    bl      '
     out_bytes(o, s0.ptr, s0.len)
     emit_sym(o, i.callee_start, i.callee_len)
     out_byte(o, 10)
+    if stack_bytes > 0 {
+        if stack_bytes <= 4095 {
+            let clean: str = '    add     sp, sp, #'
+            out_bytes(o, clean.ptr, clean.len)
+            out_u64(o, stack_bytes)
+            out_byte(o, 10)
+        } else {
+            emit_movi(o, 16, stack_bytes)
+            let cleanr: str = '    add     sp, sp, x16\n'
+            out_bytes(o, cleanr.ptr, cleanr.len)
+        }
+    }
     let ro: *u64 = fn.reg_of
     let dr: u64 = ro[i.dst]
     if dr < NREGS {
-        emit_mov_x_x(o, dr + 9, 0)
+        emit_mov_x_x(o, ir_phys_reg(dr), 0)
         return
     }
-    emit_str_x(o, 0, i.dst * 8)
+    emit_str_x(o, 0, slot_off(fn, i.dst))
 }
 
 fun emit_i_ret(o: *Out, fn: *IrFn, i: *Ins, epi_label: u64) {
@@ -708,15 +758,15 @@ fun emit_i_ret(o: *Out, fn: *IrFn, i: *Ins, epi_label: u64) {
         let r: u64 = ro[i.a]
         if wide == 1 {
             if r < NREGS {
-                emit_mov_x_x(o, 0, r + 9)
+                emit_mov_x_x(o, 0, ir_phys_reg(r))
             } else {
-                emit_ldr_x(o, 0, i.a * 8)
+                emit_ldr_x(o, 0, slot_off(fn, i.a))
             }
         } else {
             if r < NREGS {
-                emit_mov_w_w(o, 0, r + 9)
+                emit_mov_w_w(o, 0, ir_phys_reg(r))
             } else {
-                emit_ldr_w(o, 0, i.a * 8)
+                emit_ldr_w(o, 0, slot_off(fn, i.a))
             }
         }
     }
@@ -791,6 +841,37 @@ fun emit_sym(o: *Out, ns: u64, nl: u64) {
     out_bytes(o, lx.src + ns, nl)
 }
 
+fun emit_save_callee(o: *Out, count: u64) {
+    let i: u64 = 0
+    while i < count {
+        let s: str = '    stp     x'
+        out_bytes(o, s.ptr, s.len)
+        out_u64(o, 19 + i)
+        let m: str = ', x'
+        out_bytes(o, m.ptr, m.len)
+        out_u64(o, 20 + i)
+        let e: str = ', [sp, #-16]!\n'
+        out_bytes(o, e.ptr, e.len)
+        i = i + 2
+    }
+}
+
+fun emit_restore_callee(o: *Out, count: u64) {
+    let i: u64 = count
+    if i % 2 != 0 { i = i + 1 }
+    while i > 0 {
+        i = i - 2
+        let s: str = '    ldp     x'
+        out_bytes(o, s.ptr, s.len)
+        out_u64(o, 19 + i)
+        let m: str = ', x'
+        out_bytes(o, m.ptr, m.len)
+        out_u64(o, 20 + i)
+        let e: str = ', [sp], #16\n'
+        out_bytes(o, e.ptr, e.len)
+    }
+}
+
 // Prologo: guardar x29/x30, fijar el frame pointer y reservar los locales.
 //
 // Como en cgb_prologue, la reserva tiene dos caminos porque `sub sp, sp, #imm`
@@ -806,6 +887,7 @@ fun emit_prologue(o: *Out, fn: *IrFn) {
     emit_sym(o, fn.name_start, fn.name_len)
     let s2: str = ':\n    stp     x29, x30, [sp, #-16]!\n    mov     x29, sp\n'
     out_bytes(o, s2.ptr, s2.len)
+    emit_save_callee(o, fn.callee_count)
     if fn.frame_bytes > 0 {
         if fn.frame_bytes <= 4095 {
             let s3: str = '    sub     sp, sp, #'
@@ -838,6 +920,7 @@ fun emit_epilogue(o: *Out, fn: *IrFn, epi_label: u64) {
             out_bytes(o, s5.ptr, s5.len)
         }
     }
+    emit_restore_callee(o, fn.callee_count)
     let s4: str = '    ldp     x29, x30, [sp], #16\n    ret\n'
     out_bytes(o, s4.ptr, s4.len)
 }
@@ -870,21 +953,32 @@ fun emit_param_spill(o: *Out, fn: *IrFn, k: u64) {
             if tw == 4 { w = 4 }
         }
     }
+    if k >= 8 {
+        let ld: str = '    ldr     x16, [x29, #'
+        out_bytes(o, ld.ptr, ld.len)
+        out_u64(o, 16 + (k - 8) * 8)
+        let end: str = ']\n'
+        out_bytes(o, end.ptr, end.len)
+        if w == 1 { out_mn(o, 3); out_w_n(o, 16); out_sp_tail(o, slot_off(fn, k)); return }
+        if w == 4 { out_mn(o, 1); out_w_n(o, 16); out_sp_tail(o, slot_off(fn, k)); return }
+        emit_str_x(o, 16, slot_off(fn, k))
+        return
+    }
     if w == 1 {
         out_mn(o, 3)
         out_w_n(o, k)
-        out_sp_tail(o, k * 8)
+        out_sp_tail(o, slot_off(fn, k))
         return
     }
     if w == 4 {
         out_mn(o, 1)
         out_w_n(o, k)
-        out_sp_tail(o, k * 8)
+        out_sp_tail(o, slot_off(fn, k))
         return
     }
     out_mn(o, 1)
     out_x_n(o, k)
-    out_sp_tail(o, k * 8)
+    out_sp_tail(o, slot_off(fn, k))
 }
 
 fun emit_fn(o: *Out, fn: *IrFn, epi_label: u64) {

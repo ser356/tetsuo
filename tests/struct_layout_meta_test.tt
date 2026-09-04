@@ -1,0 +1,25 @@
+struct Mixed {
+    a: u8,
+    b: u32,
+    c: *u8,
+}
+
+fun main() -> u64 {
+    let src: str = 'struct Mixed { a: u8, b: u32, c: *u8 } fun f() -> u64 { return 0 }'
+    let ar: *Arena = ast_init()
+    let prog: *Program = parse(ar, src.ptr, src.len)
+    let d: *StructDecl = prog.structs
+    if d == nil { return 1 }
+    if d.size != 16 { return 2 }
+    if d.align != 8 { return 3 }
+    let f: *Field = d.fields
+    if f.offset != 0 { return 4 }
+    f = f.next
+    if f.offset != 4 { return 5 }
+    f = f.next
+    if f.offset != 8 { return 6 }
+    let mixed: *Type = mk_prim(ar, T_STRUCT)
+    mixed.decl = d
+    if type_width(mixed) != 16 { return 7 }
+    return 0
+}

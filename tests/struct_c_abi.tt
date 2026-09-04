@@ -1,0 +1,16 @@
+struct MixedC {
+    a: u8,
+    b: u32,
+    c: *u8,
+}
+
+fun tt_mixed_read(p: *MixedC) -> u64 {
+    let q: *u8 = p.c
+    return p.a as u64 + p.b as u64 + (@q) as u64
+}
+
+fun tt_mixed_write(p: *MixedC, q: *u8) {
+    p.a = 7
+    p.b = 305419896
+    p.c = q
+}

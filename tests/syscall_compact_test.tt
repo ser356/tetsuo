@@ -1,0 +1,13 @@
+fun main() -> u64 {
+    let a:u64=1
+    let b:u64=2
+    let c:u64=3
+    let d:u64=4
+    let e:u64=5
+    let f:u64=6
+    let g:u64=7
+    let h:u64=8
+    let pid:u64=syscall(20,0,0,0)
+    if pid == 0 { return 1 }
+    return a+b+c+d+e+f+g+h-36
+}

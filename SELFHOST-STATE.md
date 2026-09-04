@@ -1,5 +1,140 @@
 # Estado del autohospedaje tetsuo (verificado 2026-09-03)
 
+## Chequeo semantico 1.a — 2026-09-04
+
+Añadida pasada `parse -> check -> lower` para rechazar funciones no declaradas
+y aridad incorrecta, incluidos `syscall` y `syscall_checked`. La suite negativa
+comprueba codigo 2, ruta, linea, columna y mensaje. Seed regenerada desde stage2
+convergente: 148718 bytes, SHA-256
+`7e26556b7acb3ba1c2747774bdcbd671a56ce0056a8275d6a81da647ba75e2bd`.
+
+## Compatibilidad de tipos 1.b — 2026-09-04
+
+Validados argumentos, retornos con y sin valor, `let` explicito y asignaciones
+por clase de tipo, dereferencia, indices y aritmetica; los enteros conservan
+conversiones de ancho existentes.
+Seed regenerada desde stage2 convergente: 148718 bytes, SHA-256
+`7745158eeb68e491b3480c0de477cbee432a1d17605c72f1dcfe7abc43e79bed`.
+
+## Diagnosticos semanticos 1.c — 2026-09-04
+
+`Expr` guarda span fuente y el checker conserva ruta, linea y columna tras
+expandir imports. Añadidas pruebas de literal e import; destinos no asignables
+se rechazan antes de lowering. Seed: 165230 bytes, SHA-256
+`bbfbcdf82c93c63a0923be24eed45ade8d63317656fcd95884c6e7f3ff91101c`.
+
+## Reservas estructurales 2.a — 2026-09-04
+
+Todas las reservas de structs AST, parser e IR usan `sizeof(T)`. Los únicos
+`arena_take` numéricos restantes en `src/` son arrays y capacidades. El test
+`compiler_sizeof_test.tt` fija 16 layouts; lexer, codegen y Mach-O no reservan
+structs en arena. Cambio mecánico: seed y fixpoint permanecen idénticos.
+
+## Buffer preprocesado 3.2 — 2026-09-04
+
+`PP_OUT` sube de 1 MiB a 4 MiB. `pp_large_build.sh` expande cinco imports hasta
+1,15 MiB y compila el resultado con stage1. Seed: 165230 bytes, SHA-256
+`58d2770934c022ca86588b47b7cce08d8c81bf11803f616bad147812ee334288`.
+
+## Imports dinamicos 3.1 — 2026-09-04
+
+La guarda fija de 32 rutas se reemplazó por `Vec` en arena. Estado global se
+reinicia por compilación e imports mal formados fallan explícitamente. Prueba
+con 40 imports. Seed: 165230 bytes, SHA-256
+`20a59f5fe76ebbc23760893adec7c51bd033d3591611ad40b2ab7870c0ccf433`.
+
+## Pilas de bucles dinamicas 3.4 — 2026-09-04
+
+Las pilas de `break` y `continue` crecen en arena; desaparece el límite 16.
+Prueba con 20 `while` anidados. Seed: 165230 bytes, SHA-256
+`4b6cda3e85664dd1351948cd368deff54ecaa8a3f3f6e9251fe0444c1c1bbc04`.
+
+## Linea base de rendimiento 4.a — 2026-09-04
+
+Tres kernels ABI comparan tetsuo, Clang `-O0` y `-O2`, con oráculos comunes.
+Muestra local: tetsuo 0,163/0,240/0,130 s; O0 0,156/0,235/0,109 s; O2
+0,023/0,203/0,019 s para bytes/aritmética/llamadas. Fixpoint: 0,76 s.
+Tetsuo queda cerca de O0; bytes y llamadas justifican optimización posterior.
+
+## Layout de structs 2.b(i) — 2026-09-04
+
+`Field.offset` y `StructDecl.size/align` calculan alineación natural con tope 8.
+Prueba mixta confirma offsets 0/4/8, tamaño 16 y alineación 8. Este subhito es
+solo metadatos: `type_width` y accesos cambian en pasos posteriores. Seed:
+165230 bytes, SHA-256
+`26bf507b8df6deea3024751af49c2098bd71b6c70375277e4ac8ae7efda9d0e6`.
+
+## Ancho de structs 2.b(iii) — 2026-09-04
+
+`type_width(T_STRUCT)` usa `StructDecl.size`; `sizeof(Mixed)` devuelve 16.
+Offsets de acceso siguen aislados para 2.b(iv). Seed: 165230 bytes, SHA-256
+`e62938aa631cf4f7e990697c3db11cb42bece99994415075060afe5e17bf97d0`.
+
+## Offsets de campos 2.b(iv) — 2026-09-04
+
+Acceso por `*struct` y structs locales usa `Field.offset`, no `indice*8`.
+Pruebas AST y runtime cubren campos mixtos; `gp_acceptance` conserva resultado.
+Seed: 165230 bytes, SHA-256
+`19626fdb176490c60a813e2de5575a79547df11c7e578223514281d52bbbdf28`.
+
+## Anchos de campos y ABI C 2.b(v) — 2026-09-04
+
+Cargas y stores usan ancho del campo en ambos backends. Harness C confirma
+layout 0/4/8, tamaño 16, lectura C→tetsuo y escritura tetsuo→C.
+
+## Plegado de constantes 4.b.1 — 2026-09-04
+
+`lower_expr` colapsa binarios constantes `u64` seguros a un `IR_MOVI`; div/mod
+por cero y shifts fuera de rango conservan ruta runtime. Seed: 165230 bytes,
+SHA-256 `84f2fb4e2d90e2cef32979ef94115b406acb2fc20fc497522a7268ed30d4ea59`.
+
+## Banco de registros 4.b.2 — 2026-09-04
+
+Regalloc usa x9-x15 y x19-x28. Valores vivos sobre llamadas usan callee-saved;
+ambos backends guardan/restauran solo pares necesarios. Seed: 165230 bytes,
+SHA-256 `fe3372391b31eec242f0c8994288cced35c0a6bca1cf75a9411dd7ba7cfc937a`.
+
+## Cierre del plan — 2026-09-04
+
+Auditoría final añadió rechazo de store no puntero y ejecuta ABI C contra
+stage1. Seed definitiva: 165230 bytes, SHA-256
+`068aaa2fa1265ed3fd6aa89f82b3fd0767b5073e4d711d91c8ab6f1e26138e2e`.
+
+## Arrays no-8 2.c — 2026-09-04
+
+Arrays locales reservan por ancho byte total; `[N]u8` y `[N]u32` funcionan.
+Seed SHA-256 `7e43d5cc5080ab94bb023838299f7cfd1c21721279437337aabde56bac2cdc87`.
+
+## Parámetros en pila AAPCS64 — 2026-09-04
+
+AST/IR aceptan aridad dinámica; x0-x7 llevan los primeros ocho argumentos y
+el resto usa pila alineada en ambos backends. Llamada de 12 argumentos devuelve
+78. Seed SHA-256 `c6054883539be2bbe360e4692194a346815fea97d44dfda7f24c964171eb4b15`.
+
+## Orden BSS determinista — 2026-09-04
+
+`cgb_bss_layout` asigna offsets por nombre sin mutar índices AST. Declaraciones
+invertidas producen Mach-O idénticos y ejecutan con rc=42.
+
+## Volatilidad y peephole — 2026-09-04
+
+El operador `@` marca loads/stores volátiles en AST e IR. Peephole elimina
+stores locales consecutivos sobrescritos; no reescribe memoria.
+
+## Frames compactos — 2026-09-04
+
+`stack_of` asigna huecos solo a locales y temporales derramados. Ambos backends
+usan el mapa; `frame_bytes` ya no reserva espacio para temporales en registro.
+
+## Cierre de opcionales — 2026-09-04
+
+Completados arrays no-8 incluidos structs, parámetros AAPCS64 en pila, orden
+BSS estable, volatilidad explícita, peephole seguro y frames compactos. Seed
+definitiva: 165230 bytes, SHA-256
+`f74fbae3b43a9fd834710b698322b62d923e8704d4269d1556ffb8c00a858b89`.
+Cobertura extrema incluye 520 argumentos, área saliente superior a 4095 bytes
+y syscall bajo mapa de pila compacto.
+
 ## Backend Videodrome — 2026-09-04
 
 Añadidos `--emit=obj`, arena freestanding sin `bss`, UTF-8 estricto, `%`, `!`,

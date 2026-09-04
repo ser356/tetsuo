@@ -1,0 +1,3 @@
+2
+tests/neg/call_undefined.tt:2:12:
+error: funcion no declarada

@@ -1,0 +1,3 @@
+2
+tests/neg/assign_type.tt:4:5:
+error: tipo de asignacion incompatible

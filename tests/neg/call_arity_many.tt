@@ -1,0 +1,4 @@
+fun one(a: u64) -> u64 { return a }
+fun main() -> u64 {
+    return one(1, 2)
+}

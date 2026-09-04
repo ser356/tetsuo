@@ -1,0 +1,3 @@
+2
+tests/neg/import_type_body.tti:2:12:
+error: tipo de retorno incompatible

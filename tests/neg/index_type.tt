@@ -1,0 +1,5 @@
+fun main() -> u64 {
+    let p: *u8 = nil
+    let s: str = 'x'
+    return p[s]
+}

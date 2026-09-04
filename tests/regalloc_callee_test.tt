@@ -1,0 +1,20 @@
+fun main() -> u64 {
+    let src: str = 'fun id(x: u64) -> u64 { return x } fun run() -> u64 { return 1 + id(2) }'
+    let aa: *Arena = ast_init()
+    let ia: *Arena = ir_init()
+    let prog: *Program = parse(aa, src.ptr, src.len)
+    let funcs: *IrFn = lower(ia, prog)
+    let run: *IrFn = funcs.next
+    if run == nil { return 1 }
+    if run.callee_count == 0 { return 2 }
+    let found: u64 = 0
+    let i: u64 = 0
+    while i < run.nslots {
+        if run.reg_of[i] >= 7 {
+            if run.reg_of[i] < NREGS { found = 1 }
+        }
+        i = i + 1
+    }
+    if found == 0 { return 3 }
+    return 0
+}
