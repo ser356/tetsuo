@@ -141,6 +141,17 @@ fun out_hex4(o: *Out, v: u64) {
 // vaciar un Out que quiza este en un estado inconsistente.
 bss ERR_STORAGE: 64
 bss ERR_BUF: 4096
+bss DIAGNOSTIC_JSON: 8
+
+fun diagnostics_set_json(enabled: u64) {
+    let p: *u64 = DIAGNOSTIC_JSON
+    p[0] = enabled
+}
+
+fun diagnostics_json() -> u64 {
+    let p: *u64 = DIAGNOSTIC_JSON
+    return p[0]
+}
 
 // Imprime "error linea N: mensaje" en stderr (fd 2) y termina con codigo 2.
 //
@@ -152,6 +163,11 @@ bss ERR_BUF: 4096
 // Linea 0 significa "sin posicion util" y lo usan los errores del
 // preprocesador, que ocurren antes de que exista un lexer.
 fun die_line(msg: *u8, mlen: u64, line: u64) {
+    if diagnostics_json() == 1 {
+        let empty: str = ''
+        diagnostic_fatal_json(msg, mlen, empty.ptr, 0, line)
+        io_exit(2)
+    }
     let o: *Out = ERR_STORAGE
     out_init(o, 2, ERR_BUF, 4096)
     let s: str = 'error linea '
@@ -166,6 +182,10 @@ fun die_line(msg: *u8, mlen: u64, line: u64) {
 }
 
 fun die_path_line(msg: *u8, mlen: u64, path: *u8, plen: u64, line: u64) {
+    if diagnostics_json() == 1 {
+        diagnostic_fatal_json(msg, mlen, path, plen, line)
+        io_exit(2)
+    }
     let o: *Out = ERR_STORAGE
     out_init(o, 2, ERR_BUF, 4096)
     out_bytes(o, path, plen)
@@ -188,6 +208,26 @@ struct DiagnosticSite {
     slen: u64,
     tok: *u8,
     tlen: u64,
+    byte_start: u64,
+    byte_len: u64,
+}
+
+fun diagnostic_fatal_json(msg: *u8, mlen: u64, path: *u8, plen: u64, line: u64) {
+    let site: DiagnosticSite
+    site.path = path
+    site.plen = plen
+    site.line = line
+    site.col = 0
+    site.src = path
+    site.slen = 0
+    site.tok = path
+    site.tlen = 0
+    site.byte_start = 0
+    site.byte_len = 0
+    let o: *Out = ERR_STORAGE
+    out_init(o, 2, ERR_BUF, 4096)
+    diagnostic_print_json(o, msg, mlen, &site)
+    out_flush(o)
 }
 
 bss DIAGNOSTIC_COUNT: 8
@@ -201,6 +241,8 @@ bss DIAGNOSTIC_SRCS: 160
 bss DIAGNOSTIC_SLENS: 160
 bss DIAGNOSTIC_TOKS: 160
 bss DIAGNOSTIC_TLENS: 160
+bss DIAGNOSTIC_BYTE_STARTS: 160
+bss DIAGNOSTIC_BYTE_LENS: 160
 
 fun diagnostics_reset() {
     let count: *u64 = DIAGNOSTIC_COUNT
@@ -226,6 +268,8 @@ fun diagnostics_add(msg: *u8, mlen: u64, site: *DiagnosticSite) {
     let slens: *u64 = DIAGNOSTIC_SLENS
     let toks: **u8 = DIAGNOSTIC_TOKS
     let tlens: *u64 = DIAGNOSTIC_TLENS
+    let byte_starts: *u64 = DIAGNOSTIC_BYTE_STARTS
+    let byte_lens: *u64 = DIAGNOSTIC_BYTE_LENS
     msgs[n] = msg
     mlens[n] = mlen
     paths[n] = site.path
@@ -236,10 +280,143 @@ fun diagnostics_add(msg: *u8, mlen: u64, site: *DiagnosticSite) {
     slens[n] = site.slen
     toks[n] = site.tok
     tlens[n] = site.tlen
+    byte_starts[n] = site.byte_start
+    byte_lens[n] = site.byte_len
     count[0] = n + 1
 }
 
+fun diagnostic_id(msg: *u8, mlen: u64) -> u64 {
+    let m1: str = 'funcion no declarada'
+    if mlen == m1.len { if bytes_eq(msg, m1.ptr, mlen) == 1 { return 101 } }
+    let m2: str = 'aridad de llamada incorrecta'
+    if mlen == m2.len { if bytes_eq(msg, m2.ptr, mlen) == 1 { return 102 } }
+    let m3: str = 'tipo de argumento incompatible'
+    if mlen == m3.len { if bytes_eq(msg, m3.ptr, mlen) == 1 { return 103 } }
+    let m4: str = 'tipo de retorno incompatible'
+    if mlen == m4.len { if bytes_eq(msg, m4.ptr, mlen) == 1 { return 104 } }
+    let m5: str = 'retorno requiere valor'
+    if mlen == m5.len { if bytes_eq(msg, m5.ptr, mlen) == 1 { return 105 } }
+    let m6: str = 'tipo de inicializador incompatible'
+    if mlen == m6.len { if bytes_eq(msg, m6.ptr, mlen) == 1 { return 106 } }
+    let m7: str = 'tipo de asignacion incompatible'
+    if mlen == m7.len { if bytes_eq(msg, m7.ptr, mlen) == 1 { return 107 } }
+    let m8: str = 'destino de asignacion invalido'
+    if mlen == m8.len { if bytes_eq(msg, m8.ptr, mlen) == 1 { return 108 } }
+    let m9: str = 'deref requiere puntero'
+    if mlen == m9.len { if bytes_eq(msg, m9.ptr, mlen) == 1 { return 109 } }
+    let m10: str = 'store requiere puntero'
+    if mlen == m10.len { if bytes_eq(msg, m10.ptr, mlen) == 1 { return 110 } }
+    let m11: str = 'operandos aritmeticos incompatibles'
+    if mlen == m11.len { if bytes_eq(msg, m11.ptr, mlen) == 1 { return 111 } }
+    let m12: str = 'expresion primaria invalida'
+    if mlen == m12.len { if bytes_eq(msg, m12.ptr, mlen) == 1 { return 7 } }
+    let m13: str = 'keyword fn no soportado'
+    if mlen == m13.len { if bytes_eq(msg, m13.ptr, mlen) == 1 { return 201 } }
+    let m14: str = 'keyword pub no soportado'
+    if mlen == m14.len { if bytes_eq(msg, m14.ptr, mlen) == 1 { return 202 } }
+    let m15: str = 'keyword mut no soportado'
+    if mlen == m15.len { if bytes_eq(msg, m15.ptr, mlen) == 1 { return 203 } }
+    let m16: str = 'tipo int no soportado'
+    if mlen == m16.len { if bytes_eq(msg, m16.ptr, mlen) == 1 { return 204 } }
+    let m17: str = 'printf no soportado'
+    if mlen == m17.len { if bytes_eq(msg, m17.ptr, mlen) == 1 { return 205 } }
+    let m18: str = 'malloc no soportado'
+    if mlen == m18.len { if bytes_eq(msg, m18.ptr, mlen) == 1 { return 206 } }
+    let m19: str = 'include de C no soportado'
+    if mlen == m19.len { if bytes_eq(msg, m19.ptr, mlen) == 1 { return 207 } }
+    let m20: str = 'comentario de bloque no soportado'
+    if mlen == m20.len { if bytes_eq(msg, m20.ptr, mlen) == 1 { return 208 } }
+    return 1
+}
+
+fun json_string(o: *Out, p: *u8, n: u64) {
+    out_byte(o, 34)
+    let i: u64 = 0
+    while i < n {
+        let c: u8 = p[i]
+        if c == 34 { out_byte(o, 92); out_byte(o, 34) }
+        else if c == 92 { out_byte(o, 92); out_byte(o, 92) }
+        else if c == 10 { out_byte(o, 92); out_byte(o, 110) }
+        else if c == 9 { out_byte(o, 92); out_byte(o, 116) }
+        else { out_byte(o, c) }
+        i = i + 1
+    }
+    out_byte(o, 34)
+}
+
+fun diagnostic_english_json(o: *Out, id: u64) {
+    let english: str = 'compilation error'
+    if id == 101 { let m: str = 'undeclared function'; json_string(o, m.ptr, m.len); return }
+    if id == 102 { let m: str = 'incorrect call arity'; json_string(o, m.ptr, m.len); return }
+    if id == 103 { let m: str = 'incompatible argument type'; json_string(o, m.ptr, m.len); return }
+    if id == 104 { let m: str = 'incompatible return type'; json_string(o, m.ptr, m.len); return }
+    if id == 105 { let m: str = 'return value required'; json_string(o, m.ptr, m.len); return }
+    if id == 106 { let m: str = 'incompatible initializer type'; json_string(o, m.ptr, m.len); return }
+    if id == 107 { let m: str = 'incompatible assignment type'; json_string(o, m.ptr, m.len); return }
+    if id == 108 { let m: str = 'invalid assignment target'; json_string(o, m.ptr, m.len); return }
+    if id == 109 { let m: str = 'dereference requires a pointer'; json_string(o, m.ptr, m.len); return }
+    if id == 110 { let m: str = 'store requires a pointer'; json_string(o, m.ptr, m.len); return }
+    if id == 111 { let m: str = 'incompatible arithmetic operands'; json_string(o, m.ptr, m.len); return }
+    if id == 7 { let m: str = 'invalid primary expression'; json_string(o, m.ptr, m.len); return }
+    if id == 201 { let m: str = 'use fun instead of fn'; json_string(o, m.ptr, m.len); return }
+    if id == 202 { let m: str = 'pub is not supported'; json_string(o, m.ptr, m.len); return }
+    if id == 203 { let m: str = 'mut is not supported'; json_string(o, m.ptr, m.len); return }
+    if id == 204 { let m: str = 'use an explicit integer type'; json_string(o, m.ptr, m.len); return }
+    if id == 205 { let m: str = 'use print or println'; json_string(o, m.ptr, m.len); return }
+    if id == 206 { let m: str = 'use arena_take'; json_string(o, m.ptr, m.len); return }
+    if id == 207 { let m: str = 'use import'; json_string(o, m.ptr, m.len); return }
+    if id == 208 { let m: str = 'use line comments'; json_string(o, m.ptr, m.len); return }
+    json_string(o, english.ptr, english.len)
+}
+
+fun diagnostic_fix_json(o: *Out, id: u64) {
+    if id == 201 { let f: str = 'fun'; json_string(o, f.ptr, f.len); return }
+    if id == 202 { let f: str = ''; json_string(o, f.ptr, f.len); return }
+    if id == 203 { let f: str = ''; json_string(o, f.ptr, f.len); return }
+    if id == 204 { let f: str = 'u64'; json_string(o, f.ptr, f.len); return }
+    if id == 205 { let f: str = 'print'; json_string(o, f.ptr, f.len); return }
+    if id == 206 { let f: str = 'arena_take'; json_string(o, f.ptr, f.len); return }
+    if id == 207 { let f: str = 'import \'path\''; json_string(o, f.ptr, f.len); return }
+    if id == 208 { let f: str = '//'; json_string(o, f.ptr, f.len); return }
+    let none: str = 'null'
+    out_bytes(o, none.ptr, none.len)
+}
+
+fun diagnostic_print_json(o: *Out, msg: *u8, mlen: u64, site: *DiagnosticSite) {
+    let id: u64 = diagnostic_id(msg, mlen)
+    let a: str = '{"code":"E'
+    out_bytes(o, a.ptr, a.len)
+    out_byte(o, 48 + (id / 1000) % 10)
+    out_byte(o, 48 + (id / 100) % 10)
+    out_byte(o, 48 + (id / 10) % 10)
+    out_byte(o, 48 + id % 10)
+    let b: str = '","path":'
+    out_bytes(o, b.ptr, b.len)
+    json_string(o, site.path, site.plen)
+    let c: str = ',"line":'
+    out_bytes(o, c.ptr, c.len)
+    out_u64(o, site.line)
+    let d: str = ',"column":'
+    out_bytes(o, d.ptr, d.len)
+    out_u64(o, site.col)
+    let e: str = ',"span":{"start":'
+    out_bytes(o, e.ptr, e.len)
+    out_u64(o, site.byte_start)
+    let f: str = ',"length":'
+    out_bytes(o, f.ptr, f.len)
+    out_u64(o, site.byte_len)
+    let g: str = '},"message":'
+    out_bytes(o, g.ptr, g.len)
+    diagnostic_english_json(o, id)
+    let h: str = ',"fix":'
+    out_bytes(o, h.ptr, h.len)
+    diagnostic_fix_json(o, id)
+    let z: str = '}\n'
+    out_bytes(o, z.ptr, z.len)
+}
+
 fun diagnostic_print(o: *Out, msg: *u8, mlen: u64, site: *DiagnosticSite) {
+    if diagnostics_json() == 1 { diagnostic_print_json(o, msg, mlen, site); return }
     out_bytes(o, site.path, site.plen)
     out_byte(o, 58)
     out_u64(o, site.line)
@@ -288,6 +465,8 @@ fun diagnostics_flush() {
     let slens: *u64 = DIAGNOSTIC_SLENS
     let toks: **u8 = DIAGNOSTIC_TOKS
     let tlens: *u64 = DIAGNOSTIC_TLENS
+    let byte_starts: *u64 = DIAGNOSTIC_BYTE_STARTS
+    let byte_lens: *u64 = DIAGNOSTIC_BYTE_LENS
     let n: u64 = diagnostics_count()
     let i: u64 = 0
     while i < n {
@@ -300,6 +479,8 @@ fun diagnostics_flush() {
         site.slen = slens[i]
         site.tok = toks[i]
         site.tlen = tlens[i]
+        site.byte_start = byte_starts[i]
+        site.byte_len = byte_lens[i]
         diagnostic_print(o, msgs[i], mlens[i], &site)
         i = i + 1
     }

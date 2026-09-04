@@ -11,7 +11,7 @@ fun main() -> u32 {
     let prog: *Program = parse(ast_ar, src, n)
     let irhead: *IrFn = lower(ir_ar, prog)
     let bvsz: u64 = cgb_bss_layout(prog)
-    codegen_bytes(prog, irhead)
+    codegen_bytes(TGT_MACOS, prog, irhead)
 
     let path: str = '/tmp/tt_cgb_bss\0'
     let fd: u64 = io_open_write(path.ptr)

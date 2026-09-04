@@ -1,0 +1,132 @@
+fun pe_name(img: *u8, name: str) {
+    let i: u64 = 0
+    while i < 8 { if i < name.len { e8(img, name.ptr[i]) } else { e8(img, 0) }; i = i + 1 }
+}
+
+fun pe_e16(img: *u8, v: u64) { e8(img, v); e8(img, v >> 8) }
+
+fun pe_section(img: *u8, name: str, vsize: u64, rva: u64, raw_size: u64, raw_off: u64, flags: u64) {
+    pe_name(img, name)
+    e32(img, vsize); e32(img, rva); e32(img, raw_size); e32(img, raw_off)
+    e32(img, 0); e32(img, 0); pe_e16(img, 0); pe_e16(img, 0); e32(img, flags)
+}
+
+fun pe_headers_arm64(img: *u8, text_raw: u64, text_vsize: u64, idata_rva: u64, idata_raw: u64, bss_rva: u64, bss_size: u64) {
+    mc_set(0)
+    e8(img, 77); e8(img, 90); ezeros(img, 58); e32(img, 128); ezeros(img, 64)
+    e8(img, 80); e8(img, 69); e8(img, 0); e8(img, 0)
+    pe_e16(img, 43620); pe_e16(img, 3); e32(img, 0); e32(img, 0); e32(img, 0); pe_e16(img, 240); pe_e16(img, 34)
+    pe_e16(img, 523); e8(img, 0); e8(img, 0)
+    e32(img, text_raw); e32(img, 512); e32(img, bss_size); e32(img, 4096); e32(img, 4096)
+    e64(img, 5368709120)
+    e32(img, 4096); e32(img, 512)
+    pe_e16(img, 10); pe_e16(img, 0); pe_e16(img, 0); pe_e16(img, 0); pe_e16(img, 10); pe_e16(img, 0)
+    e32(img, 0); e32(img, bss_rva + ((bss_size + 4095) / 4096) * 4096); e32(img, 512); e32(img, 0)
+    pe_e16(img, 3); pe_e16(img, 0)
+    e64(img, 1048576); e64(img, 4096); e64(img, 1048576); e64(img, 4096)
+    e32(img, 0); e32(img, 16)
+    let d: u64 = 0
+    while d < 16 {
+        if d == 1 { e32(img, idata_rva); e32(img, 128) } else { e64(img, 0) }
+        d = d + 1
+    }
+    let text: str = '.text'; pe_section(img, text, text_vsize, 4096, text_raw, 512, 1610612768)
+    let idata: str = '.idata'; pe_section(img, idata, 128, idata_rva, 512, idata_raw, 3221225536)
+    let bss_name: str = '.bss'; pe_section(img, bss_name, bss_size, bss_rva, 0, 0, 3221225600)
+    ezeros(img, 512 - mc_get())
+}
+
+fun pe_idata_arm64(img: *u8, idata_rva: u64, idata_raw: u64) {
+    while mc_get() < idata_raw { e8(img, 0) }
+    e32(img, idata_rva + 64); e32(img, 0); e32(img, 0); e32(img, idata_rva + 256); e32(img, idata_rva + 160)
+    ezeros(img, 20)
+    while mc_get() < idata_raw + 64 { e8(img, 0) }
+    let name_rva: u64 = idata_rva + 272
+    let offsets: [11]u64
+    offsets[0] = 0; offsets[1] = 7; offsets[2] = 15; offsets[3] = 24; offsets[4] = 32
+    offsets[5] = 41; offsets[6] = 51; offsets[7] = 61; offsets[8] = 70
+    offsets[9] = 79; offsets[10] = 92
+    let j: u64 = 0
+    while j < 11 { e64(img, name_rva + offsets[j]); j = j + 1 }
+    e64(img, 0)
+    while mc_get() < idata_raw + 160 { e8(img, 0) }
+    j = 0
+    while j < 11 { e64(img, name_rva + offsets[j]); j = j + 1 }
+    e64(img, 0)
+    let dll: str = 'msvcrt.dll'
+    let i: u64 = 0
+    while i < dll.len { e8(img, dll.ptr[i]); i = i + 1 }
+    e8(img, 0)
+    while mc_get() < idata_raw + 272 { e8(img, 0) }
+    let names: str = '\0\0exit\0\0\0_read\0\0\0_write\0\0\0_open\0\0\0_close\0\0\0_getpid\0\0\0_unlink\0\0\0_chdir\0\0\0_mkdir\0\0\0__p___argc\0\0\0__p___argv\0'
+    i = 0
+    while i < names.len { e8(img, names.ptr[i]); i = i + 1 }
+    while mc_get() < idata_raw + 512 { e8(img, 0) }
+}
+
+fun emit_pe_arm64_image(fd: u64, code: *u8, code_len: u64, bss_size: u64) {
+    let img: *u8 = MO_IMG
+    if code_len > 512 { io_exit(72) }
+    pe_headers_arm64(img, 512, code_len, 8192, 1024, 12288, bss_size)
+    let i: u64 = 0
+    while i < code_len { e8(img, code[i]); i = i + 1 }
+    while mc_get() < 1024 { e8(img, 0) }
+    pe_idata_arm64(img, 8192, 1024)
+    io_write(fd, img, mc_get())
+}
+
+fun pe_string_layout(prog: *Program, code_len: u64) -> u64 {
+    let off: u64 = 512 + code_len
+    let it: *StrLit = prog.strs
+    while it != nil { cgb_stroff_set(it.id, off); off = off + it.slen + 1; it = it.next }
+    return off
+}
+
+fun pe_resolve(text_rva: u64, bss_rva: u64) {
+    let img: *u8 = MO_IMG
+    let fixes: *u64 = CG_FIX
+    let np: *u64 = CG_FIXN
+    let i: u64 = 0
+    while i < np[0] {
+        let pos: u64 = fixes[i * 3]
+        let kind: u64 = fixes[i * 3 + 1]
+        let target: u64 = fixes[i * 3 + 2]
+        let instr_file: u64 = 512 + pos
+        let instr_rva: u64 = text_rva + pos
+        let target_rva: u64 = 0
+        if kind == FX_ADRP { target_rva = text_rva + cgb_stroff_get(target) - 512 }
+        if kind == FX_PGOF { target_rva = text_rva + cgb_stroff_get(target) - 512 }
+        if kind == FX_ADRPB { target_rva = bss_rva + cgb_bss_off_get(target) }
+        if kind == FX_PGOFB { target_rva = bss_rva + cgb_bss_off_get(target) }
+        if kind == FX_IAT { target_rva = bss_rva - 4096 + 160 + target * 8 }
+        if kind == FX_ADRP { let imm: u64 = ((target_rva / 4096) - (instr_rva / 4096)) & 2097151; img_or(instr_file, ((imm & 3) << 29) | (((imm >> 2) & 524287) << 5)) }
+        if kind == FX_ADRPB { let imm: u64 = ((target_rva / 4096) - (instr_rva / 4096)) & 2097151; img_or(instr_file, ((imm & 3) << 29) | (((imm >> 2) & 524287) << 5)) }
+        if kind == FX_PGOF { img_or(instr_file, (target_rva & 4095) << 10) }
+        if kind == FX_PGOFB { img_or(instr_file, (target_rva & 4095) << 10) }
+        if kind == FX_IAT {
+            if img[instr_file + 3] == 144 { let imm: u64 = ((target_rva / 4096) - (instr_rva / 4096)) & 2097151; img_or(instr_file, ((imm & 3) << 29) | (((imm >> 2) & 524287) << 5)) }
+            else { img_or(instr_file, ((target_rva & 4095) / 8) << 10) }
+        }
+        i = i + 1
+    }
+}
+
+fun emit_pe_arm64_code(fd: u64, prog: *Program, code_len: u64, entry_off: u64, bss_size: u64) {
+    let img: *u8 = MO_IMG
+    let end: u64 = pe_string_layout(prog, code_len)
+    let text_raw: u64 = ((end - 512 + 511) / 512) * 512
+    let text_pages: u64 = ((end - 512 + 4095) / 4096)
+    let idata_rva: u64 = 4096 + text_pages * 4096
+    let idata_raw: u64 = 512 + text_raw
+    let bss_rva: u64 = idata_rva + 4096
+    pe_headers_arm64(img, text_raw, end - 512, idata_rva, idata_raw, bss_rva, bss_size)
+    let cb: *u8 = CB
+    let i: u64 = 0
+    while i < code_len { e8(img, cb[i]); i = i + 1 }
+    let it: *StrLit = prog.strs
+    while it != nil { while mc_get() < cgb_stroff_get(it.id) { e8(img, 0) }; let k: u64 = 0; while k < it.slen { e8(img, it.bytes[k]); k = k + 1 }; e8(img, 0); it = it.next }
+    pe_resolve(4096, bss_rva)
+    while mc_get() < idata_raw { e8(img, 0) }
+    pe_idata_arm64(img, idata_rva, idata_raw)
+    io_write(fd, img, mc_get())
+}

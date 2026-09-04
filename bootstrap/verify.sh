@@ -108,6 +108,12 @@ check "codegen_e2e (stage1 -> bin)"     42  bash tests/codegen_e2e_build.sh
 check "main_e2e (argv-driven driver)"   42  bash tests/main_e2e_build.sh
 check "emit=obj (C ABI link)"             0   bash tests/obj_link_build.sh
 check "struct mixed C ABI"                0   env TETSUOC=build/main bash tests/struct_c_abi_build.sh
+check "ELF64 AArch64 direct"              0   env TETSUOC=build/main bash tests/elf_emit_build.sh
+check "ELF64 Linux runtime"               0   env TETSUOC=build/main bash tests/elf_runtime_build.sh
+check "ELF64 native fixpoint"             0   bash bootstrap/linux/verify_native_elf.sh
+check "PE32+ Windows ARM64"               0   env TETSUOC=build/main bash tests/pe_arm64_build.sh
+check "COFF Windows x64"                 0   env TETSUOC=build/main bash tests/x64_coff_build.sh
+check "PE32+ Windows x64"                0   env TETSUOC=build/main bash tests/x64_pe_build.sh
 check "freestanding (2 pthreads)"          0   bash tests/freestanding_build.sh
 check "release parser ABI"                 0   bash tests/release_name_abi_build.sh
 
@@ -134,6 +140,9 @@ check "BSS order deterministic"          0   env TETSUOC=build/main_macho_s1.mac
 
 section "Compilacion negativa"
 check "tests/neg (rc + stderr)"          0   env TETSUOC=build/main_macho_s1.macho bash tests/neg_run.sh
+check "diagnostics JSON Lines"           0   env TETSUOC=build/main_macho_s1.macho bash tests/diagnostics_json_build.sh
+check "agent interference fixes"         0   env TETSUOC=build/main_macho_s1.macho bash tests/interference_build.sh
+check "versioned agent context"          0   bash tests/agent_context_build.sh
 
 section "Runtime IO + fixpoint (hito 19.b)"
 rm -f /tmp/tetsuo_write_test.txt

@@ -1,0 +1,14 @@
+bss PE_CODE: 16
+fun main() -> u64 {
+    let code: *u8 = PE_CODE
+    let words: *u32 = code as *u32
+    words[0] = 3531605280
+    words[1] = 3596551104
+    words[2] = 3592356352
+    words[3] = 3594452992
+    let path: str = '/tmp/tt_pe_arm64.exe'
+    let fd: u64 = io_open_write(path.ptr)
+    emit_pe_arm64_image(fd, code, 16, 4096)
+    io_close(fd)
+    return 0
+}

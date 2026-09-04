@@ -46,6 +46,7 @@
 const TGT_VIRT:  u64 = 0
 const TGT_MACOS: u64 = 1
 const TGT_LINUX: u64 = 2
+const TGT_WINDOWS: u64 = 3
 bss G_TARGET: 8
 
 fun set_target(t: u64) {

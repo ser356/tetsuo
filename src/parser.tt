@@ -332,6 +332,8 @@ fun current_diagnostic_site(site: *DiagnosticSite) -> u64 {
             site.slen = end - begin
             site.tok = lx.src + t.start
             site.tlen = t.tlen
+            site.byte_start = t.start
+            site.byte_len = t.tlen
             return 1
         }
     }

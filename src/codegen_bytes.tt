@@ -92,6 +92,7 @@ const FX_ADRP: u64 = 3   // adrp de literal str_id (pagina)
 const FX_PGOF: u64 = 4   // add pageoff de literal str_id
 const FX_ADRPB: u64 = 5  // adrp de simbolo bss (pagina)
 const FX_PGOFB: u64 = 6  // add pageoff de simbolo bss
+const FX_IAT: u64 = 7
 
 fun cb_pos() -> u64 {
     let p: *u64 = CB_POS
@@ -512,6 +513,11 @@ fun cgb_i_cmp(fn: *IrFn, i: *Ins, cc: u64) {
 // Es el unico sitio del backend que emite svc, y por tanto lo unico que el
 // harness de Linux tiene que reescribir para ejecutar estos binarios bajo qemu.
 fun cgb_i_syscall(fn: *IrFn, i: *Ins) {
+    if get_target() == TGT_WINDOWS { cgb_i_syscall_windows(fn, i); return }
+    if get_target() == TGT_LINUX {
+        cgb_i_syscall_linux(fn, i)
+        return
+    }
     let args: *u64 = i.args
     let ro: *u64 = fn.reg_of
     let s0: u64 = args[0]
@@ -529,8 +535,88 @@ fun cgb_i_syscall(fn: *IrFn, i: *Ins) {
     b_str_x(0, cgb_stack_off(fn, i.dst))
 }
 
+fun cgb_windows_call(api: u64) {
+    fix_add(cb_pos(), FX_IAT, api)
+    cb_word(2415919120)
+    fix_add(cb_pos(), FX_IAT, api)
+    cb_word(4181721104)
+    cb_word(3594453504)
+}
+
+fun cgb_i_syscall_windows(fn: *IrFn, i: *Ins) {
+    let args: *u64 = i.args
+    let k: u64 = 1
+    while k < i.nargs { cgb_load_slot_x(fn, args[k], k - 1); k = k + 1 }
+    let api: u64 = 0
+    if i.imm == 1 { api = 0 }
+    else if i.imm == 3 { api = 1 }
+    else if i.imm == 4 { api = 2 }
+    else if i.imm == 5 { api = 3; if i.label != 0 { b_movi(1, 33537) } else { b_movi(1, 32768) } }
+    else if i.imm == 6 { api = 4 }
+    else if i.imm == 20 { api = 5 }
+    else if i.imm == 10 { api = 6 }
+    else if i.imm == 12 { api = 7 }
+    else if i.imm == 136 { api = 8 }
+    cgb_windows_call(api)
+    let ro: *u64 = fn.reg_of
+    let dr: u64 = ro[i.dst]
+    if dr < NREGS { b_mov_x(ir_phys_reg(dr), 0); return }
+    b_str_x(0, cgb_stack_off(fn, i.dst))
+}
+
+fun cgb_i_syscall_linux(fn: *IrFn, i: *Ins) {
+    let args: *u64 = i.args
+    let k: u64 = 1
+    while k < i.nargs {
+        cgb_load_slot_x(fn, args[k], k - 1)
+        k = k + 1
+    }
+    let nr: u64 = i.imm
+    if nr == 1 { b_movi(8, 93) }
+    else if nr == 3 { b_movi(8, 63) }
+    else if nr == 4 { b_movi(8, 64) }
+    else if nr == 5 {
+        b_mov_x(3, 2)
+        b_mov_x(1, 0)
+        b_movi(0, 18446744073709551516)
+        let flags: u64 = 0
+        if i.label != 0 { flags = 577 }
+        b_movi(2, flags)
+        b_movi(8, 56)
+    }
+    else if nr == 6 { b_movi(8, 57) }
+    else if nr == 10 { b_mov_x(1, 0); b_movi(0, 18446744073709551516); b_movi(2, 0); b_movi(8, 35) }
+    else if nr == 12 { b_movi(8, 49) }
+    else if nr == 20 { b_movi(8, 172) }
+    else if nr == 136 { b_mov_x(2, 1); b_mov_x(1, 0); b_movi(0, 18446744073709551516); b_movi(8, 34) }
+    else { b_movi(8, nr) }
+    cb_word(enc_svc(0))
+    let ro: *u64 = fn.reg_of
+    let dr: u64 = ro[i.dst]
+    if dr < NREGS { b_mov_x(ir_phys_reg(dr), 0); return }
+    b_str_x(0, cgb_stack_off(fn, i.dst))
+}
+
 fun cgb_i_syscall_checked(fn: *IrFn, i: *Ins) {
     cgb_i_syscall(fn, i)
+    if get_target() == TGT_LINUX {
+        b_movi(15, 63)
+        cb_word(enc_lsrv(17, 0, 15))
+        cb_word(enc_sub_reg(17, 31, 17))
+        cb_word(enc_sub_reg(16, 31, 0))
+        cb_word(enc_and(17, 16, 17))
+        cgb_load_slot_x(fn, i.args[4], 16)
+        cb_word(enc_str_x(17, 16, 0))
+        return
+    }
+    if get_target() == TGT_WINDOWS {
+        b_movi(15, 18446744073709551615)
+        cb_word(enc_cmp_reg(0, 15))
+        cb_word(enc_cset(17, 1))
+        cgb_load_slot_x(fn, i.args[4], 16)
+        cb_word(enc_str_x(17, 16, 0))
+        return
+    }
     cb_word(enc_cset(17, 3))
     cgb_load_slot_x(fn, i.args[4], 16)
     cb_word(enc_str_x(17, 16, 0))
@@ -950,25 +1036,41 @@ fun cgb_stroff_get(id: u64) -> u64 {
 //
 // Los labels de epilogo se numeran a partir de cgb_max_label para no chocar con
 // los del lowering, y se asigna uno por funcion (epi + 1 en cada vuelta).
-fun codegen_bytes(prog: *Program, funcs: *IrFn) {
+fun codegen_bytes(target: u64, prog: *Program, funcs: *IrFn) {
     cgb_prog_set(prog)
-    set_target(TGT_MACOS)
+    set_target(target)
     cb_set(0)
     let fn0: *u64 = CG_FIXN
     fn0[0] = 0
 
     let maxl: u64 = cgb_max_label(funcs)
 
-    // _tt_start: bl _main; movz x16,#1; svc #0x80
     let entry: *u64 = CG_ENTRY
     entry[0] = cb_pos()
     let main_kw: str = 'main'
-    // fixup bl a la funcion 'main' por nombre
     let mi: u64 = fn_index_by_name(funcs, main_kw.ptr, 4)
+    if target == TGT_LINUX {
+        cb_word(enc_ldr_x(0, 31, 0))
+        cb_word(enc_add_imm(1, 31, 8))
+    }
+    if target == TGT_WINDOWS {
+        cgb_windows_call(9)
+        cb_word(enc_ldr_w(19, 0, 0))
+        cgb_windows_call(10)
+        cb_word(enc_ldr_x(1, 0, 0))
+        b_mov_w(0, 19)
+    }
     fix_add(cb_pos(), FX_BL, mi)
     cb_word(enc_bl(0))
-    cb_word(enc_movz(16, 1, 0))
-    cb_word(enc_svc(128))
+    if target == TGT_LINUX {
+        cb_word(enc_movz(8, 93, 0))
+        cb_word(enc_svc(0))
+    } else if target == TGT_WINDOWS {
+        cgb_windows_call(0)
+    } else {
+        cb_word(enc_movz(16, 1, 0))
+        cb_word(enc_svc(128))
+    }
 
     // funciones
     let epi: u64 = maxl

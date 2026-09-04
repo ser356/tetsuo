@@ -28,7 +28,7 @@ fi
 
 LIBS=(src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt \
   src/lexer.tt src/parser.tt src/check.tt src/ir.tt src/codegen.tt \
-      lib/sha256.tt src/asm.tt src/macho.tt src/codegen_bytes.tt)
+      lib/sha256.tt src/asm.tt src/macho.tt src/codegen_bytes.tt src/elf.tt src/pe.tt src/codegen_x64.tt)
 if [[ -f ${LIBS[0]} && $INPUT != ${LIBS[0]} ]]; then
   ENTRY=$BUILD/entry_macos.tt
   : > "$ENTRY"

@@ -1,0 +1,230 @@
+fun x64_sym(o: *Out, start: u64, len: u64) {
+    let lx: *Lexer = LX_STATE
+    out_bytes(o, lx.src + start, len)
+}
+
+fun x64_slot(o: *Out, fn: *IrFn, slot: u64) {
+    let index: u64 = slot
+    if fn.stack_of != nil { index = fn.stack_of[slot] }
+    out_byte(o, 45)
+    out_u64(o, (index + 1) * 8)
+    let s: str = '(%rbp)'
+    out_bytes(o, s.ptr, s.len)
+}
+
+fun x64_load(o: *Out, fn: *IrFn, slot: u64, reg: str) {
+    let s: str = '    movq    '
+    out_bytes(o, s.ptr, s.len)
+    x64_slot(o, fn, slot)
+    let c: str = ', '
+    out_bytes(o, c.ptr, c.len)
+    out_bytes(o, reg.ptr, reg.len)
+    out_byte(o, 10)
+}
+
+fun x64_store(o: *Out, fn: *IrFn, slot: u64, reg: str) {
+    let s: str = '    movq    '
+    out_bytes(o, s.ptr, s.len)
+    out_bytes(o, reg.ptr, reg.len)
+    let c: str = ', '
+    out_bytes(o, c.ptr, c.len)
+    x64_slot(o, fn, slot)
+    out_byte(o, 10)
+}
+
+fun x64_normalize_rax(o: *Out, width: u64, signed: u64) {
+    if width == 1 {
+        if signed == 1 { let s: str = '    movsbq  %al, %rax\n'; out_bytes(o, s.ptr, s.len); return }
+        let u: str = '    movzbq  %al, %rax\n'; out_bytes(o, u.ptr, u.len); return
+    }
+    if width == 4 {
+        if signed == 1 { let s2: str = '    movslq  %eax, %rax\n'; out_bytes(o, s2.ptr, s2.len); return }
+        let u2: str = '    movl    %eax, %eax\n'; out_bytes(o, u2.ptr, u2.len)
+    }
+}
+
+fun x64_instr(o: *Out, fn: *IrFn, ins: *Ins, epilogue: u64) {
+    if ins.op == IR_MOVI {
+        let s: str = '    movabsq $'
+        out_bytes(o, s.ptr, s.len); out_u64(o, ins.imm); let r: str = ', %rax\n'; out_bytes(o, r.ptr, r.len)
+        let ax: str = '%rax'; x64_store(o, fn, ins.dst, ax); return
+    }
+    if ins.op == IR_LABEL_ADDR {
+        let s0: str = '    leaq    '; out_bytes(o, s0.ptr, s0.len)
+        if ins.callee_len > 0 { x64_sym(o, ins.callee_start, ins.callee_len) }
+        else { let ls: str = 'L_str'; out_bytes(o, ls.ptr, ls.len); out_u64(o, ins.str_id) }
+        let s1: str = '(%rip), %rax\n'; out_bytes(o, s1.ptr, s1.len)
+        let ax0: str = '%rax'; x64_store(o, fn, ins.dst, ax0); return
+    }
+    if ins.op == IR_ADDR_LOCAL {
+        let s2: str = '    leaq    '; out_bytes(o, s2.ptr, s2.len); x64_slot(o, fn, ins.local); let ar: str = ', %rax\n'; out_bytes(o, ar.ptr, ar.len)
+        let ax1: str = '%rax'; x64_store(o, fn, ins.dst, ax1); return
+    }
+    if ins.op == IR_LOAD_LOCAL {
+        if ins.width == 1 {
+            if ins.is_signed == 1 { let s3: str = '    movsbq  '; out_bytes(o, s3.ptr, s3.len) }
+            else { let s4: str = '    movzbq  '; out_bytes(o, s4.ptr, s4.len) }
+        } else if ins.width == 4 {
+            if ins.is_signed == 1 { let s5: str = '    movslq  '; out_bytes(o, s5.ptr, s5.len) }
+            else { let s6: str = '    movl    '; out_bytes(o, s6.ptr, s6.len) }
+        } else { let s7: str = '    movq    '; out_bytes(o, s7.ptr, s7.len) }
+        x64_slot(o, fn, ins.local); let lr: str = ', %rax\n'; if ins.width == 4 && ins.is_signed == 0 { let lr32: str = ', %eax\n'; out_bytes(o, lr32.ptr, lr32.len) } else { out_bytes(o, lr.ptr, lr.len) }
+        let ax2: str = '%rax'; x64_store(o, fn, ins.dst, ax2); return
+    }
+    if ins.op == IR_STORE_LOCAL {
+        let ax3: str = '%rax'; x64_load(o, fn, ins.a, ax3)
+        if ins.width == 1 { let s8: str = '    movb    %al, '; out_bytes(o, s8.ptr, s8.len) }
+        else if ins.width == 4 { let s9: str = '    movl    %eax, '; out_bytes(o, s9.ptr, s9.len) }
+        else { let s10: str = '    movq    %rax, '; out_bytes(o, s10.ptr, s10.len) }
+        x64_slot(o, fn, ins.local); out_byte(o, 10); return
+    }
+    if ins.op == IR_LOAD_MEM {
+        let ax4: str = '%rax'; x64_load(o, fn, ins.a, ax4)
+        if ins.width == 1 {
+            if ins.is_signed == 1 { let s11: str = '    movsbq  (%rax), %rax\n'; out_bytes(o, s11.ptr, s11.len) }
+            else { let s12: str = '    movzbq  (%rax), %rax\n'; out_bytes(o, s12.ptr, s12.len) }
+        } else if ins.width == 4 {
+            if ins.is_signed == 1 { let s13: str = '    movslq  (%rax), %rax\n'; out_bytes(o, s13.ptr, s13.len) }
+            else { let s14: str = '    movl    (%rax), %eax\n'; out_bytes(o, s14.ptr, s14.len) }
+        } else { let s15: str = '    movq    (%rax), %rax\n'; out_bytes(o, s15.ptr, s15.len) }
+        x64_store(o, fn, ins.dst, ax4); return
+    }
+    if ins.op == IR_STORE_MEM {
+        let ax5: str = '%rax'; let cx0: str = '%rcx'; x64_load(o, fn, ins.a, ax5); x64_load(o, fn, ins.b, cx0)
+        if ins.width == 1 { let s16: str = '    movb    %cl, (%rax)\n'; out_bytes(o, s16.ptr, s16.len) }
+        else if ins.width == 4 { let s17: str = '    movl    %ecx, (%rax)\n'; out_bytes(o, s17.ptr, s17.len) }
+        else { let s18: str = '    movq    %rcx, (%rax)\n'; out_bytes(o, s18.ptr, s18.len) }
+        return
+    }
+    if ins.op == IR_CAST {
+        let ax6: str = '%rax'; x64_load(o, fn, ins.a, ax6); x64_normalize_rax(o, ins.width, ins.is_signed); x64_store(o, fn, ins.dst, ax6); return
+    }
+    if ins.op == IR_BINOP {
+        let ax: str = '%rax'; let cx: str = '%rcx'
+        x64_load(o, fn, ins.a, ax); x64_load(o, fn, ins.b, cx)
+        if ins.binop == OP_ADD { let op: str = '    addq    %rcx, %rax\n'; out_bytes(o, op.ptr, op.len) }
+        if ins.binop == OP_SUB { let op: str = '    subq    %rcx, %rax\n'; out_bytes(o, op.ptr, op.len) }
+        if ins.binop == OP_MUL { let op: str = '    imulq   %rcx, %rax\n'; out_bytes(o, op.ptr, op.len) }
+        if ins.binop == OP_AND { let op: str = '    andq    %rcx, %rax\n'; out_bytes(o, op.ptr, op.len) }
+        if ins.binop == OP_OR { let op: str = '    orq     %rcx, %rax\n'; out_bytes(o, op.ptr, op.len) }
+        if ins.binop == OP_XOR { let op: str = '    xorq    %rcx, %rax\n'; out_bytes(o, op.ptr, op.len) }
+        if ins.binop == OP_SHL { let op: str = '    shlq    %cl, %rax\n'; out_bytes(o, op.ptr, op.len) }
+        if ins.binop == OP_SHR {
+            if ins.is_signed == 1 { let op: str = '    sarq    %cl, %rax\n'; out_bytes(o, op.ptr, op.len) }
+            else { let op2: str = '    shrq    %cl, %rax\n'; out_bytes(o, op2.ptr, op2.len) }
+        }
+        if ins.binop == OP_DIV || ins.binop == OP_MOD {
+            if ins.is_signed == 1 { let sx: str = '    cqto\n    idivq   %rcx\n'; out_bytes(o, sx.ptr, sx.len) }
+            else { let ux: str = '    xorl    %edx, %edx\n    divq    %rcx\n'; out_bytes(o, ux.ptr, ux.len) }
+            if ins.binop == OP_MOD { let mr: str = '    movq    %rdx, %rax\n'; out_bytes(o, mr.ptr, mr.len) }
+        }
+        x64_normalize_rax(o, ins.width, ins.is_signed)
+        x64_store(o, fn, ins.dst, ax); return
+    }
+    if ins.op >= IR_CMPEQ && ins.op <= IR_CMPGE {
+        let ax7: str = '%rax'; let cx2: str = '%rcx'; x64_load(o, fn, ins.a, ax7); x64_load(o, fn, ins.b, cx2)
+        let cmp: str = '    cmpq    %rcx, %rax\n'; out_bytes(o, cmp.ptr, cmp.len)
+        if ins.op == IR_CMPEQ { let cc0: str = '    sete    %al\n'; out_bytes(o, cc0.ptr, cc0.len) }
+        if ins.op == IR_CMPNE { let cc1: str = '    setne   %al\n'; out_bytes(o, cc1.ptr, cc1.len) }
+        if ins.op == IR_CMPLT { if ins.is_signed == 1 { let cc2: str = '    setl    %al\n'; out_bytes(o, cc2.ptr, cc2.len) } else { let cc3: str = '    setb    %al\n'; out_bytes(o, cc3.ptr, cc3.len) } }
+        if ins.op == IR_CMPLE { if ins.is_signed == 1 { let cc4: str = '    setle   %al\n'; out_bytes(o, cc4.ptr, cc4.len) } else { let cc5: str = '    setbe   %al\n'; out_bytes(o, cc5.ptr, cc5.len) } }
+        if ins.op == IR_CMPGT { if ins.is_signed == 1 { let cc6: str = '    setg    %al\n'; out_bytes(o, cc6.ptr, cc6.len) } else { let cc7: str = '    seta    %al\n'; out_bytes(o, cc7.ptr, cc7.len) } }
+        if ins.op == IR_CMPGE { if ins.is_signed == 1 { let cc8: str = '    setge   %al\n'; out_bytes(o, cc8.ptr, cc8.len) } else { let cc9: str = '    setae   %al\n'; out_bytes(o, cc9.ptr, cc9.len) } }
+        let zx: str = '    movzbq  %al, %rax\n'; out_bytes(o, zx.ptr, zx.len); x64_store(o, fn, ins.dst, ax7); return
+    }
+    if ins.op == IR_CALL {
+        let sysname: str = 'syscall'
+        let checkedname: str = 'syscall_checked'
+        let is_sys: u64 = bytes_eq_at(ins.callee_start, ins.callee_len, sysname.ptr, sysname.len)
+        let is_checked: u64 = bytes_eq_at(ins.callee_start, ins.callee_len, checkedname.ptr, checkedname.len)
+        let args: *u64 = ins.args
+        let first: u64 = 0
+        if is_sys == 1 || is_checked == 1 { first = 1 }
+        let count: u64 = ins.nargs - first
+        let stack: u64 = 32
+        if count > 4 { stack = ((32 + (count - 4) * 8 + 15) / 16) * 16 }
+        let sub: str = '    subq    $'; out_bytes(o, sub.ptr, sub.len); out_u64(o, stack); let rsp: str = ', %rsp\n'; out_bytes(o, rsp.ptr, rsp.len)
+        let k: u64 = 0
+        while k < count {
+            let ax: str = '%rax'
+            if is_sys == 1 || is_checked == 1 {
+                if ins.imm == 5 && k == 1 {
+                    let movf: str = '    movq    $'; out_bytes(o, movf.ptr, movf.len); if ins.label != 0 { out_u64(o, 33537) } else { out_u64(o, 32768) }; let fax: str = ', %rax\n'; out_bytes(o, fax.ptr, fax.len)
+                } else { x64_load(o, fn, args[first + k], ax) }
+            } else { x64_load(o, fn, args[k], ax) }
+            if k < 4 { let mv: str = '    movq    %rax, '; out_bytes(o, mv.ptr, mv.len); if k == 0 { let r: str = '%rcx'; out_bytes(o, r.ptr, r.len) }; if k == 1 { let r: str = '%rdx'; out_bytes(o, r.ptr, r.len) }; if k == 2 { let r: str = '%r8'; out_bytes(o, r.ptr, r.len) }; if k == 3 { let r: str = '%r9'; out_bytes(o, r.ptr, r.len) }; out_byte(o, 10) }
+            else { let st: str = '    movq    %rax, '; out_bytes(o, st.ptr, st.len); out_u64(o, 32 + (k - 4) * 8); let sr: str = '(%rsp)\n'; out_bytes(o, sr.ptr, sr.len) }
+            k = k + 1
+        }
+        let call: str = '    call    '; out_bytes(o, call.ptr, call.len)
+        if is_sys == 1 || is_checked == 1 {
+            if ins.imm == 1 { let api0: str = 'exit'; out_bytes(o, api0.ptr, api0.len) }
+            else if ins.imm == 3 { let api1: str = '_read'; out_bytes(o, api1.ptr, api1.len) }
+            else if ins.imm == 4 { let api2: str = '_write'; out_bytes(o, api2.ptr, api2.len) }
+            else if ins.imm == 5 { let api3: str = '_open'; out_bytes(o, api3.ptr, api3.len) }
+            else if ins.imm == 6 { let api4: str = '_close'; out_bytes(o, api4.ptr, api4.len) }
+            else if ins.imm == 20 { let api5: str = '_getpid'; out_bytes(o, api5.ptr, api5.len) }
+            else if ins.imm == 10 { let api6: str = '_unlink'; out_bytes(o, api6.ptr, api6.len) }
+            else if ins.imm == 12 { let api7: str = '_chdir'; out_bytes(o, api7.ptr, api7.len) }
+            else if ins.imm == 136 { let api8: str = '_mkdir'; out_bytes(o, api8.ptr, api8.len) }
+        } else { x64_sym(o, ins.callee_start, ins.callee_len) }
+        out_byte(o, 10)
+        let add: str = '    addq    $'; out_bytes(o, add.ptr, add.len); out_u64(o, stack); out_bytes(o, rsp.ptr, rsp.len)
+        if is_checked == 1 {
+            let ce: str = '    cmpq    $-1, %rax\n    sete    %cl\n    movzbq  %cl, %rcx\n'; out_bytes(o, ce.ptr, ce.len)
+            let ep: str = '%rdx'; x64_load(o, fn, args[4], ep); let es: str = '    movq    %rcx, (%rdx)\n'; out_bytes(o, es.ptr, es.len)
+        }
+        let ax2: str = '%rax'; x64_store(o, fn, ins.dst, ax2); return
+    }
+    if ins.op == IR_RET {
+        if ins.imm == 0 { let ax: str = '%rax'; x64_load(o, fn, ins.a, ax) }
+        let j: str = '    jmp     .LX'; out_bytes(o, j.ptr, j.len); out_u64(o, epilogue); out_byte(o, 10); return
+    }
+    if ins.op == IR_JMP { let j2: str = '    jmp     .L'; out_bytes(o, j2.ptr, j2.len); out_u64(o, ins.label); out_byte(o, 10); return }
+    if ins.op == IR_JZ { let ax8: str = '%rax'; x64_load(o, fn, ins.a, ax8); let t: str = '    testq   %rax, %rax\n    je      .L'; out_bytes(o, t.ptr, t.len); out_u64(o, ins.label); out_byte(o, 10); return }
+    if ins.op == IR_LABEL { let l0: str = '.L'; out_bytes(o, l0.ptr, l0.len); out_u64(o, ins.label); let l1: str = ':\n'; out_bytes(o, l1.ptr, l1.len); return }
+}
+
+fun codegen_x64(o: *Out, prog: *Program, funcs: *IrFn) {
+    let text: str = '    .text\n    .globl  tt_start\ntt_start:\n    subq    $40, %rsp\n    call    __p___argc\n    movl    (%rax), %r12d\n    call    __p___argv\n    movq    (%rax), %rdx\n    movl    %r12d, %ecx\n    call    main\n    movl    %eax, %ecx\n    call    exit\n    int3\n'
+    out_bytes(o, text.ptr, text.len)
+    let fn: *IrFn = funcs
+    let ep: u64 = 0
+    while fn != nil {
+        let g: str = '    .globl  '; out_bytes(o, g.ptr, g.len); x64_sym(o, fn.name_start, fn.name_len); out_byte(o, 10)
+        x64_sym(o, fn.name_start, fn.name_len); let h: str = ':\n    pushq   %rbp\n    movq    %rsp, %rbp\n'; out_bytes(o, h.ptr, h.len)
+        let frame: u64 = ((fn.frame_bytes + 15) / 16) * 16
+        if frame > 0 { let s: str = '    subq    $'; out_bytes(o, s.ptr, s.len); out_u64(o, frame); let r: str = ', %rsp\n'; out_bytes(o, r.ptr, r.len) }
+        let k: u64 = 0
+        while k < fn.nparams {
+            if k == 0 { let r: str = '%rcx'; x64_store(o, fn, k, r) }
+            else if k == 1 { let r: str = '%rdx'; x64_store(o, fn, k, r) }
+            else if k == 2 { let r: str = '%r8'; x64_store(o, fn, k, r) }
+            else if k == 3 { let r: str = '%r9'; x64_store(o, fn, k, r) }
+            else { let ld: str = '    movq    '; out_bytes(o, ld.ptr, ld.len); out_u64(o, 48 + (k - 4) * 8); let rr: str = '(%rbp), %rax\n'; out_bytes(o, rr.ptr, rr.len); let ax: str = '%rax'; x64_store(o, fn, k, ax) }
+            k = k + 1
+        }
+        let it: *Ins = fn.head
+        while it != nil { x64_instr(o, fn, it, ep); it = it.next }
+        let l: str = '.LX'; out_bytes(o, l.ptr, l.len); out_u64(o, ep); let tail: str = ':\n    movq    %rbp, %rsp\n    popq    %rbp\n    ret\n'; out_bytes(o, tail.ptr, tail.len)
+        ep = ep + 1; fn = fn.next
+    }
+    if prog.strs != nil {
+        let ro: str = '\n    .section .rdata,"dr"\n'; out_bytes(o, ro.ptr, ro.len)
+        let lit: *StrLit = prog.strs
+        while lit != nil {
+            let align: str = '    .p2align 3\nL_str'; out_bytes(o, align.ptr, align.len); out_u64(o, lit.id); let colon: str = ':\n'; out_bytes(o, colon.ptr, colon.len)
+            let si: u64 = 0
+            while si < lit.slen { emit_string_byte(o, lit.bytes[si]); si = si + 1 }
+            emit_string_byte(o, 0); lit = lit.next
+        }
+    }
+    if prog.bsses != nil {
+        let bs: str = '\n    .bss\n'; out_bytes(o, bs.ptr, bs.len)
+        let item: *BssItem = prog.bsses
+        while item != nil {
+            let global: str = '    .globl  '; out_bytes(o, global.ptr, global.len); x64_sym(o, item.name_start, item.name_len); let ba: str = '\n    .p2align 3\n'; out_bytes(o, ba.ptr, ba.len); x64_sym(o, item.name_start, item.name_len); let bc: str = ':\n    .zero   '; out_bytes(o, bc.ptr, bc.len); out_u64(o, item.size); out_byte(o, 10)
+            item = item.next
+        }
+    }
+}

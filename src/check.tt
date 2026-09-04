@@ -49,6 +49,8 @@ fun check_site(start: u64, len: u64, site: *DiagnosticSite) -> u64 {
     site.slen = end - begin
     site.tok = lx.src + start
     site.tlen = len
+    site.byte_start = start
+    site.byte_len = len
     return 1
 }
 
@@ -59,6 +61,95 @@ fun check_error(start: u64, len: u64, msg: str) {
         return
     }
     die_line(msg.ptr, msg.len, 0)
+}
+
+fun interference_word(src: *u8, start: u64, len: u64, word: str) -> u64 {
+    if len != word.len { return 0 }
+    return bytes_eq(src + start, word.ptr, len)
+}
+
+fun interference_error(start: u64, len: u64, msg: str) {
+    let site: DiagnosticSite
+    if check_site(start, len, &site) == 1 { diagnostics_add(msg.ptr, msg.len, &site) }
+}
+
+fun interference_line_prefix(src: *u8, start: u64) -> u64 {
+    let i: u64 = start
+    while i > 0 {
+        let c: u8 = src[i - 1]
+        if c == 10 { return 1 }
+        if c != 32 { if c != 9 { return 0 } }
+        i = i - 1
+    }
+    return 1
+}
+
+fun check_interference() -> u64 {
+    let lx: *Lexer = LX_STATE
+    let src: *u8 = lx.src
+    let n: u64 = lx.len
+    let i: u64 = 0
+    let depth: u64 = 0
+    while i < n {
+        if src[i] == 39 {
+            i = i + 1
+            while i < n {
+                if src[i] == 92 { i = i + 2 }
+                else if src[i] == 39 { i = i + 1; break }
+                else { i = i + 1 }
+            }
+        } else if i + 1 < n {
+            if src[i] == 47 {
+                if src[i + 1] == 47 {
+                    while i < n { if src[i] == 10 { break }; i = i + 1 }
+                } else if src[i + 1] == 42 {
+                    let mb: str = 'comentario de bloque no soportado'
+                    interference_error(i, 2, mb)
+                    i = i + 2
+                    while i + 1 < n {
+                        if src[i] == 42 { if src[i + 1] == 47 { i = i + 2; break } }
+                        i = i + 1
+                    }
+                } else { i = i + 1 }
+            } else if src[i] == 35 {
+                let inc: str = '#include'
+                if i + inc.len <= n {
+                    if bytes_eq(src + i, inc.ptr, inc.len) == 1 {
+                        let mi: str = 'include de C no soportado'
+                        interference_error(i, inc.len, mi)
+                        i = i + inc.len
+                    } else { i = i + 1 }
+                } else { i = i + 1 }
+            } else if is_alpha(src[i]) == 1 {
+                let start: u64 = i
+                while i < n { if is_alnum(src[i]) == 0 { break }; i = i + 1 }
+                let len: u64 = i - start
+                if depth == 0 {
+                if interference_line_prefix(src, start) == 1 {
+                    let fnw: str = 'fn'
+                    if interference_word(src, start, len, fnw) == 1 { let m: str = 'keyword fn no soportado'; interference_error(start, len, m) }
+                    let pubw: str = 'pub'
+                    if interference_word(src, start, len, pubw) == 1 { let m: str = 'keyword pub no soportado'; interference_error(start, len, m) }
+                    let mutw: str = 'mut'
+                    if interference_word(src, start, len, mutw) == 1 { let m: str = 'keyword mut no soportado'; interference_error(start, len, m) }
+                    let intw: str = 'int'
+                    if interference_word(src, start, len, intw) == 1 { let m: str = 'tipo int no soportado'; interference_error(start, len, m) }
+                }
+                } else {
+                    let printfw: str = 'printf'
+                    if interference_word(src, start, len, printfw) == 1 { let m: str = 'printf no soportado'; interference_error(start, len, m) }
+                    let mallocw: str = 'malloc'
+                    if interference_word(src, start, len, mallocw) == 1 { let m: str = 'malloc no soportado'; interference_error(start, len, m) }
+                }
+            } else {
+                if src[i] == 123 { depth = depth + 1 }
+                if src[i] == 125 { if depth > 0 { depth = depth - 1 } }
+                i = i + 1
+            }
+        } else { i = i + 1 }
+        if diagnostics_count() == 20 { return 20 }
+    }
+    return diagnostics_count()
 }
 
 fun check_expr_start(e: *Expr) -> u64 {

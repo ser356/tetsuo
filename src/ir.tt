@@ -533,6 +533,16 @@ fun lower_expr(b: *B, e: *Expr) -> u64 {
         ci.callee_len = e.callee_len
         ci.args = arg_slots
         ci.nargs = actual
+        let sysname: str = 'syscall'
+        let checkedname: str = 'syscall_checked'
+        if bytes_eq_at(e.callee_start, e.callee_len, sysname.ptr, sysname.len) == 1 {
+            if n > 0 { if src[0].kind == EX_INT { ci.imm = src[0].ival } }
+            if n > 2 { if src[2].kind == EX_INT { ci.label = src[2].ival } }
+        }
+        if bytes_eq_at(e.callee_start, e.callee_len, checkedname.ptr, checkedname.len) == 1 {
+            if n > 0 { if src[0].kind == EX_INT { ci.imm = src[0].ival } }
+            if n > 2 { if src[2].kind == EX_INT { ci.label = src[2].ival } }
+        }
         ir_emit(b.f, ci)
         return dst4
     }

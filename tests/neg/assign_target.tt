@@ -1,0 +1,5 @@
+fun main() -> u64 {
+    let a: u64 = 1
+    (a + 1) = 2
+    return 0
+}

@@ -1,5 +1,12 @@
 # tetsuo
 
+## Agent context
+
+Use [AGENT-CONTEXT.md](AGENT-CONTEXT.md) as the single versioned context pack.
+It contains the language reference, idioms, twenty recipes, stable diagnostic
+catalog, source hashes, and tokens-to-competence metric. Regenerate with
+`python3 tools/build_agent_context.py` and verify with `--check`.
+
 Compilador de un lenguaje de propósito general mínimo para CLI y sistemas,
 **totalmente autohospedado**: escrito y compilado por sí mismo. Incluye enteros
 signed/unsigned, casts, funciones, control estructurado, scopes léxicos,

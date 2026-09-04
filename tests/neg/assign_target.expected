@@ -1,0 +1,3 @@
+2
+tests/neg/assign_target.tt:3:6:
+error: destino de asignacion invalido

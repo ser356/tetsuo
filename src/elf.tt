@@ -1,0 +1,88 @@
+fun elf_put32(img: *u8, off: u64, v: u64) {
+    img[off] = v & 255
+    img[off + 1] = (v >> 8) & 255
+    img[off + 2] = (v >> 16) & 255
+    img[off + 3] = (v >> 24) & 255
+}
+
+fun elf_e16(img: *u8, v: u64) {
+    e8(img, v)
+    e8(img, v >> 8)
+}
+
+fun elf_string_layout(prog: *Program, code_len: u64) -> u64 {
+    let off: u64 = 176 + code_len
+    let it: *StrLit = prog.strs
+    while it != nil {
+        cgb_stroff_set(it.id, off)
+        off = off + it.slen + 1
+        it = it.next
+    }
+    return off
+}
+
+fun elf_resolve(prog: *Program, text_pages: u64) {
+    let img: *u8 = MO_IMG
+    let fixes: *u64 = CG_FIX
+    let np: *u64 = CG_FIXN
+    let text_size: u64 = text_pages * 4096
+    let i: u64 = 0
+    while i < np[0] {
+        let pos: u64 = fixes[i * 3]
+        let kind: u64 = fixes[i * 3 + 1]
+        let target: u64 = fixes[i * 3 + 2]
+        let instr: u64 = 176 + pos
+        let tgt: u64 = 0
+        if kind == FX_ADRP { tgt = cgb_stroff_get(target) }
+        if kind == FX_PGOF { tgt = cgb_stroff_get(target) }
+        if kind == FX_ADRPB { tgt = text_size + cgb_bss_off_get(target) }
+        if kind == FX_PGOFB { tgt = text_size + cgb_bss_off_get(target) }
+        if kind == FX_ADRP { let imm: u64 = ((tgt / 4096) - (instr / 4096)) & 2097151; img_or(instr, ((imm & 3) << 29) | (((imm >> 2) & 524287) << 5)) }
+        if kind == FX_ADRPB { let imm: u64 = ((tgt / 4096) - (instr / 4096)) & 2097151; img_or(instr, ((imm & 3) << 29) | (((imm >> 2) & 524287) << 5)) }
+        if kind == FX_PGOF { img_or(instr, (tgt & 4095) << 10) }
+        if kind == FX_PGOFB { img_or(instr, (tgt & 4095) << 10) }
+        i = i + 1
+    }
+}
+
+fun elf_emit_header(img: *u8, text_size: u64, entry_off: u64, bss_size: u64) {
+    e8(img, 127); e8(img, 69); e8(img, 76); e8(img, 70)
+    e8(img, 2); e8(img, 1); e8(img, 1); e8(img, 0)
+    ezeros(img, 8)
+    elf_e16(img, 2); elf_e16(img, 183)
+    e32(img, 1)
+    e64(img, 4194304 + 176 + entry_off)
+    e64(img, 64); e64(img, 0)
+    e32(img, 0)
+    elf_e16(img, 64); elf_e16(img, 56); elf_e16(img, 2)
+    elf_e16(img, 64); elf_e16(img, 0); elf_e16(img, 0)
+    e32(img, 1); e32(img, 5)
+    e64(img, 0); e64(img, 4194304); e64(img, 4194304)
+    e64(img, text_size); e64(img, text_size); e64(img, 4096)
+    e32(img, 1); e32(img, 6)
+    e64(img, 0); e64(img, 4194304 + text_size); e64(img, 4194304 + text_size)
+    e64(img, 0); e64(img, bss_size); e64(img, 4096)
+}
+
+fun emit_elf_code_bss(fd: u64, prog: *Program, code_len: u64, entry_off: u64, bss_size: u64) {
+    let img: *u8 = MO_IMG
+    let end: u64 = elf_string_layout(prog, code_len)
+    let text_pages: u64 = (end + 4095) / 4096
+    let text_size: u64 = text_pages * 4096
+    mc_set(0)
+    elf_emit_header(img, text_size, entry_off, bss_size)
+    let cb: *u8 = CB
+    let i: u64 = 0
+    while i < code_len { e8(img, cb[i]); i = i + 1 }
+    let it: *StrLit = prog.strs
+    while it != nil {
+        while mc_get() < cgb_stroff_get(it.id) { e8(img, 0) }
+        let k: u64 = 0
+        while k < it.slen { e8(img, it.bytes[k]); k = k + 1 }
+        e8(img, 0)
+        it = it.next
+    }
+    elf_resolve(prog, text_pages)
+    ezeros(img, text_size - mc_get())
+    io_write(fd, img, text_size)
+}

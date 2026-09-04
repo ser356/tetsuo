@@ -1,0 +1,7 @@
+# Context metrics
+
+**Tokens to competence** means tokens an agent must ingest before receiving language specification, idioms, twenty executable recipes, and stable error catalog.
+
+Canonical measurement is deterministic lexical tokens, counted as Unicode word runs or single non-whitespace punctuation characters with Python regex `\w+|[^\w\s]`. It is provider-independent and reproducible without network or packages. UTF-8 bytes and `ceil(bytes/4)` are also reported for rough model-window planning; the latter is explicitly an estimate, not a tokenizer claim.
+
+Run `python3 tools/build_agent_context.py --metrics`.

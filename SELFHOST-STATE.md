@@ -1,4 +1,52 @@
-# Estado del autohospedaje tetsuo (verificado 2026-09-03)
+# Estado del autohospedaje tetsuo (verificado 2026-09-05)
+
+Semilla macOS ARM64 convergente: `bootstrap/tetsuoc.macho`, 214766 bytes,
+SHA-256 `d1cb27187332344e6f5f2d800005fc7043f15506b6d6ef59dc0c041d3f5eff83`.
+
+## Linux AArch64 nativo — 2026-09-05
+
+`--emit=elf` genera ELF64 AArch64 directo con entry `argc/argv`, segmentos RX/RW
+y syscalls Linux sin shim. `bootstrap/tetsuoc.elf` es seed nativa; el fixpoint
+ELF y smoke rc=42 corren sin assembler/linker cuando `qemu-aarch64` está
+disponible. Seed: 196608 bytes, SHA-256
+`495986b6473348e0fae0c400003ea99cc47ff44784fa3dcac1667a8d553a64b0`.
+
+## Windows ARM64 — 2026-09-05
+
+`--emit=pe-arm64` genera PE32+ ARM64 con `.text/.idata/.bss`, entry que obtiene
+`argc/argv`, y runtime fd mediante imports de `msvcrt.dll`. Seed
+`bootstrap/tetsuoc-arm64.exe`: 196608 bytes, SHA-256
+`716fc3b0e57ddf09f2651279e97bfcef6903231664eb099ef1f986b0707bd290`.
+Cabeceras, IAT y llamadas se validan estructuralmente; ejecución/fixpoint exige
+Windows ARM64 real.
+
+## Windows x64 — 2026-09-05
+
+`--target=windows-x64` cubre todo el IR, ABI Windows x64, strings, BSS y runtime
+fd mediante `msvcrt.dll`. `tools/link_pe_x64.py` convierte COFF AMD64 en PE32+
+determinista sin dependencias Python externas. Seed `bootstrap/tetsuoc-x64.exe`:
+596480 bytes, SHA-256
+`e97127e9c37bfaed2ec60912b0bc1a3e3c665aabd69e4c9f5a27b60963c27502`.
+Cabeceras, entrada, relocaciones, IAT e imports se validan estructuralmente;
+ejecución/fixpoint exige Windows x64 real.
+
+## Diagnósticos para agentes — 2026-09-05
+
+`--diagnostics=json` emite JSON Lines en inglés con código estable, ruta,
+línea, columna, span absoluto de bytes, mensaje y campo `fix`. Seed: 181742
+bytes, SHA-256
+`24fb45607836e393d5501436717f866b92d9864206a07344cde985f73552f573`.
+Parser, checker, preprocesador y errores fatales comparten el mismo esquema sin
+texto mezclado.
+
+Checker cerrado para argumentos, `return` con/sin valor, `let`, asignación,
+store, dereferencia, indexación y aritmética; cada clase crítica tiene código
+JSON estable y prueba negativa posicionada.
+
+Producciones anti-interferencia E0201-E0208 detectan `fn`, `pub`, `mut`, `int`,
+`printf`, `malloc`, `#include` y `/* */`, con reemplazo literal y sin falsos
+positivos en strings o comentarios de línea. Seed: 181742 bytes, SHA-256
+`f7a16abf966ac5d92dfe9a7bd2cbcabd6c4d3d6ccf5a656f2062f17bd719ef15`.
 
 ## Chequeo semantico 1.a — 2026-09-04
 

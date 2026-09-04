@@ -1,0 +1,7 @@
+import 'src/runtime/io.tt'
+fun main() -> u64 {
+    let msg: str = 'linux-native\n'
+    io_write(1, msg.ptr, msg.len)
+    if io_getpid() == 0 { return 1 }
+    return 0
+}

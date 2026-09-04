@@ -364,12 +364,21 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let flag_ir: str = '--dump-ir'
     let flag_macho: str = '--emit=macho'
     let flag_obj: str = '--emit=obj'
+    let flag_elf: str = '--emit=elf'
+    let flag_pe_arm64: str = '--emit=pe-arm64'
     let flag_linux: str = '--target=linux'
+    let flag_json: str = '--diagnostics=json'
+    let flag_windows_x64: str = '--target=windows-x64'
     let is_dump_tok: u64 = cstr_eq(a1, flag_tok.ptr, flag_tok.len)
     let is_dump_ir: u64 = cstr_eq(a1, flag_ir.ptr, flag_ir.len)
     let is_macho: u64 = cstr_eq(a1, flag_macho.ptr, flag_macho.len)
     let is_obj: u64 = cstr_eq(a1, flag_obj.ptr, flag_obj.len)
+    let is_elf: u64 = cstr_eq(a1, flag_elf.ptr, flag_elf.len)
+    let is_pe_arm64: u64 = cstr_eq(a1, flag_pe_arm64.ptr, flag_pe_arm64.len)
     let is_linux: u64 = cstr_eq(a1, flag_linux.ptr, flag_linux.len)
+    let is_json: u64 = cstr_eq(a1, flag_json.ptr, flag_json.len)
+    let is_windows_x64: u64 = cstr_eq(a1, flag_windows_x64.ptr, flag_windows_x64.len)
+    diagnostics_set_json(is_json)
 
     if is_dump_tok == 1 {
         let path: *u8 = argv[2]
@@ -395,6 +404,9 @@ fun main(argc: u64, argv: **u8) -> u32 {
         if n == 0 { return EXIT_READ_FAIL }
         let ast_ar: *Arena = ast_init()
         let ir_ar: *Arena = ir_init()
+        diagnostics_reset()
+        ps_init(PP_OUT, n)
+        if check_interference() > 0 { diagnostics_flush() }
         let prog: *Program = parse(ast_ar, PP_OUT, n)
         if check(ast_ar, prog) != 0 { diagnostics_flush() }
         let irhead: *IrFn = lower(ir_ar, prog)
@@ -423,6 +435,9 @@ fun main(argc: u64, argv: **u8) -> u32 {
 
     let ast_ar: *Arena = ast_init()
     let ir_ar: *Arena = ir_init()
+    diagnostics_reset()
+    ps_init(src, n)
+    if check_interference() > 0 { diagnostics_flush() }
     let prog: *Program = parse(ast_ar, src, n)
     if check(ast_ar, prog) != 0 { diagnostics_flush() }
     let irhead: *IrFn = lower(ir_ar, prog)
@@ -438,13 +453,31 @@ fun main(argc: u64, argv: **u8) -> u32 {
     // indices los asigna el layout.
     if is_macho == 1 {
         let bvsz: u64 = cgb_bss_layout(prog)
-        codegen_bytes(prog, irhead)
+        codegen_bytes(TGT_MACOS, prog, irhead)
         let clen: u64 = cb_pos()
         let entry: *u64 = CG_ENTRY
         emit_macho_code_bss(fd, prog, clen, entry[0], bvsz)
+    } else if is_elf == 1 {
+        let bvsz2: u64 = cgb_bss_layout(prog)
+        codegen_bytes(TGT_LINUX, prog, irhead)
+        let clen2: u64 = cb_pos()
+        let entry2: *u64 = CG_ENTRY
+        emit_elf_code_bss(fd, prog, clen2, entry2[0], bvsz2)
+    } else if is_pe_arm64 == 1 {
+        let bvsz3: u64 = cgb_bss_layout(prog)
+        codegen_bytes(TGT_WINDOWS, prog, irhead)
+        let clen3: u64 = cb_pos()
+        let entry3: *u64 = CG_ENTRY
+        emit_pe_arm64_code(fd, prog, clen3, entry3[0], bvsz3)
     } else {
         let o: *Out = OUT_STORAGE
         out_init(o, fd, OUT_BUF, 65536)
+        if is_windows_x64 == 1 {
+            codegen_x64(o, prog, irhead)
+            out_flush(o)
+            io_close(fd)
+            return EXIT_OK
+        }
         let target: u64 = TGT_MACOS
         if is_linux == 1 { target = TGT_LINUX }
         codegen(o, target, is_obj, prog, irhead)
