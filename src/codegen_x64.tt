@@ -17,7 +17,6 @@ fun x64_stack_bytes(fn: *IrFn, count: u64) -> u64 {
     }
     return total
 }
-
 fun x64_slot(o: *Out, fn: *IrFn, slot: u64) {
     out_byte(o, 45)
     out_u64(o, x64_stack_bytes(fn, slot + 1))
