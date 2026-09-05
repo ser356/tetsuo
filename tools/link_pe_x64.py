@@ -127,8 +127,7 @@ def main():
         "_unlink",
         "_chdir",
         "_mkdir",
-        "__p___argc",
-        "__p___argv",
+        "__getmainargs",
     ]
     unknown = referenced.difference(import_order)
     if unknown:

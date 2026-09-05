@@ -36,6 +36,6 @@ assert sections['.bss'][0]>800_000_000 and sections['.bss'][2:]==(0,0)
 idata=sections['.idata']
 assert idata[1]==import_rva
 blob=p[idata[3]:idata[3]+idata[2]]
-for name in (b'msvcrt.dll',b'exit',b'_write',b'__p___argc',b'__p___argv'):
+for name in (b'msvcrt.dll',b'exit',b'_write',b'__getmainargs'):
     assert name in blob
 PY
