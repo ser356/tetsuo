@@ -9,7 +9,7 @@ function Build-TetsuoExe($compiler, $output) {
     $assembly = "$output.s"
     $object = "$output.obj"
     & $compilerPath --target=windows-x64 tests/fixpoint_entry.tt -o $assembly
-    if ($LASTEXITCODE -ne 0) { throw "$compiler failed" }
+    if ($LASTEXITCODE -ne 0) { throw "$compiler failed with exit code $LASTEXITCODE" }
     clang --target=x86_64-windows-msvc -c $assembly -o $object
     if ($LASTEXITCODE -ne 0) { throw "clang failed" }
     python tools/link_pe_x64.py $object "$output.exe"

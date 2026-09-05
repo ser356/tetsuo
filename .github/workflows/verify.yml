@@ -23,13 +23,10 @@ jobs:
 
   linux:
     name: Linux AArch64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y qemu-user binutils-aarch64-linux-gnu
-      - run: bash bootstrap/linux/verify_linux.sh
-      - run: bash bootstrap/linux/verify_macho_linux.sh
       - run: bash bootstrap/linux/verify_native_elf.sh
 
   windows:

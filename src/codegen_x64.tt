@@ -4,10 +4,8 @@ fun x64_sym(o: *Out, start: u64, len: u64) {
 }
 
 fun x64_slot(o: *Out, fn: *IrFn, slot: u64) {
-    let index: u64 = slot
-    if fn.stack_of != nil { index = fn.stack_of[slot] }
     out_byte(o, 45)
-    out_u64(o, (index + 1) * 8)
+    out_u64(o, (slot + 1) * 8)
     let s: str = '(%rbp)'
     out_bytes(o, s.ptr, s.len)
 }
@@ -193,7 +191,7 @@ fun codegen_x64(o: *Out, prog: *Program, funcs: *IrFn) {
     while fn != nil {
         let g: str = '    .globl  '; out_bytes(o, g.ptr, g.len); x64_sym(o, fn.name_start, fn.name_len); out_byte(o, 10)
         x64_sym(o, fn.name_start, fn.name_len); let h: str = ':\n    pushq   %rbp\n    movq    %rsp, %rbp\n'; out_bytes(o, h.ptr, h.len)
-        let frame: u64 = ((fn.frame_bytes + 15) / 16) * 16
+        let frame: u64 = ((fn.nslots * 8 + 15) / 16) * 16
         if frame > 0 { let s: str = '    subq    $'; out_bytes(o, s.ptr, s.len); out_u64(o, frame); let r: str = ', %rsp\n'; out_bytes(o, r.ptr, r.len) }
         let k: u64 = 0
         while k < fn.nparams {
