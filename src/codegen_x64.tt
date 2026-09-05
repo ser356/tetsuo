@@ -192,7 +192,12 @@ fun codegen_x64(o: *Out, prog: *Program, funcs: *IrFn) {
         let g: str = '    .globl  '; out_bytes(o, g.ptr, g.len); x64_sym(o, fn.name_start, fn.name_len); out_byte(o, 10)
         x64_sym(o, fn.name_start, fn.name_len); let h: str = ':\n    pushq   %rbp\n    movq    %rsp, %rbp\n'; out_bytes(o, h.ptr, h.len)
         let frame: u64 = ((fn.nslots * 8 + 15) / 16) * 16
-        if frame > 0 { let s: str = '    subq    $'; out_bytes(o, s.ptr, s.len); out_u64(o, frame); let r: str = ', %rsp\n'; out_bytes(o, r.ptr, r.len) }
+        let remaining: u64 = frame
+        while remaining > 4096 {
+            let page: str = '    subq    $4096, %rsp\n    testb   $0, (%rsp)\n'; out_bytes(o, page.ptr, page.len)
+            remaining = remaining - 4096
+        }
+        if remaining > 0 { let s: str = '    subq    $'; out_bytes(o, s.ptr, s.len); out_u64(o, remaining); let r: str = ', %rsp\n'; out_bytes(o, r.ptr, r.len) }
         let k: u64 = 0
         while k < fn.nparams {
             if k == 0 { let r: str = '%rcx'; x64_store(o, fn, k, r) }

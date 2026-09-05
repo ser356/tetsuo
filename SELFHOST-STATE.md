@@ -1,7 +1,7 @@
 # tetsuo self-hosting state (verified 2026-09-05)
 
 Convergent macOS ARM64 seed: `bootstrap/tetsuoc.macho`, 214766 bytes,
-SHA-256 `f6409147f552b07b0fc1d31e9b106828c35a61a69461b47af2e2e6fc718031b3`.
+SHA-256 `f2ba693a30b6e56fe2a1148b7a990d4fe0b3e44e1a5547e87289c54731477678`.
 
 ## Native Linux AArch64 — 2026-09-05
 
@@ -9,22 +9,22 @@ SHA-256 `f6409147f552b07b0fc1d31e9b106828c35a61a69461b47af2e2e6fc718031b3`.
 RX/RW segments and Linux syscalls with no shim. `bootstrap/tetsuoc.elf` is the
 native seed; the ELF fixpoint and the rc=42 smoke test run with no
 assembler/linker whenever `qemu-aarch64` is available. Seed: 196608 bytes,
-SHA-256 `2da98c70cb17341e8aba47aa843a193349094b629e6f118d99242c338fcf52c0`.
+SHA-256 `82c2878acac84e5e30a4f87e409ddec1c47457a411d3e78b66f22847df438022`.
 
 ## Windows ARM64 — 2026-09-05
 
 `--emit=pe-arm64` generates an ARM64 PE32+ with `.text/.idata/.bss`, an entry
 point that obtains `argc/argv`, and an fd runtime through `msvcrt.dll` imports.
 Seed `bootstrap/tetsuoc-arm64.exe`: 196608 bytes, SHA-256
-`c5e14159da3a4044a980f2dea937396ad3f3a7bd8b7ae7504639c09d9a58d8b8`.
+`3bbad4f53719eb3d329e1d365789a01d2857ef6426254c4266a4f264c799fbf8`.
 
 ## Windows x64 — 2026-09-05
 
 `--target=windows-x64` covers the whole IR, the Windows x64 ABI, strings, BSS
 and an fd runtime through `msvcrt.dll`. `tools/link_pe_x64.py` converts AMD64
 COFF into a deterministic PE32+ with no external Python dependencies. Seed
-`bootstrap/tetsuoc-x64.exe`: 583680 bytes, SHA-256
-`967384baad47cf9762e8fb3c7ebc0c277d22df081bdcea257676bc6649039ae4`.
+`bootstrap/tetsuoc-x64.exe`: 584192 bytes, SHA-256
+`0a1c11173762ee1cbabf6a4c3e4a78e8827086b909fa9f5b339cbde153263a62`.
 Headers, entry point, relocations, IAT and imports are validated structurally;
 execution/fixpoint requires real Windows x64.
 

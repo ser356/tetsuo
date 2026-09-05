@@ -46,6 +46,8 @@ grep -q '\.section \.rdata' "$tmp/ops.s"
 grep -q '^L_str' "$tmp/ops.s"
 grep -q '^X64_BUF:' "$tmp/ops.s"
 grep -q 'call    _write' "$tmp/ops.s"
+"$compiler" --target=windows-x64 tests/fixpoint_entry.tt -o "$tmp/compiler.s"
+grep -q 'testb.*(%rsp)' "$tmp/compiler.s"
 if clang --target=x86_64-windows-msvc -c "$tmp/ops.s" -o "$tmp/ops.obj"; then
     python3 - "$tmp/ops.obj" <<'PY'
 import struct,sys
