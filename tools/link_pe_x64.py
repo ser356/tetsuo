@@ -142,6 +142,8 @@ def main():
     text_rva = 0x1000
     rdata_rva = align(text_rva + len(text), 0x1000)
     rdata = buffers["rdata"]
+    if not rdata:
+        rdata.append(0)
     idata_rva = align(rdata_rva + len(rdata), 0x1000)
     ilt_offset = 40
     iat_offset = align(ilt_offset + (len(imports) + 1) * 8, 8)
@@ -167,6 +169,7 @@ def main():
         displacement = idata_rva + iat_offset + import_index * 8 - (thunk_rva + 6)
         struct.pack_into("<l", text, thunk_offsets[name] + 2, displacement)
     bss_rva = align(idata_rva + len(idata), 0x1000)
+    bss_size = max(bss_size, 8)
     group_rvas = {"text": text_rva, "rdata": rdata_rva, "bss": bss_rva}
     for section in sections:
         group = section.get("group")

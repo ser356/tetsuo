@@ -39,3 +39,21 @@ blob=p[idata[3]:idata[3]+idata[2]]
 for name in (b'msvcrt.dll',b'exit',b'_write',b'__getmainargs'):
     assert name in blob
 PY
+cat > "$tmp/smoke.tt" <<'EOF'
+fun main() -> u64 { return 42 }
+EOF
+"$compiler" --target=windows-x64 "$tmp/smoke.tt" -o "$tmp/smoke.s"
+clang --target=x86_64-windows-msvc -c "$tmp/smoke.s" -o "$tmp/smoke.obj"
+python3 tools/link_pe_x64.py "$tmp/smoke.obj" "$tmp/smoke.exe"
+python3 - "$tmp/smoke.exe" <<'PY'
+import struct,sys
+p=open(sys.argv[1],'rb').read(); pe=struct.unpack_from('<L',p,60)[0]; opt=pe+24
+n=struct.unpack_from('<H',p,pe+6)[0]; image_size=struct.unpack_from('<L',p,opt+56)[0]
+sections=[]
+for i in range(n):
+    off=opt+240+i*40
+    virtual_size,rva=struct.unpack_from('<LL',p,off+8)
+    sections.append((rva,virtual_size))
+assert len({rva for rva,_ in sections})==n
+assert image_size>=max(rva+max(size,1) for rva,size in sections)
+PY
