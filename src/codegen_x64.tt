@@ -3,9 +3,24 @@ fun x64_sym(o: *Out, start: u64, len: u64) {
     out_bytes(o, lx.src + start, len)
 }
 
+fun x64_stack_bytes(fn: *IrFn, count: u64) -> u64 {
+    let total: u64 = 0
+    let i: u64 = 0
+    while i < count {
+        let width: u64 = 8
+        let types: **Type = fn.slot_types
+        if types[i] != nil { width = type_width(types[i]) }
+        let words: u64 = (width + 7) / 8
+        if words == 0 { words = 1 }
+        total = total + words * 8
+        i = i + 1
+    }
+    return total
+}
+
 fun x64_slot(o: *Out, fn: *IrFn, slot: u64) {
     out_byte(o, 45)
-    out_u64(o, (slot + 1) * 8)
+    out_u64(o, x64_stack_bytes(fn, slot + 1))
     let s: str = '(%rbp)'
     out_bytes(o, s.ptr, s.len)
 }
@@ -191,7 +206,7 @@ fun codegen_x64(o: *Out, prog: *Program, funcs: *IrFn) {
     while fn != nil {
         let g: str = '    .globl  '; out_bytes(o, g.ptr, g.len); x64_sym(o, fn.name_start, fn.name_len); out_byte(o, 10)
         x64_sym(o, fn.name_start, fn.name_len); let h: str = ':\n    pushq   %rbp\n    movq    %rsp, %rbp\n'; out_bytes(o, h.ptr, h.len)
-        let frame: u64 = ((fn.nslots * 8 + 15) / 16) * 16
+        let frame: u64 = ((x64_stack_bytes(fn, fn.nslots) + 15) / 16) * 16
         let remaining: u64 = frame
         while remaining > 4096 {
             let page: str = '    subq    $4096, %rsp\n    testb   $0, (%rsp)\n'; out_bytes(o, page.ptr, page.len)

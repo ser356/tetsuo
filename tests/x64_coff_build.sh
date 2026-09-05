@@ -19,6 +19,8 @@ fun tt_io() -> u64 {
 }
 
 fun tt_ops(a: u64, b: u64) -> u64 {
+    let values: [16]u64
+    values[15] = a
     let byte: u8 = a as u8
     let local: *u8 = &byte
     @local = byte
@@ -28,7 +30,7 @@ fun tt_ops(a: u64, b: u64) -> u64 {
     let bits: u64 = (a << b) ^ (a >> b)
     let cmp: u64 = (a == b) + (a != b) + (a < b) + (a <= b) + (a > b) + (a >= b)
     while loaded == 0 { return 1 }
-    return a / b + a % b + bits + cmp + @global
+    return values[15] / b + a % b + bits + cmp + @global
 }
 EOF
 "$compiler" --target=windows-x64 "$tmp/ops.tt" -o "$tmp/ops.s"
