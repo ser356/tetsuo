@@ -37,8 +37,8 @@ def build() -> tuple[str, int, int]:
     header = (
         f"# Tetsuo agent context pack\n\n"
         f"Version: `{VERSION}`\n\n"
-        f"Canonical lexical tokens to competence: **{tokens}**  \n"
-        f"UTF-8 bytes: **{byte_count}**  \n"
+        f"Canonical lexical tokens to competence: **{tokens}**\n\n"
+        f"UTF-8 bytes: **{byte_count}**\n\n"
         f"Estimated model tokens (`ceil(bytes/4)`): **{math.ceil(byte_count / 4)}**\n\n"
         f"## Source integrity\n\n" + "\n".join(hashes) + "\n"
     )

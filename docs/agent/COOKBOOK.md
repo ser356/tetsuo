@@ -152,10 +152,10 @@ let bytes: *u8 = BUFFER
 ```
 Source: `tests/codegen_bytes_bss_test.tt`.
 
-## 19. String search
+## 19. Byte search in a string
 
 ```tetsuo
-let at: u64 = string_find(haystack, needle)
+let at: u64 = string_find_byte(text, byte)
 ```
 Source: `lib/string.tt`.
 
@@ -165,3 +165,17 @@ Source: `lib/string.tt`.
 fun tt_add(a: u64, b: u64) -> u64 { return a + b }
 ```
 Source: `tests/obj_link_test.tt`.
+
+## Build recipes
+
+```text
+tetsuoc --emit=macho app.tt -o app
+tetsuoc --emit=elf app.tt -o app
+tetsuoc --emit=pe-arm64 app.tt -o app.exe
+tetsuoc --target=windows-x64 app.tt -o app.s
+tetsuoc --diagnostics=json app.tt -o app.s
+```
+
+For Windows x64, assemble with Clang's COFF target and link with
+`tools/link_pe_x64.py`. Prefer `io_*` wrappers so one source works on all
+native targets.
