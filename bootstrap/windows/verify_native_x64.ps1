@@ -45,7 +45,9 @@ if ($LASTEXITCODE -ne 0) { throw "PE linker failed for smoke" }
 Write-Host "[4/4] Running smoke executable; expected exit=42"
 $smokePath = (Resolve-Path "$build/smoke.exe").Path
 & $smokePath
-Write-Host "Smoke exit: $LASTEXITCODE"
-if ($LASTEXITCODE -ne 42) { throw "smoke returned $LASTEXITCODE, expected 42" }
+$smokeExit = $LASTEXITCODE
+Write-Host "Smoke exit: $smokeExit"
+if ($smokeExit -ne 42) { throw "smoke returned $smokeExit, expected 42" }
 
 Write-Host "VERIFY WINDOWS X64 OK"
+exit 0
