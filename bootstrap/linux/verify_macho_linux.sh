@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Verifica el path --emit=macho COMPLETO sin macOS.
+# Verifies the COMPLETE --emit=macho path without macOS.
 #
-# Para cada test de bootstrap/verify.sh que se compila con tests/macos_build.sh:
-#   1. stage1 (bootstrappeado desde bootstrap/tetsuoc.s) emite el binario Mach-O
-#      firmado ad-hoc con --emit=macho, igual que en macOS;
-#   2. check_macho.py revalida la firma recalculando los 4KB-hashes contra el
-#      fichero final (lo mismo que hace `codesign -v`);
-#   3. macho_exec.py reproduce el layout de memoria del Mach-O (mismos vmaddr de
-#      __TEXT y __bss) en un ELF y lo ejecuta bajo qemu-aarch64.
+# For every bootstrap/verify.sh test that is built with tests/macos_build.sh:
+#   1. stage1 (bootstrapped from bootstrap/tetsuoc.s) emits the ad-hoc signed
+#      Mach-O binary with --emit=macho, exactly as on macOS;
+#   2. check_macho.py revalidates the signature by recomputing the 4KB hashes
+#      against the final file (the same thing `codesign -v` does);
+#   3. macho_exec.py reproduces the Mach-O memory layout (same vmaddr for
+#      __TEXT and __bss) in an ELF and runs it under qemu-aarch64.
 #
-# Sirve para separar los dos mundos cuando un binario emitido muere en macOS:
-#   - si aqui FALLA -> el problema esta en el codegen de bytes o en los fixups;
-#   - si aqui PASA  -> el codigo y el layout son correctos y el fallo de macOS
-#     esta en el contenedor (firma, load commands, cache del kernel).
+# It serves to separate the two worlds when an emitted binary dies on macOS:
+#   - if it FAILS here -> the problem is in the byte codegen or in the fixups;
+#   - if it PASSES here -> the code and the layout are correct and the macOS
+#     failure is in the container (signature, load commands, kernel cache).
 #
 # Requiere: qemu-user (qemu-aarch64), binutils-aarch64-linux-gnu, python3.
 set -uo pipefail
@@ -30,7 +30,7 @@ for tool in qemu-aarch64 aarch64-linux-gnu-as aarch64-linux-gnu-ld aarch64-linux
     command -v "$tool" >/dev/null || { echo "falta $tool (apt install qemu-user binutils-aarch64-linux-gnu)" >&2; exit 2; }
 done
 
-mk_elf() { # $1=asm macOS  $2=binario ELF de salida
+mk_elf() { # $1=macOS asm  $2=output ELF binary
     "$HARNESS/macho2elf.sh" "$1" > "$2.elf.s"
     aarch64-linux-gnu-as "$2.elf.s" -o "$2.o"
     aarch64-linux-gnu-ld -e _linux_start -o "$2" "$2.o" "$BUILD/linux/shim.o"
@@ -38,10 +38,10 @@ mk_elf() { # $1=asm macOS  $2=binario ELF de salida
 
 aarch64-linux-gnu-as "$HARNESS/shim.s" -o "$BUILD/linux/shim.o" || exit 2
 
-# stage0: la seed committeada, ejecutable bajo qemu.
+# stage0: the committed seed, executable under qemu.
 mk_elf "$SEED" "$BUILD/linux/stage1" || exit 2
 
-# stage1 con --emit=macho, compilado por la seed desde las fuentes actuales.
+# stage1 with --emit=macho, built by the seed from the current sources.
 EMITTER=$BUILD/linux/main_macho
 qemu-aarch64 "$BUILD/linux/stage1" tests/fixpoint_entry.tt -o "$BUILD/main_macho_linux.s" || {
     echo "la seed no pudo compilar tests/fixpoint_entry.tt" >&2; exit 2; }
@@ -51,7 +51,7 @@ LIBS="src/runtime/io.tt lib/str.tt lib/fmt.tt lib/vec.tt lib/ast.tt src/lexer.tt
       src/parser.tt src/ir.tt src/codegen.tt lib/sha256.tt src/asm.tt src/macho.tt
       src/codegen_bytes.tt"
 
-check() { # $1=nombre $2=rc esperado $3=fuente  [args...]
+check() { # $1=name $2=expected rc $3=source  [args...]
     local name=$1 exp=$2 input=$3; shift 3
     printf '  %-42s ' "$name"
     local entry="$BUILD/eml_$name.tt"
@@ -123,8 +123,8 @@ check write_test          0   tests/write_test.tt
 check macos_hello         0   tests/macos_hello.tt
 check syscall_checked     0   tests/syscall_checked_test.tt
 
-# Reproductor minimo: __TEXT de 7 paginas + ~50MB de __bss con apenas 40
-# instrucciones de codigo. Aisla el layout del volumen de codigo.
+# Minimal reproducer: a 7-page __TEXT + ~50MB of __bss with barely 40
+# instructions of code. It isolates the layout from the code volume.
 printf '\n%sLayout multi-pagina aislado%s\n' "$BOLD" "$RESET"
 printf '  %-42s ' "macho_multipage (7 paginas + 50MB bss)"
 rc=0
@@ -138,7 +138,7 @@ qemu-aarch64 "$BUILD/linux/stage1" tests/macho_multipage_entry.tt -o "$BUILD/mp_
 if [[ $rc -eq 20 ]]; then printf '%sOK%s\n' "$GREEN" "$RESET"
 else printf '%sFAIL%s (rc=%s esp=20)\n' "$RED" "$RESET" "$rc"; fails=$((fails+1)); fi
 
-# Fixpoint en bytes: el compilador emitido se compila a si mismo bit a bit.
+# Fixpoint over bytes: the emitted compiler compiles itself bit for bit.
 printf '\n%sFixpoint Mach-O en bytes%s\n' "$BOLD" "$RESET"
 printf '  %-42s ' "s1 == s2 (--emit=macho self-host)"
 rc=0

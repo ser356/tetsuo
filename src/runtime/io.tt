@@ -1,54 +1,54 @@
 import 'lib/arena.tt'
 
 // ============================================================================
-// src/runtime/io.tt - runtime minimo: syscalls de macOS y asignador de arena
+// src/runtime/io.tt - minimal runtime: macOS syscalls and arena allocator
 // ============================================================================
 //
-// Es el fichero mas bajo de la pila: no depende de nada y todo lo demas depende
-// de el. Por eso encabeza la lista de `import` de todos los entries del
-// compilador (tests/fixpoint_entry.tt, tests/macos_build.sh, etc.).
+// It is the lowest file in the stack: it depends on nothing and everything
+// else depends on it. That is why it heads the `import` list of every compiler
+// entry point (tests/fixpoint_entry.tt, tests/macos_build.sh, etc.).
 //
-// Contiene dos cosas sin relacion entre si mas que "ser el suelo":
+// It holds two things unrelated to each other beyond "being the floor":
 //
-//   1. Los envoltorios de syscall. tetsuo no enlaza contra libSystem: llama al
-//      kernel directamente. La ABI de macOS/arm64 es
+//   1. The syscall wrappers. tetsuo does not link against libSystem: it calls
+//      the kernel directly. The macOS/arm64 ABI is
 //
-//          x16 = numero de syscall BSD
-//          x0..x5 = argumentos
+//          x16 = BSD syscall number
+//          x0..x5 = arguments
 //          svc #0x80
-//          x0 = resultado (carry flag = error, que aqui se ignora)
+//          x0 = result (carry flag = error, ignored here)
 //
-//      El builtin `syscall(num, a0, a1, a2)` que se usa aqui lo emite el
-//      codegen (ver emit_syscall en codegen.tt y cgb_i_call en
-//      codegen_bytes.tt); no es una funcion normal.
+//      The `syscall(num, a0, a1, a2)` builtin used here is emitted by the
+//      codegen (see emit_syscall in codegen.tt and cgb_i_call in
+//      codegen_bytes.tt); it is not a normal function.
 //
-//      Los numeros son los de <sys/syscall.h> de BSD: 1=exit, 3=read, 4=write,
-//      5=open, 6=close. En Linux (harness de qemu) el shim de
-//      bootstrap/linux/shim.s traduce estos numeros a los de Linux, por eso
-//      macho2elf.sh reescribe `svc #0x80` como `bl _tt_sys`.
+//      The numbers are the BSD ones from <sys/syscall.h>: 1=exit, 3=read,
+//      4=write, 5=open, 6=close. On Linux (the qemu harness) the shim in
+//      bootstrap/linux/shim.s translates these numbers into the Linux ones,
+//      which is why macho2elf.sh rewrites `svc #0x80` as `bl _tt_sys`.
 //
-//   2. El arena. tetsuo no tiene malloc ni free: toda la memoria dinamica sale
-//      de bloques bss fijos repartidos por un puntero que solo avanza. Se
-//      libera todo de golpe al terminar el proceso, que para un compilador de
-//      un solo disparo es exactamente lo que hace falta.
+//   2. The arena. tetsuo has neither malloc nor free: all dynamic memory comes
+//      from fixed bss blocks handed out by a pointer that only moves forward.
+//      Everything is released at once when the process ends, which for a
+//      one-shot compiler is exactly what is needed.
 //
-// IO_BUF es el bloque generico de 16MB que usan los tests y el que sirve de
-// respaldo cuando alguien necesita un buffer grande sin declarar el suyo. Es
-// tambien el PRIMER simbolo bss del programa enlazado, asi que en el Mach-O
-// emitido cae en el offset 0 de __DATA (vaddr = base de __bss). Ver
-// cgb_bss_layout en codegen_bytes.tt.
+// IO_BUF is the generic 16MB block that the tests use and the fallback for
+// anyone who needs a large buffer without declaring their own. It is also the
+// FIRST bss symbol of the linked program, so in the emitted Mach-O it lands at
+// offset 0 of __DATA (vaddr = base of __bss). See cgb_bss_layout in
+// codegen_bytes.tt.
 // ============================================================================
 
 bss IO_BUF: 16777216
 
 // ---------------------------------------------------------------------------
-// Syscalls. Todas devuelven el x0 crudo del kernel; no se inspecciona el carry
-// flag, asi que un error se manifiesta como un valor absurdo (fd 0, 0 bytes
-// leidos). Los llamantes lo tratan como "fallo" y salen.
+// Syscalls. They all return the raw x0 from the kernel; the carry flag is not
+// inspected, so an error shows up as an absurd value (fd 0, 0 bytes read). The
+// callers treat that as "failure" and exit.
 // ---------------------------------------------------------------------------
 
-// open(path, O_RDONLY, 0). Devuelve 0 si falla (fd 0 es stdin, que nunca se
-// abre aqui, asi que 0 es un centinela seguro).
+// open(path, O_RDONLY, 0). Returns 0 on failure (fd 0 is stdin, which is never
+// opened here, so 0 is a safe sentinel).
 fun io_open_read(path: *u8) -> u64 {
     return syscall(5, path, 0, 0)
 }
@@ -58,13 +58,14 @@ fun io_open_read_checked(path: *u8, err: *u64) -> u64 {
 }
 
 // open(path, O_WRONLY|O_CREAT|O_TRUNC, 0644).
-// 0x601 = O_WRONLY(0x001) | O_CREAT(0x200) | O_TRUNC(0x400) en macOS.
-// 420 = 0644 en decimal.
+// 0x601 = O_WRONLY(0x001) | O_CREAT(0x200) | O_TRUNC(0x400) on macOS.
+// 420 = 0644 in decimal.
 //
-// Nota: O_TRUNC reescribe el fichero SIN cambiar de inodo. Para binarios Mach-O
-// firmados eso es peligroso (macOS cachea la firma por vnode y puede matar el
-// proceso con SIGKILL al ejecutarlos), por lo que los scripts de tests/ emiten
-// a un temporal y hacen rename(), o borran el destino antes.
+// Note: O_TRUNC rewrites the file WITHOUT changing its inode. For signed
+// Mach-O binaries that is dangerous (macOS caches the signature per vnode and
+// may kill the process with SIGKILL when running them), which is why the
+// scripts in tests/ emit to a temporary and rename(), or delete the
+// destination first.
 fun io_open_write(path: *u8) -> u64 {
     return syscall(5, path, 0x601, 420)
 }
@@ -73,7 +74,7 @@ fun io_open_write_checked(path: *u8, err: *u64) -> u64 {
     return syscall_checked(5, path, 0x601, 420, err)
 }
 
-// read(fd, buf, cap). Devuelve el numero de bytes leidos; 0 = EOF.
+// read(fd, buf, cap). Returns the number of bytes read; 0 = EOF.
 fun io_read(fd: u64, buf: *u8, cap: u64) -> u64 {
     return syscall(3, fd, buf, cap)
 }
@@ -82,8 +83,8 @@ fun io_read_checked(fd: u64, buf: *u8, cap: u64, err: *u64) -> u64 {
     return syscall_checked(3, fd, buf, cap, err)
 }
 
-// write(fd, buf, len). Se ignora la escritura parcial: en la practica todas las
-// escrituras aqui van a un fichero regular o a un tty y salen completas.
+// write(fd, buf, len). Partial writes are ignored: in practice every write
+// here goes to a regular file or a tty and completes in full.
 fun io_write(fd: u64, buf: *u8, len: u64) {
     syscall(4, fd, buf, len)
 }
@@ -108,9 +109,9 @@ fun io_mkdir(path: *u8, mode: u64) -> u64 {
     return syscall(136, path, mode, 0)
 }
 
-// exit(code). No retorna. El codigo de salida es el contrato de casi todos los
-// tests de tests/: el programa devuelve un numero y bootstrap/verify.sh lo
-// compara.
+// exit(code). Does not return. The exit code is the contract of almost every
+// test in tests/: the program returns a number and bootstrap/verify.sh
+// compares it.
 fun io_exit(code: u64) {
     syscall(1, code, 0, 0)
 }

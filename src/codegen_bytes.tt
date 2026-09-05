@@ -1,97 +1,97 @@
 // ============================================================================
-// src/codegen_bytes.tt - backend de BYTES: del IR a un Mach-O ejecutable
+// src/codegen_bytes.tt - BYTE backend: from IR to an executable Mach-O
 // ============================================================================
 //
-// Es el hermano de src/codegen.tt. Los dos recorren el mismo IR y emiten el
-// mismo codigo; la diferencia es el formato de salida:
+// It is the sibling of src/codegen.tt. Both walk the same IR and emit the same
+// code; the difference is the output format:
 //
-//     codegen.tt        -> texto  "    add     x9, x10, x11\n"  -> clang/as/ld
+//     codegen.tt        -> text   "    add     x9, x10, x11\n"  -> clang/as/ld
 //     codegen_bytes.tt  -> u32    0x8b0b014a                      -> Mach-O
 //
-// Que sean equivalentes no es casualidad ni fe: cada `enc_*` de asm.tt esta
-// emparejado con la cadena que emite codegen.tt para la misma instruccion, y
-// bootstrap/linux/verify_macho_linux.sh compara los dos caminos. Si tocas uno,
-// toca el otro.
+// Their equivalence is neither an accident nor a matter of faith: every `enc_*`
+// from asm.tt is paired with the string codegen.tt emits for the same
+// instruction, and bootstrap/linux/verify_macho_linux.sh compares both paths.
+// If you touch one, touch the other.
 //
-// COMO SE RESUELVEN LAS REFERENCIAS HACIA DELANTE
+// HOW FORWARD REFERENCES ARE RESOLVED
 //
-// Al emitir un salto o una llamada todavia no se sabe adonde van, porque el
-// destino puede estar mas adelante. En vez de dos pasadas completas se emite la
-// instruccion con el campo de desplazamiento a CERO y se apunta el hueco en una
-// lista de fixups; al final se recorre la lista y se hace un OR del valor
-// correcto sobre cada instruccion. El OR funciona precisamente porque el campo
-// se dejo a cero.
+// When a branch or a call is emitted its target is not known yet, because the
+// destination may lie further ahead. Instead of two complete passes, the
+// instruction is emitted with the displacement field at ZERO and the hole is
+// recorded in a fixup list; at the end the list is walked and the correct
+// value is ORed onto each instruction. The OR works precisely because the
+// field was left at zero.
 //
-// Hay dos rondas de parcheo, en dos espacios de direcciones distintos:
+// There are two patching rounds, in two different address spaces:
 //
-//   1. cgb_resolve_branches, sobre offsets DENTRO de CB (el buffer de codigo).
-//      Resuelve b, cbz y bl, que son relativos al PC y por tanto no dependen de
-//      donde acabe cargado el binario.
+//   1. cgb_resolve_branches, over offsets INSIDE CB (the code buffer). It
+//      resolves b, cbz and bl, which are PC-relative and therefore do not
+//      depend on where the binary ends up loaded.
 //
-//   2. mo_resolve_strings_bss, sobre offsets dentro de la IMAGEN Mach-O ya
-//      montada (o sea, desplazados 704 bytes por las cabeceras). Resuelve los
-//      pares adrp+add de literales de cadena y de simbolos bss, que si dependen
-//      del layout final.
+//   2. mo_resolve_strings_bss, over offsets inside the already assembled
+//      Mach-O IMAGE (that is, shifted by 704 bytes because of the headers). It
+//      resolves the adrp+add pairs of string literals and bss symbols, which
+//      do depend on the final layout.
 //
-// ESTRUCTURA DEL FICHERO
+// STRUCTURE OF THE FILE
 //
-//   1. Estado global (CB, tablas) y tipos de fixup
-//   2. Primitivas: escribir palabras, registrar labels y fixups
-//   3. Emisores b_* : una instruccion cada uno, envoltorio de los enc_* de asm.tt
-//   4. Helpers de registro/slot: el reparto de registros que decidio ir.tt
-//   5. cgb_i_* : una funcion por opcode del IR
-//   6. cgb_fn / codegen_bytes : el driver
-//   7. mo_* : montaje de la imagen Mach-O (layout de literales, fixups, firma)
+//   1. Global state (CB, tables) and fixup kinds
+//   2. Primitives: writing words, registering labels and fixups
+//   3. b_* emitters: one instruction each, wrappers around asm.tt's enc_*
+//   4. Register/slot helpers: the register split ir.tt decided
+//   5. cgb_i_*: one function per IR opcode
+//   6. cgb_fn / codegen_bytes: the driver
+//   7. mo_*: assembly of the Mach-O image (literal layout, fixups, signature)
 //
-// CONVENIO DE REGISTROS (identico al de codegen.tt)
+// REGISTER CONVENTION (identical to codegen.tt's)
 //
-//   x0..x7    argumentos y valor de retorno, ABI de AArch64
-//   x9..x9+N  registros asignados por el regalloc (reg_of[slot] + 9)
-//   x16, x17  scratch para valores derramados a pila (y x16 tambien lleva el
-//             numero de syscall, y el tamano de frame cuando pasa de 4095)
-//   x29, x30  frame pointer y direccion de retorno
-//   sp        los slots derramados viven en [sp, #slot*8]
+//   x0..x7    arguments and return value, AArch64 ABI
+//   x9..x9+N  registers assigned by the regalloc (reg_of[slot] + 9)
+//   x16, x17  scratch for values spilled to the stack (and x16 also carries
+//             the syscall number, and the frame size when it exceeds 4095)
+//   x29, x30  frame pointer and return address
+//   sp        the spilled slots live at [sp, #slot*8]
 //
-// El compilador entero pasa por aqui: `--emit=macho` sobre el propio codigo
-// fuente de tetsuo produce un binario de ~106KB de codigo y 7 paginas de
-// __TEXT.
+// The whole compiler goes through here: `--emit=macho` on tetsuo's own source
+// code produces a binary with ~106KB of code and 7 pages of __TEXT.
 // ============================================================================
 
 // ---------------------------------------------------------------------------
-// Estado global. Todo en bss porque son tablas grandes que viven durante toda
-// la compilacion y el lenguaje no tiene memoria dinamica fuera de los arenas.
+// Global state. All in bss because these are large tables that live for the
+// whole compilation and the language has no dynamic memory outside the arenas.
 // ---------------------------------------------------------------------------
 
-bss CB: 262144          // buffer de codigo: instrucciones ya codificadas
-bss CB_POS: 8           // cuantos bytes lleva CB
-bss CG_LBL: 262144      // label id -> offset de byte en CB (u64)
-bss CG_FNOFF: 8192      // indice de funcion -> offset de su entrada en CB
-bss CG_FIX: 393216      // fixups: tripletas (pos, kind, target) de u64
-bss CG_FIXN: 8          // cuantos fixups hay
-bss CG_STROFF: 65536    // str_id -> offset del literal dentro de la imagen
-bss CG_ENTRY: 8         // offset de _tt_start, que es el punto de entrada
-bss CG_PROG: 8          // *Program, para resolver bss por nombre en los fixups
-bss CG_BSSOFF: 8192     // indice de bss -> offset dentro de __DATA
+bss CB: 262144          // code buffer: already encoded instructions
+bss CB_POS: 8           // how many bytes CB holds
+bss CG_LBL: 262144      // label id -> byte offset in CB (u64)
+bss CG_FNOFF: 8192      // function index -> offset of its entry in CB
+bss CG_FIX: 393216      // fixups: (pos, kind, target) u64 triples
+bss CG_FIXN: 8          // how many fixups there are
+bss CG_STROFF: 65536    // str_id -> offset of the literal inside the image
+bss CG_ENTRY: 8         // offset of _tt_start, which is the entry point
+bss CG_PROG: 8          // *Program, to resolve bss by name in the fixups
+bss CG_BSSOFF: 8192     // bss index -> offset inside __DATA
 bss CG_BSSUSED: 8192
 
 // ---------------------------------------------------------------------------
-// Tipos de fixup. `target` significa una cosa distinta en cada uno:
+// Fixup kinds. `target` means something different in each one:
 //
-//   FX_B, FX_CBZ     target = id de label      -> lbl_get
-//   FX_BL            target = indice de funcion -> fnoff_get
-//   FX_ADRP, FX_PGOF target = str_id            -> cgb_stroff_get
-//   FX_ADRPB/PGOFB   target = indice de bss     -> cgb_bss_off_get
+//   FX_B, FX_CBZ     target = label id       -> lbl_get
+//   FX_BL            target = function index -> fnoff_get
+//   FX_ADRP, FX_PGOF target = str_id         -> cgb_stroff_get
+//   FX_ADRPB/PGOFB   target = bss index      -> cgb_bss_off_get
 //
-// Los pares ADRP/PGOF y ADRPB/PGOFB van siempre juntos: son las dos mitades de
-// la secuencia canonica `adrp Xd, sim` + `add Xd, Xd, #(sim & 4095)`.
+// The ADRP/PGOF and ADRPB/PGOFB pairs always travel together: they are the two
+// halves of the canonical `adrp Xd, sym` + `add Xd, Xd, #(sym & 4095)`
+// sequence.
 // ---------------------------------------------------------------------------
 const FX_B: u64    = 0   // b   .Llabel     (imm26)
 const FX_CBZ: u64  = 1   // cbz w, .Llabel  (imm19)
 const FX_BL: u64   = 2   // bl  funcindex   (imm26)
-const FX_ADRP: u64 = 3   // adrp de literal str_id (pagina)
-const FX_PGOF: u64 = 4   // add pageoff de literal str_id
-const FX_ADRPB: u64 = 5  // adrp de simbolo bss (pagina)
-const FX_PGOFB: u64 = 6  // add pageoff de simbolo bss
+const FX_ADRP: u64 = 3   // adrp of a str_id literal (page)
+const FX_PGOF: u64 = 4   // add pageoff of a str_id literal
+const FX_ADRPB: u64 = 5  // adrp of a bss symbol (page)
+const FX_PGOFB: u64 = 6  // add pageoff of a bss symbol
 const FX_IAT: u64 = 7
 
 fun cb_pos() -> u64 {
@@ -104,8 +104,8 @@ fun cb_set(v: u64) {
     p[0] = v
 }
 
-// Escribe una instruccion en CB, little-endian, y avanza el cursor. Es la
-// primitiva de emision: todo lo demas acaba aqui.
+// Writes an instruction into CB, little-endian, and advances the cursor. It is
+// the emission primitive: everything else ends up here.
 fun cb_word(w: u64) {
     let cb: *u8 = CB
     let c: u64 = cb_pos()
@@ -116,9 +116,9 @@ fun cb_word(w: u64) {
     cb_set(c + 4)
 }
 
-// Tabla de labels: id -> offset en CB. Se rellena cuando el driver llega a la
-// instruccion IR_LABEL, que puede ser DESPUES de haber emitido saltos hacia
-// ella; por eso los saltos pasan por la lista de fixups.
+// Label table: id -> offset in CB. It is filled in when the driver reaches the
+// IR_LABEL instruction, which may be AFTER branches towards it were emitted;
+// that is why branches go through the fixup list.
 fun lbl_set(id: u64, off: u64) {
     let p: *u64 = CG_LBL
     p[id] = off
@@ -129,8 +129,8 @@ fun lbl_get(id: u64) -> u64 {
     return p[id]
 }
 
-// Tabla de funciones: indice en la lista del IR -> offset de su primera
-// instruccion en CB. Analoga a la de labels, pero para bl.
+// Function table: index in the IR list -> offset of its first instruction in
+// CB. Analogous to the label table, but for bl.
 fun fnoff_set(idx: u64, off: u64) {
     let p: *u64 = CG_FNOFF
     p[idx] = off
@@ -141,12 +141,11 @@ fun fnoff_get(idx: u64) -> u64 {
     return p[idx]
 }
 
-// Apunta un hueco por rellenar. `pos` es el offset EN CB de la instruccion cuyo
-// campo de desplazamiento quedo a cero.
+// Records a hole to be filled in. `pos` is the offset IN CB of the instruction
+// whose displacement field was left at zero.
 //
-// No comprueba el limite de CG_FIX (16384 tripletas). El compilador compilandose
-// a si mismo, que es el programa mas grande que se procesa, usa del orden de la
-// mitad.
+// It does not check the CG_FIX limit (16384 triples). The compiler compiling
+// itself, which is the largest program processed, uses roughly half.
 fun fix_add(pos: u64, kind: u64, target: u64) {
     let n: *u64 = CG_FIXN
     let base: u64 = n[0]
@@ -157,36 +156,37 @@ fun fix_add(pos: u64, kind: u64, target: u64) {
     n[0] = base + 1
 }
 
-// Convierte una instruccion de 64 bits en su variante de 32 bits.
+// Turns a 64-bit instruction into its 32-bit variant.
 //
-// En AArch64 el bit 31 (`sf`) distingue la version X de la W en casi todas las
-// instrucciones de datos: ponerlo a cero convierte `add x9,x10,x11` en
-// `add w9,w10,w11`. 2147483647 = 0x7fffffff es la mascara que lo apaga.
+// In AArch64 bit 31 (`sf`) tells the X version from the W one in almost every
+// data instruction: clearing it turns `add x9,x10,x11` into `add w9,w10,w11`.
+// 2147483647 = 0x7fffffff is the mask that clears it.
 //
-// Se usa para operar sobre valores de tipo u32, donde el resultado debe truncar
-// a 32 bits (y la CPU pone a cero la mitad alta del registro X, que es
-// justamente la semantica que queremos).
+// It is used to operate on u32 values, where the result must truncate to 32
+// bits (and the CPU zeroes the upper half of the X register, which is exactly
+// the semantics we want).
 fun w32(enc: u64) -> u64 {
     return enc & 2147483647
 }
 
 // ---------------------------------------------------------------------------
-// Primitivas de emision: cada b_* escribe UNA instruccion (o unas pocas).
+// Emission primitives: every b_* writes ONE instruction (or a few).
 // ---------------------------------------------------------------------------
 
-// Carga una constante de 64 bits en rd.
+// Loads a 64-bit constant into rd.
 //
-// AArch64 no puede meter un u64 arbitrario en un registro de una vez: hay que
-// hacerlo en trozos de 16 bits con movz (que pone a cero el resto) y movk (que
-// conserva). La funcion parte el inmediato en cuatro grupos y SALTA los que
-// valen cero, que es la optimizacion que importa: la inmensa mayoria de las
-// constantes de un programa real caben en 16 bits y salen en UNA instruccion.
+// AArch64 cannot put an arbitrary u64 into a register in one go: it has to be
+// done in 16-bit chunks with movz (which zeroes the rest) and movk (which
+// keeps it). The function splits the immediate into four groups and SKIPS the
+// ones that are zero, which is the optimization that matters: the vast
+// majority of the constants in a real program fit in 16 bits and come out as
+// ONE instruction.
 //
-// El flag `first` sirve para que el primer grupo no nulo use movz (limpiando el
-// resto del registro) y los siguientes movk. Sin el, si el grupo bajo fuera
-// cero, empezariamos con movk sobre un registro con basura.
+// The `first` flag makes the first non-zero group use movz (clearing the rest
+// of the register) and the following ones movk. Without it, if the low group
+// were zero, we would start with a movk over a register holding garbage.
 //
-// El cero se trata aparte porque si no el bucle no emitiria nada.
+// Zero is handled separately because otherwise the loop would emit nothing.
 fun b_movi(rd: u64, imm: u64) {
     if imm == 0 {
         cb_word(enc_movz(rd, 0, 0))
@@ -223,12 +223,12 @@ fun b_mov_w(rd: u64, rs: u64) {
     cb_word(w32(enc_mov_reg(rd, rs)))
 }
 
-// Acceso a locales, siempre relativo a SP (el 31 en posicion de Rn).
+// Access to locals, always relative to SP (the 31 in the Rn position).
 //
-// La division por 8 / 4 no es un detalle menor: la forma "unsigned offset" de
-// ldr/str codifica el desplazamiento ESCALADO por el ancho del acceso, asi que
-// el campo lleva off/8 para un x, off/4 para un w y off tal cual para un byte.
-// Pasar el offset en bytes sin dividir produciria un acceso 8 veces mas lejos.
+// The division by 8 / 4 is no minor detail: the "unsigned offset" form of
+// ldr/str encodes the displacement SCALED by the access width, so the field
+// carries off/8 for an x, off/4 for a w and off as is for a byte. Passing the
+// byte offset undivided would produce an access 8 times further away.
 fun b_ldr_x(rt: u64, off: u64) {
     cb_word(enc_ldr_x(rt, 31, off / 8))
 }
@@ -266,18 +266,19 @@ fun cgb_normalize(r: u64, width: u64, signed: u64) {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers de registro/slot (espejo exacto de los de codegen.tt)
+// Register/slot helpers (an exact mirror of codegen.tt's)
 //
-// El asignador de registros de ir.tt deja en fn.reg_of un mapa
-// slot -> registro. Si el valor es menor que NREGS, el slot vive en el registro
-// fisico x(valor+9); si no, esta DERRAMADO y vive en la pila, en [sp, #slot*8].
+// The register allocator in ir.tt leaves a slot -> register map in fn.reg_of.
+// If the value is lower than NREGS, the slot lives in the physical register
+// x(value+9); otherwise it is SPILLED and lives on the stack, at
+// [sp, #slot*8].
 //
-// Estas cuatro funciones encapsulan esa disyuntiva para que los cgb_i_* no
-// tengan que repetirla en cada opcode.
+// These four functions encapsulate that split so that the cgb_i_* do not have
+// to repeat it in every opcode.
 // ---------------------------------------------------------------------------
 
-// Registro donde ESCRIBIR el resultado de un slot. Si esta derramado devuelve
-// x16 como scratch, y luego cgb_spill se encarga de guardarlo.
+// Register to WRITE the result of a slot into. If it is spilled it returns x16
+// as scratch, and cgb_spill then takes care of storing it.
 fun cgb_dst_x(fn: *IrFn, slot: u64) -> u64 {
     let ro: *u64 = fn.reg_of
     let r: u64 = ro[slot]
@@ -290,18 +291,19 @@ fun cgb_stack_off(fn: *IrFn, slot: u64) -> u64 {
     return slot * 8
 }
 
-// Guarda a pila si el slot esta derramado; si vive en registro, no hace nada.
-// Se llama siempre despues de cgb_dst_x, formando el par escribir/persistir.
+// Stores to the stack if the slot is spilled; if it lives in a register, it
+// does nothing. It is always called after cgb_dst_x, forming the
+// write/persist pair.
 fun cgb_spill(fn: *IrFn, slot: u64, xreg: u64) {
     let ro: *u64 = fn.reg_of
     if ro[slot] < NREGS { return }
     b_str_x(xreg, cgb_stack_off(fn, slot))
 }
 
-// Registro del que LEER un slot. Si vive en registro lo devuelve directamente
-// (sin emitir nada); si esta derramado, emite el load al registro `scratch` que
-// le pasa el llamante y devuelve ese. El llamante elige x16 o x17 segun cuantos
-// operandos derramados pueda haber a la vez.
+// Register to READ a slot from. If it lives in a register it is returned
+// directly (emitting nothing); if it is spilled, the load is emitted into the
+// `scratch` register the caller passes in and that one is returned. The caller
+// picks x16 or x17 depending on how many spilled operands can be live at once.
 fun cgb_src_x(fn: *IrFn, slot: u64, scratch: u64) -> u64 {
     let ro: *u64 = fn.reg_of
     let r: u64 = ro[slot]
@@ -325,11 +327,11 @@ fun cgb_load_slot_x(fn: *IrFn, slot: u64, dx: u64) {
     b_ldr_x(dx, cgb_stack_off(fn, slot))
 }
 
-// Despacha un binop del IR a su encoder. `wide` decide entre la variante de 64
-// y la de 32 bits (ver w32).
+// Dispatches an IR binop to its encoder. `wide` picks between the 64- and the
+// 32-bit variant (see w32).
 //
-// Todo son operaciones sin signo: el lenguaje no tiene tipos con signo, asi que
-// la division es udiv y los desplazamientos a la derecha son logicos (lsrv).
+// Everything is unsigned: the language has no signed types, so division is
+// udiv and right shifts are logical (lsrv).
 fun cgb_alu(binop: u64, rd: u64, ra: u64, rb: u64, wide: u64, signed: u64) {
     let e: u64 = 0
     if binop == OP_ADD { e = enc_add_reg(rd, ra, rb) }
@@ -347,13 +349,13 @@ fun cgb_alu(binop: u64, rd: u64, ra: u64, rb: u64, wide: u64, signed: u64) {
     if wide == 1 { cb_word(e) } else { cb_word(w32(e)) }
 }
 
-// Traduce un codigo de comparacion a la condicion INVERTIDA que necesita cset.
+// Translates a comparison code into the INVERTED condition cset needs.
 //
-// cset se codifica como csinc con los operandos a wzr, y csinc escribe 0 cuando
-// la condicion se cumple, asi que hay que pasarle la contraria (ver enc_cset en
-// asm.tt). Los cc de entrada son los del IR: 0=eq 1=ne 2=lo 3=ls 4=hi 5=hs, y
-// como el lenguaje no tiene tipos con signo, las comparaciones de orden usan
-// siempre las condiciones sin signo (lo/ls/hi/hs, no lt/le/gt/ge).
+// cset is encoded as csinc with the operands set to wzr, and csinc writes 0
+// when the condition holds, so the opposite one has to be passed (see enc_cset
+// in asm.tt). The incoming cc values are the IR's: 0=eq 1=ne 2=lo 3=ls 4=hi
+// 5=hs, and since the language has no signed types, ordering comparisons
+// always use the unsigned conditions (lo/ls/hi/hs, not lt/le/gt/ge).
 fun cgb_invcond(cc: u64) -> u64 {
     if cc == 0 { return 1 }   // eq -> inv ne
     if cc == 1 { return 0 }   // ne -> inv eq
@@ -368,13 +370,13 @@ fun cgb_invcond(cc: u64) -> u64 {
 }
 
 // ---------------------------------------------------------------------------
-// Un emisor por opcode del IR. Todos siguen el mismo patron:
+// One emitter per IR opcode. They all follow the same pattern:
 //
-//     leer operandos con cgb_src_*  (puede emitir loads si estan derramados)
-//     emitir la operacion sobre cgb_dst_x
-//     cgb_spill del destino
+//     read the operands with cgb_src_*  (may emit loads if they are spilled)
+//     emit the operation into cgb_dst_x
+//     cgb_spill the destination
 //
-// El despachador es cgb_instr, mas abajo.
+// The dispatcher is cgb_instr, further down.
 // ---------------------------------------------------------------------------
 
 fun cgb_i_movi(fn: *IrFn, i: *Ins) {
@@ -472,13 +474,14 @@ fun cgb_i_binop(fn: *IrFn, i: *Ins) {
     cgb_spill(fn, i.dst, rd)
 }
 
-// Comparacion: cmp + cset. Deja un 0 o un 1 en el slot destino, NO en los flags.
+// Comparison: cmp + cset. It leaves a 0 or a 1 in the destination slot, NOT in
+// the flags.
 //
-// Materializar la condicion en un registro en vez de saltar sobre los flags es
-// lo que permite que el IR trate una comparacion como cualquier otro valor
-// (asignarla, pasarla, guardarla) y que el salto condicional sea siempre un
-// simple cbz sobre ese 0/1. Cuesta una instruccion mas y ahorra tener que
-// preservar NZCV entre instrucciones del IR.
+// Materializing the condition in a register instead of branching on the flags
+// is what lets the IR treat a comparison like any other value (assign it, pass
+// it, store it) and makes the conditional branch always a simple cbz on that
+// 0/1. It costs one extra instruction and saves having to preserve NZCV
+// between IR instructions.
 fun cgb_i_cmp(fn: *IrFn, i: *Ins, cc: u64) {
     if i.is_signed == 1 {
         if cc == 2 { cc = 6 }
@@ -504,14 +507,14 @@ fun cgb_i_cmp(fn: *IrFn, i: *Ins, cc: u64) {
     cgb_spill(fn, i.dst, rd)
 }
 
-// syscall(num, a0, a1, a2): el builtin del lenguaje.
+// syscall(num, a0, a1, a2): the language builtin.
 //
-// La ABI de macOS quiere el numero en x16 y los argumentos en x0.. El primer
-// argumento del builtin es el numero, asi que va a x16 y los demas se desplazan
-// una posicion (k-1). Despues, `svc #0x80` y el resultado sale en x0.
+// The macOS ABI wants the number in x16 and the arguments in x0.. The first
+// argument of the builtin is the number, so it goes to x16 and the rest shift
+// one position (k-1). Then `svc #0x80`, and the result comes out in x0.
 //
-// Es el unico sitio del backend que emite svc, y por tanto lo unico que el
-// harness de Linux tiene que reescribir para ejecutar estos binarios bajo qemu.
+// It is the only place in the backend that emits svc, and therefore the only
+// thing the Linux harness has to rewrite to run these binaries under qemu.
 fun cgb_i_syscall(fn: *IrFn, i: *Ins) {
     if get_target() == TGT_WINDOWS { cgb_i_syscall_windows(fn, i); return }
     if get_target() == TGT_LINUX {
@@ -622,17 +625,17 @@ fun cgb_i_syscall_checked(fn: *IrFn, i: *Ins) {
     cb_word(enc_str_x(17, 16, 0))
 }
 
-// Llamada a funcion.
+// Function call.
 //
-// `syscall` se intercepta por NOMBRE: no es una funcion de verdad sino un
-// builtin, y no existe ningun cuerpo al que saltar.
+// `syscall` is intercepted by NAME: it is not a real function but a builtin,
+// and there is no body to jump to.
 //
-// Para el resto: se cargan los argumentos en x0.. en orden, se apunta un fixup
-// FX_BL y se emite `bl 0`. El desplazamiento real lo rellena
-// cgb_resolve_branches cuando ya conoce el offset de todas las funciones, lo
-// que permite llamar hacia delante y recursion sin ningun caso especial.
+// For the rest: the arguments are loaded into x0.. in order, an FX_BL fixup is
+// recorded and `bl 0` is emitted. The real displacement is filled in by
+// cgb_resolve_branches once the offset of every function is known, which
+// allows forward calls and recursion with no special case.
 //
-// El valor de retorno llega en x0 y se mueve al slot destino.
+// The return value arrives in x0 and is moved to the destination slot.
 fun cgb_i_call(fn: *IrFn, i: *Ins, funcs: *IrFn) {
     let syskw: str = 'syscall'
     if bytes_eq_at(i.callee_start, i.callee_len, syskw.ptr, 7) == 1 {
@@ -680,16 +683,15 @@ fun cgb_i_call(fn: *IrFn, i: *Ins, funcs: *IrFn) {
     b_str_x(0, cgb_stack_off(fn, i.dst))
 }
 
-// Direccion de un simbolo: o un literal de cadena, o un bloque bss.
+// Address of a symbol: either a string literal or a bss block.
 //
-// Los dos casos emiten la misma pareja de instrucciones (adrp + add) con los
-// campos a cero y dos fixups; lo unico que cambia es COMO se resolvera despues
-// el destino. El discriminante es callee_len: si trae nombre es un bss, si no
-// es un literal identificado por str_id.
+// Both cases emit the same pair of instructions (adrp + add) with the fields
+// at zero and two fixups; the only thing that changes is HOW the target will
+// later be resolved. The discriminator is callee_len: if it carries a name it
+// is a bss symbol, otherwise it is a literal identified by str_id.
 //
-// La secuencia adrp+add es la forma canonica de materializar una direccion en
-// AArch64 y es relativa al PC, con lo que sobrevive a que el cargador deslice
-// la imagen.
+// The adrp+add sequence is the canonical way of materializing an address in
+// AArch64 and it is PC-relative, so it survives the loader sliding the image.
 fun cgb_i_label_addr(fn: *IrFn, i: *Ins) {
     let xd: u64 = cgb_dst_x(fn, i.dst)
     if i.callee_len > 0 {
@@ -708,14 +710,15 @@ fun cgb_i_label_addr(fn: *IrFn, i: *Ins) {
     cgb_spill(fn, i.dst, xd)
 }
 
-// Retorno. No emite `ret` directamente: mueve el valor a x0 y SALTA al epilogo.
+// Return. It does not emit `ret` directly: it moves the value to x0 and JUMPS
+// to the epilogue.
 //
-// Tener un unico epilogo por funcion evita duplicar la restauracion del frame
-// en cada `return` y, sobre todo, garantiza que SP se restaure exactamente una
-// vez por cada vez que se ajusto.
+// Having a single epilogue per function avoids duplicating the frame
+// restoration at every `return` and, above all, guarantees that SP is restored
+// exactly once for every time it was adjusted.
 //
-// i.imm == 0 significa "hay valor de retorno"; si no, es un return desnudo.
-// El ancho lo decide el tipo de retorno de la funcion.
+// i.imm == 0 means "there is a return value"; otherwise it is a bare return.
+// The width is decided by the return type of the function.
 fun cgb_i_ret(fn: *IrFn, i: *Ins, epi_label: u64) {
     if i.imm == 0 {
         let wide: u64 = 0
@@ -742,9 +745,9 @@ fun cgb_i_jmp(i: *Ins) {
     cb_word(enc_b(0))
 }
 
-// Salto si cero. El operando es el 0/1 que dejo una comparacion (o cualquier
-// valor, si se salta sobre una expresion normal). Se lee como w porque cbz de
-// 32 bits basta para un 0/1 y ahorra depender de la mitad alta.
+// Branch if zero. The operand is the 0/1 a comparison left behind (or any
+// value, when branching on a normal expression). It is read as w because a
+// 32-bit cbz is enough for a 0/1 and avoids depending on the upper half.
 fun cgb_i_jz(fn: *IrFn, i: *Ins) {
     let wide: u64 = 0
     let types: **Type = fn.slot_types
@@ -757,11 +760,11 @@ fun cgb_i_jz(fn: *IrFn, i: *Ins) {
     else { cb_word(enc_cbz_w(sw, 0)) }
 }
 
-// Despachador: una instruccion del IR -> su emisor.
+// Dispatcher: one IR instruction -> its emitter.
 //
-// Es una cadena de ifs y no una tabla de saltos porque el lenguaje no tiene
-// switch ni punteros a funcion. El orden esta puesto aproximadamente por
-// frecuencia, aunque el coste queda enterrado bajo el del parser.
+// It is a chain of ifs and not a jump table because the language has neither
+// switch nor function pointers. The order is roughly by frequency, although
+// the cost is buried under the parser's.
 fun cgb_instr(fn: *IrFn, i: *Ins, epi_label: u64, funcs: *IrFn) {
     let op: u64 = i.op
     if op == IR_MOVI        { cgb_i_movi(fn, i);              return }
@@ -787,29 +790,29 @@ fun cgb_instr(fn: *IrFn, i: *Ins, epi_label: u64, funcs: *IrFn) {
 }
 
 // ---------------------------------------------------------------------------
-// Prologo, epilogo y entrada de funcion
+// Prologue, epilogue and function entry
 // ---------------------------------------------------------------------------
 
-// Prologo:
+// Prologue:
 //
-//     stp x29, x30, [sp, #-16]!    guarda frame pointer y retorno, baja SP
+//     stp x29, x30, [sp, #-16]!    saves frame pointer and return, lowers SP
 //     mov x29, sp                  (= add x29, sp, #0)
-//     sub sp, sp, #frame_bytes     reserva los locales
+//     sub sp, sp, #frame_bytes     reserves the locals
 //
-// El imm7 = 126 del stp es -2 en complemento a dos de 7 bits, y el campo va
-// escalado por 8, o sea -16 bytes.
+// The imm7 = 126 of the stp is -2 in 7-bit two's complement, and the field is
+// scaled by 8, that is -16 bytes.
 //
-// La reserva del frame tiene DOS caminos porque la forma inmediata de sub solo
-// llega a 4095. Por encima hay que cargar el tamano en x16 y usar la forma de
-// registro, y ahi esta el detalle importante: tiene que ser
-// enc_sub_ext_sp (registro EXTENDIDO), no enc_sub_reg, porque en la forma de
-// registro desplazado el 31 codifica xzr y no SP. Con enc_sub_reg la
-// instruccion queda como `sub xzr, sp, x16`, que no toca SP y hace que los
-// locales pisen el frame del llamante. Ese fue el bug de la sesion C2.
+// Reserving the frame has TWO paths because the immediate form of sub only
+// reaches 4095. Above that, the size has to be loaded into x16 and the
+// register form used, and there lies the important detail: it must be
+// enc_sub_ext_sp (EXTENDED register), not enc_sub_reg, because in the shifted
+// register form 31 encodes xzr and not SP. With enc_sub_reg the instruction
+// ends up as `sub xzr, sp, x16`, which does not touch SP and makes the locals
+// trample the caller's frame. That was the session C2 bug.
 //
-// frame_bytes siempre es multiplo de 16 (lo redondea finalize_frame en ir.tt),
-// lo que mantiene SP alineado a 16 como exige la ABI de AArch64 en Darwin: un
-// SP desalineado hace fallar cualquier acceso relativo a SP.
+// frame_bytes is always a multiple of 16 (finalize_frame in ir.tt rounds it
+// up), which keeps SP 16-byte aligned as the AArch64 ABI on Darwin requires: a
+// misaligned SP makes any SP-relative access fault.
 fun cgb_prologue(fn: *IrFn) {
     cb_word(enc_stp_pre(29, 30, 31, 126))
     cb_word(enc_add_imm(29, 31, 0))
@@ -828,8 +831,8 @@ fun cgb_prologue(fn: *IrFn) {
     }
 }
 
-// Epilogo, deshaciendo el prologo en orden inverso. Es el destino del salto que
-// emite cada IR_RET, de ahi que empiece fijando su propio label.
+// Epilogue, undoing the prologue in reverse order. It is the target of the
+// branch every IR_RET emits, hence it starts by fixing its own label.
 fun cgb_epilogue(fn: *IrFn, epi_label: u64) {
     lbl_set(epi_label, cb_pos())
     if fn.frame_bytes > 0 {
@@ -850,16 +853,16 @@ fun cgb_epilogue(fn: *IrFn, epi_label: u64) {
     cb_word(enc_ret())
 }
 
-// Guarda el parametro k (que llega en xk por la ABI) en su hueco de pila.
+// Stores parameter k (which arrives in xk per the ABI) into its stack slot.
 //
-// Derramar TODOS los parametros nada mas entrar simplifica enormemente el
-// backend: a partir de ahi un parametro es un local mas y no hay que llevar la
-// cuenta de que registros de argumento siguen vivos. El regalloc puede volver a
-// subirlos a registro despues.
+// Spilling EVERY parameter right on entry simplifies the backend enormously:
+// from then on a parameter is just another local and there is no need to track
+// which argument registers are still live. The regalloc can lift them back
+// into registers afterwards.
 //
-// El ancho del store depende del tipo declarado: strb para u8, str w para u32,
-// str x para el resto. Guardar 8 bytes de un parametro u8 escribiria sobre el
-// hueco vecino.
+// The width of the store depends on the declared type: strb for u8, str w for
+// u32, str x for the rest. Storing 8 bytes of a u8 parameter would write over
+// the neighbouring slot.
 fun cgb_param_spill(fn: *IrFn, k: u64) {
     let w: u64 = 8
     let pts: **Type = fn.param_types
@@ -883,8 +886,8 @@ fun cgb_param_spill(fn: *IrFn, k: u64) {
     b_str_x(k, cgb_stack_off(fn, k))
 }
 
-// Emite una funcion completa: prologo, derrame de parametros, instrucciones y
-// epilogo.
+// Emits a complete function: prologue, parameter spilling, instructions and
+// epilogue.
 fun cgb_fn(fn: *IrFn, epi_label: u64, funcs: *IrFn) {
     cgb_prologue(fn)
     let k: u64 = 0
@@ -900,19 +903,19 @@ fun cgb_fn(fn: *IrFn, epi_label: u64, funcs: *IrFn) {
     cgb_epilogue(fn, epi_label)
 }
 
-// Busca el indice de una funcion por nombre, recorriendo la lista del IR.
+// Looks up the index of a function by name, walking the IR list.
 //
-// El nombre no esta en ningun sitio como cadena: `cs`/`cl` son un rango dentro
-// del buffer de fuente (ver la nota de lexer.tt), y por eso hace falta leer
-// LX_STATE para obtener el puntero base.
+// The name is nowhere stored as a string: `cs`/`cl` are a range inside the
+// source buffer (see the note in lexer.tt), which is why LX_STATE has to be
+// read to obtain the base pointer.
 //
-// Es una busqueda lineal por cada llamada, o sea O(llamadas * funciones). Con
-// las ~700 funciones del compilador sale caro pero tolerable, y evita tener que
-// construir una tabla de simbolos.
+// It is a linear search per call, that is O(calls * functions). With the ~700
+// functions of the compiler that is expensive but tolerable, and it avoids
+// having to build a symbol table.
 //
-// Devolver 0 cuando no encuentra nada es optimista: una llamada a una funcion
-// inexistente acaba saltando a la primera. El parser deberia haberlo cazado
-// antes.
+// Returning 0 when nothing is found is optimistic: a call to a non-existent
+// function ends up jumping to the first one. The parser should have caught it
+// earlier.
 fun find_fn_index(funcs: *IrFn, cs: u64, cl: u64) -> u64 {
     let lx: *Lexer = LX_STATE
     let target: *u8 = lx.src + cs
@@ -930,11 +933,11 @@ fun find_fn_index(funcs: *IrFn, cs: u64, cl: u64) -> u64 {
     return 0
 }
 
-// Parchea una instruccion ya emitida en CB haciendo OR de los bits que faltaban.
+// Patches an instruction already emitted into CB by ORing in the missing bits.
 //
-// Funciona porque el campo se dejo a cero al emitir. Si no fuera asi habria que
-// enmascarar primero, y un OR sobre bits ya puestos produciria una instruccion
-// distinta.
+// It works because the field was left at zero on emission. Were that not the
+// case, it would have to be masked first, and an OR over bits already set
+// would produce a different instruction.
 fun cb_patch_or(pos: u64, extra: u64) {
     let cb: *u8 = CB
     let w: u64 = cb[pos] | (cb[pos + 1] << 8) | (cb[pos + 2] << 16) | (cb[pos + 3] << 24)
@@ -945,19 +948,19 @@ fun cb_patch_or(pos: u64, extra: u64) {
     cb[pos + 3] = (w >> 24) & 255
 }
 
-// PRIMERA RONDA DE PARCHEO: saltos internos (b, cbz, bl).
+// FIRST PATCHING ROUND: internal branches (b, cbz, bl).
 //
-// Se puede hacer aqui, sobre offsets de CB, porque los tres son relativos al PC
-// y por tanto independientes de donde acabe cargado el binario. El
-// desplazamiento se cuenta en instrucciones, de ahi la division por 4.
+// It can be done here, over CB offsets, because all three are PC-relative and
+// therefore independent of where the binary ends up loaded. The displacement
+// is counted in instructions, hence the division by 4.
 //
-// Las restas producen valores negativos para saltos hacia atras; como todo es
-// u64, eso se convierte en un numero enorme y el enmascarado a 26 o 19 bits lo
-// recorta al complemento a dos correcto.
+// The subtractions produce negative values for backward branches; since
+// everything is a u64, that becomes an enormous number and masking to 26 or 19
+// bits trims it to the correct two's complement.
 //
-// Los adrp/add de literales y bss NO se tocan aqui: dependen de las direcciones
-// virtuales finales, que solo se conocen al montar la imagen Mach-O. De eso se
-// encarga mo_resolve_strings_bss.
+// The adrp/add pairs of literals and bss are NOT touched here: they depend on
+// the final virtual addresses, which are only known when the Mach-O image is
+// assembled. mo_resolve_strings_bss takes care of that.
 fun cgb_resolve_branches() {
     let n: *u64 = CG_FIXN
     let f: *u64 = CG_FIX
@@ -983,11 +986,11 @@ fun cgb_resolve_branches() {
     }
 }
 
-// Mayor id de label usado por el control de flujo, mas uno.
+// Largest label id used by the control flow, plus one.
 //
-// Hace falta porque los epilogos necesitan labels propios y se asignan DESPUES
-// de los que creo el lowering: empezando en este maximo, un epilogo por funcion,
-// no chocan con ninguno existente.
+// It is needed because the epilogues require labels of their own and they are
+// assigned AFTER the ones the lowering created: starting from this maximum,
+// one epilogue per function, they collide with no existing label.
 fun cgb_max_label(funcs: *IrFn) -> u64 {
     let m: u64 = 0
     let fn: *IrFn = funcs
@@ -1004,8 +1007,9 @@ fun cgb_max_label(funcs: *IrFn) -> u64 {
     return m
 }
 
-// Tabla str_id -> offset del literal DENTRO DE LA IMAGEN Mach-O (no de CB).
-// La rellena mo_string_layout(_bss) al decidir donde va cada cadena.
+// str_id -> offset of the literal INSIDE THE Mach-O IMAGE (not inside CB).
+// It is filled in by mo_string_layout(_bss) when deciding where each string
+// goes.
 fun cgb_stroff_set(id: u64, off: u64) {
     let p: *u64 = CG_STROFF
     p[id] = off
@@ -1017,25 +1021,25 @@ fun cgb_stroff_get(id: u64) -> u64 {
 }
 
 // ---------------------------------------------------------------------------
-// Driver del backend de bytes
+// Driver of the byte backend
 //
-// Deja CB con el codigo completo, CB_POS con su tamano y CG_ENTRY con el offset
-// del punto de entrada. Despues hay que llamar a emit_macho_code_bss para
-// envolverlo en un Mach-O.
+// It leaves CB holding the complete code, CB_POS its size and CG_ENTRY the
+// offset of the entry point. Afterwards emit_macho_code_bss has to be called
+// to wrap it in a Mach-O.
 //
-// El codigo emitido empieza SIEMPRE por _tt_start, que es lo que apunta el
-// LC_MAIN del binario:
+// The emitted code ALWAYS starts with _tt_start, which is what the binary's
+// LC_MAIN points at:
 //
-//     bl   _main            <- fixup por nombre, igual que cualquier llamada
+//     bl   _main            <- fixup by name, like any other call
 //     movz x16, #1          <- SYS_exit
 //     svc  #0x80
 //
-// O sea: el valor que devuelve main() se convierte en el codigo de salida del
-// proceso sin pasar por libc. Eso es lo que permite que casi todos los tests de
-// tests/ sean "un programa que devuelve un numero".
+// That is: the value main() returns becomes the exit code of the process
+// without going through libc. It is what allows almost every test in tests/ to
+// be "a program that returns a number".
 //
-// Los labels de epilogo se numeran a partir de cgb_max_label para no chocar con
-// los del lowering, y se asigna uno por funcion (epi + 1 en cada vuelta).
+// The epilogue labels are numbered from cgb_max_label so as not to collide
+// with the lowering's, and one is assigned per function (epi + 1 each round).
 fun codegen_bytes(target: u64, prog: *Program, funcs: *IrFn) {
     cgb_prog_set(prog)
     set_target(target)
@@ -1072,7 +1076,7 @@ fun codegen_bytes(target: u64, prog: *Program, funcs: *IrFn) {
         cb_word(enc_svc(128))
     }
 
-    // funciones
+    // functions
     let epi: u64 = maxl
     let idx: u64 = 0
     let fn: *IrFn = funcs
@@ -1087,29 +1091,29 @@ fun codegen_bytes(target: u64, prog: *Program, funcs: *IrFn) {
     cgb_resolve_branches()
 }
 
-// --- writer con reubicacion de literales de cadena (__cstring en __TEXT) ---
+// --- writer with string literal relocation (__cstring inside __TEXT) ---
 
 // ---------------------------------------------------------------------------
-// Montaje de la imagen Mach-O
+// Assembly of the Mach-O image
 //
-// A partir de aqui se trabaja sobre MO_IMG (ver src/macho.tt), no sobre CB.
-// Los offsets son de FICHERO, o sea que llevan sumadas las cabeceras: 552 en el
-// camino sin bss y 704 en el camino con bss.
+// From here on the work happens over MO_IMG (see src/macho.tt), not over CB.
+// The offsets are FILE offsets, that is, they already include the headers: 552
+// in the path without bss and 704 in the path with bss.
 // ---------------------------------------------------------------------------
 
-// Los literales se alinean a 8 para que un `str` pueda leerse con accesos
-// alineados y para que el layout sea determinista (importa para el fixpoint).
+// The literals are 8-aligned so that a `str` can be read with aligned accesses
+// and so that the layout is deterministic (which matters for the fixpoint).
 fun mo_align8(v: u64) -> u64 {
     return ((v + 7) / 8) * 8
 }
 
-// parche in situ (OR) de una palabra de 32 bits en MO_IMG
-// El equivalente de cb_patch_or pero sobre MO_IMG. Mismo razonamiento: el campo
-// se dejo a cero, asi que basta con un OR.
+// in-place patch (OR) of a 32-bit word in MO_IMG
+// The equivalent of cb_patch_or but over MO_IMG. Same reasoning: the field was
+// left at zero, so an OR is enough.
 //
-// Solo toca los 4 bytes de la instruccion: los bits de `extra` por encima de 32
-// se descartan al reescribir, lo que actua como red de seguridad si un
-// desplazamiento se calculo mal.
+// It only touches the 4 bytes of the instruction: the bits of `extra` above 32
+// are discarded on rewrite, which acts as a safety net if a displacement was
+// miscomputed.
 fun img_or(off: u64, extra: u64) {
     let img: *u8 = MO_IMG
     let w: u64 = img[off] | (img[off + 1] << 8) | (img[off + 2] << 16) | (img[off + 3] << 24)
@@ -1120,15 +1124,15 @@ fun img_or(off: u64, extra: u64) {
     img[off + 3] = (w >> 24) & 255
 }
 
-// Coloca los literales de cadena detras del codigo y devuelve el tamano total
-// de la seccion __text.
+// Places the string literals after the code and returns the total size of the
+// __text section.
 //
-// Las cadenas viven DENTRO de __TEXT, no en un __cstring aparte: son de solo
-// lectura, asi que comparten segmento con el codigo y eso ahorra un segmento
-// entero. Cada una lleva su terminador nulo porque el runtime pasa punteros a
-// syscalls que esperan cadenas de C (open, sobre todo).
+// The strings live INSIDE __TEXT, not in a separate __cstring: they are read
+// only, so they share a segment with the code and that saves a whole segment.
+// Each one carries its null terminator because the runtime passes pointers to
+// syscalls that expect C strings (open, above all).
 //
-// Version del camino SIN bss (offsets base 552).
+// Version for the path WITHOUT bss (base offset 552).
 fun mo_string_layout(prog: *Program, code_len: u64) -> u64 {
     let cursor: u64 = 552 + code_len
     let it: *StrLit = prog.strs
@@ -1141,13 +1145,13 @@ fun mo_string_layout(prog: *Program, code_len: u64) -> u64 {
     return cursor - 552
 }
 
-// SEGUNDA RONDA DE PARCHEO (camino sin bss): los pares adrp+add de literales.
+// SECOND PATCHING ROUND (path without bss): the adrp+add pairs of literals.
 //
-// Ahora si se conocen las direcciones finales, asi que se puede calcular la
-// diferencia de paginas. Como __TEXT se mapea en 0x100000000, que es multiplo
-// de 4096, la diferencia de paginas entre dos posiciones de la imagen es la
-// misma que entre sus offsets de fichero: por eso basta con dividir los offsets
-// por 4096 sin sumar la base.
+// The final addresses are known by now, so the page difference can be
+// computed. Since __TEXT is mapped at 0x100000000, which is a multiple of
+// 4096, the page difference between two positions of the image is the same as
+// between their file offsets: that is why dividing the offsets by 4096 without
+// adding the base is enough.
 fun mo_resolve_strings() {
     let n: *u64 = CG_FIXN
     let f: *u64 = CG_FIX
@@ -1174,29 +1178,30 @@ fun mo_resolve_strings() {
     }
 }
 
-// Monta y escribe el Mach-O del camino SIN bss (una sola pagina de __TEXT).
+// Assembles and writes the Mach-O of the path WITHOUT bss (a single __TEXT
+// page).
 //
-// Orden de operaciones, que importa: cabeceras, codigo, literales, PARCHEO,
-// relleno y por ultimo firma. Cualquier cosa que se escriba despues de la firma
-// la invalidaria.
+// Order of operations, which matters: headers, code, literals, PATCHING,
+// padding and finally the signature. Anything written after the signature
+// would invalidate it.
 fun emit_macho_code(fd: u64, prog: *Program, code_len: u64, entry_off: u64) {
     let img: *u8 = MO_IMG
     let tsize: u64 = mo_string_layout(prog, code_len)
-    // este path fija __TEXT a una sola pagina de 16KB
+    // this path pins __TEXT to a single 16KB page
     if 552 + tsize > 16384 {
         io_exit(72)
     }
     mo_uuid_from_code(CB, code_len)
     mc_set(0)
     mo_emit_headers(img, tsize, entry_off)
-    // copia el codigo
+    // copies the code
     let cb: *u8 = CB
     let bi: u64 = 0
     while bi < code_len {
         e8(img, cb[bi])
         bi = bi + 1
     }
-    // literales: alinea a cada offset asignado y escribe bytes + null
+    // literals: pads to each assigned offset and writes bytes + null
     let it: *StrLit = prog.strs
     while it != nil {
         let off: u64 = cgb_stroff_get(it.id)
@@ -1211,16 +1216,16 @@ fun emit_macho_code(fd: u64, prog: *Program, code_len: u64, entry_off: u64) {
         e8(img, 0)
         it = it.next
     }
-    // parchea las reubicaciones de literales
+    // patches the literal relocations
     mo_resolve_strings()
-    // relleno hasta 0x4000, firma y escritura
+    // padding up to 0x4000, signature and write
     let cur: u64 = mc_get()
     ezeros(img, 16384 - cur)
     mo_sign_and_write(fd, img)
 }
 
-// Como find_fn_index, pero comparando contra una cadena literal en vez de
-// contra un rango del buffer de fuente. Se usa para localizar `main` desde
+// Like find_fn_index, but comparing against a string literal instead of
+// against a range of the source buffer. It is used to locate `main` from
 // _tt_start.
 fun fn_index_by_name(funcs: *IrFn, name: *u8, nlen: u64) -> u64 {
     let lx: *Lexer = LX_STATE
@@ -1239,14 +1244,15 @@ fun fn_index_by_name(funcs: *IrFn, name: *u8, nlen: u64) -> u64 {
 }
 
 // ============================================================================
-// Soporte de bss (hito 24.g): __DATA,__bss y __TEXT multi-pagina
+// bss support (milestone 24.g): __DATA,__bss and multi-page __TEXT
 // ============================================================================
 //
-// Todo lo que sigue duplica las funciones de arriba con el offset base 704 en
-// vez de 552, y anade la resolucion de los fixups contra simbolos bss.
+// Everything that follows duplicates the functions above with base offset 704
+// instead of 552, and adds the resolution of the fixups against bss symbols.
 //
-// El *Program se guarda en un global porque cgb_i_label_addr necesita resolver
-// un nombre de bss a su indice y no tiene el Program a mano en su firma.
+// The *Program is kept in a global because cgb_i_label_addr needs to resolve a
+// bss name to its index and does not have the Program at hand in its
+// signature.
 
 fun cgb_prog_set(p: *Program) {
     let s: **Program = CG_PROG
@@ -1284,19 +1290,19 @@ fun cgb_bss_name_before(a: *BssItem, b: *BssItem) -> u64 {
     return 0
 }
 
-// Asigna a cada simbolo bss su offset dentro de __DATA y devuelve el tamano
-// total del segmento.
+// Assigns every bss symbol its offset inside __DATA and returns the total size
+// of the segment.
 //
-// El orden es el de declaracion, o sea el orden de los `import` del entry: por
-// eso IO_BUF (declarado en src/runtime/io.tt, el primer import) siempre cae en
-// el offset 0.
+// The order is the declaration order, that is the order of the entry point's
+// `import`s: that is why IO_BUF (declared in src/runtime/io.tt, the first
+// import) always lands at offset 0.
 //
-// Cada bloque se alinea a 8 y el total se redondea a 16KB porque un
-// LC_SEGMENT_64 tiene que ocupar un numero entero de paginas virtuales, y en
-// arm64 macOS la pagina es de 16KB.
+// Each block is 8-aligned and the total is rounded up to 16KB because an
+// LC_SEGMENT_64 has to span a whole number of virtual pages, and on arm64
+// macOS the page is 16KB.
 //
-// Un programa sin ningun bss da 0 aqui; emit_macho_code_bss lo corrige a una
-// pagina para no emitir un segmento de tamano cero.
+// A program with no bss at all yields 0 here; emit_macho_code_bss corrects
+// that to one page so as not to emit a zero-sized segment.
 fun cgb_bss_layout(prog: *Program) -> u64 {
     let it: *BssItem = prog.bsses
     let count: u64 = 0
@@ -1333,8 +1339,8 @@ fun cgb_bss_layout(prog: *Program) -> u64 {
     return ((cursor + 16383) / 16384) * 16384
 }
 
-// Indice de un simbolo bss por nombre. Recorre la misma lista en el mismo orden
-// que cgb_bss_layout, que es lo que garantiza que los indices coincidan.
+// Index of a bss symbol by name. It walks the same list in the same order as
+// cgb_bss_layout, which is what guarantees that the indices match.
 fun cgb_bss_index_by_name(prog: *Program, s: u64, n: u64) -> u64 {
     let lx: *Lexer = LX_STATE
     let it: *BssItem = prog.bsses
@@ -1352,7 +1358,7 @@ fun cgb_bss_index_by_name(prog: *Program, s: u64, n: u64) -> u64 {
     return 0
 }
 
-// Igual que mo_string_layout pero con el offset base 704 del camino con bss.
+// Same as mo_string_layout but with the base offset 704 of the path with bss.
 fun mo_string_layout_bss(prog: *Program, code_len: u64) -> u64 {
     let cursor: u64 = 704 + code_len
     let it: *StrLit = prog.strs
@@ -1365,19 +1371,19 @@ fun mo_string_layout_bss(prog: *Program, code_len: u64) -> u64 {
     return cursor - 704
 }
 
-// SEGUNDA RONDA DE PARCHEO (camino con bss): literales Y simbolos bss.
+// SECOND PATCHING ROUND (path with bss): literals AND bss symbols.
 //
-// Aqui es donde entra text_pages, y donde estaba el bug que abrio la sesion
-// C3a: la direccion base de __bss se calculaba como 16384 + offset, o sea
-// asumiendo que __TEXT ocupaba UNA pagina. En un binario de 7 paginas todos los
-// accesos a bss apuntaban 6 paginas de 16KB antes de donde debian, es decir
-// dentro de __TEXT. Ahora se deriva de text_pages.
+// This is where text_pages comes in, and where the bug that opened session C3a
+// lived: the base address of __bss was computed as 16384 + offset, that is,
+// assuming __TEXT took ONE page. In a 7-page binary every bss access pointed
+// six 16KB pages before where it should, that is, inside __TEXT. It is now
+// derived from text_pages.
 //
-// Sobre el enmascarado a 21 bits: la resta de paginas puede dar negativo (aqui
-// no ocurre, porque las cadenas van detras del codigo y el bss detras de
-// __TEXT, pero la aritmetica no lo sabe). Sin la mascara, un valor negativo
-// convertido a u64 daria un `hi` gigantesco cuyo desplazamiento a la izquierda
-// se colaria sobre bits del opcode.
+// About the masking to 21 bits: the page subtraction can go negative (it does
+// not here, because the strings sit after the code and the bss after __TEXT,
+// but the arithmetic does not know that). Without the mask, a negative value
+// converted to u64 would give a gigantic `hi` whose left shift would leak onto
+// opcode bits.
 fun mo_resolve_strings_bss(text_pages: u64) {
     let text_vmsize: u64 = text_pages * 16384
     let n: *u64 = CG_FIXN
@@ -1419,22 +1425,23 @@ fun mo_resolve_strings_bss(text_pages: u64) {
     }
 }
 
-// Monta y escribe el Mach-O del camino CON bss. Es la salida de `--emit=macho`.
+// Assembles and writes the Mach-O of the path WITH bss. It is the output of
+// `--emit=macho`.
 //
-// text_pages se calcula del tamano real: cabeceras (704) mas codigo mas
-// literales, redondeado a paginas de 16KB. De ahi salen a la vez el vmsize de
-// __TEXT, la direccion base de __DATA y el numero de hashes de la firma; que
-// los tres vengan del mismo sitio es lo que hace que el binario sea coherente.
+// text_pages is computed from the real size: headers (704) plus code plus
+// literals, rounded up to 16KB pages. From it come, at once, the vmsize of
+// __TEXT, the base address of __DATA and the number of signature hashes; all
+// three coming from the same place is what makes the binary consistent.
 //
-// Orden: UUID (que depende del codigo), cabeceras (que llevan el UUID dentro),
-// codigo, literales, parcheo, relleno hasta el final de la ultima pagina y
-// firma.
+// Order: UUID (which depends on the code), headers (which carry the UUID
+// inside), code, literals, patching, padding up to the end of the last page
+// and signature.
 fun emit_macho_code_bss(fd: u64, prog: *Program, code_len: u64, entry_off: u64, bss_vmsize: u64) {
     let img: *u8 = MO_IMG
     let tsize: u64 = mo_string_layout_bss(prog, code_len)
     let text_pages: u64 = ((704 + tsize + 16383) / 16384)
-    // un LC_SEGMENT_64 de vmsize 0 haria que __DATA y __LINKEDIT compartan
-    // vmaddr; reservamos siempre al menos una pagina.
+    // an LC_SEGMENT_64 with vmsize 0 would make __DATA and __LINKEDIT share a
+    // vmaddr; we always reserve at least one page.
     let bvs: u64 = bss_vmsize
     if bvs == 0 { bvs = 16384 }
     mo_uuid_from_code(CB, code_len)

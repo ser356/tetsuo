@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Hito 24.g Session A: stage1 compila un programa con bss al pipeline codegen_bytes.
-# El binario Mach-O emitido (con __DATA,__bss S_ZEROFILL) se ejecuta directamente,
-# sin herramientas externas, y devuelve 42 (leyendo un byte escrito en un buffer bss).
+# Milestone 24.g Session A: stage1 compiles a program with bss through the
+# codegen_bytes pipeline. The emitted Mach-O binary (with __DATA,__bss
+# S_ZEROFILL) runs directly, with no external tools, and returns 42 (by reading
+# a byte written into a bss buffer).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

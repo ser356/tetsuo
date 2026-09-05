@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""Ejecuta bajo qemu-aarch64 un Mach-O arm64 emitido por `tetsuoc --emit=macho`,
-reproduciendo EXACTAMENTE su layout de memoria.
+"""Runs an arm64 Mach-O emitted by `tetsuoc --emit=macho` under qemu-aarch64,
+reproducing its memory layout EXACTLY.
 
-A diferencia de macho_run.py (que solo salta a main dentro de una copia de la
-primera pagina), este harness construye un ELF estatico cuyos PT_LOAD calcan los
-LC_SEGMENT_64 del Mach-O:
+Unlike macho_run.py (which only jumps to main inside a copy of the first page),
+this harness builds a static ELF whose PT_LOAD entries trace the LC_SEGMENT_64
+of the Mach-O:
 
-  - __TEXT se mapea r-x en su vmaddr real (0x100000000) desde el fichero, con la
-    cabecera Mach-O y los cstrings incluidos, para que los adrp/add PC-relativos
-    den exactamente las mismas direcciones que en macOS;
-  - __DATA/__bss se mapea rw- anonimo (cero) en su vmaddr real, con su vmsize
-    completo, para que los fixups FX_ADRPB/FX_PGOFB apunten a memoria valida;
-  - los `svc #0x80` del cuerpo se reescriben a `bl` a un shim que traduce las
-    syscalls BSD (x16) a Linux (x8).
+  - __TEXT is mapped r-x at its real vmaddr (0x100000000) from the file, with
+    the Mach-O header and the cstrings included, so that the PC-relative
+    adrp/add pairs yield exactly the same addresses as on macOS;
+  - __DATA/__bss is mapped rw- anonymous (zeroed) at its real vmaddr, with its
+    full vmsize, so that the FX_ADRPB/FX_PGOFB fixups point at valid memory;
+  - the `svc #0x80` instructions in the body are rewritten to a `bl` into a shim
+    that translates the BSD syscalls (x16) into Linux ones (x8).
 
-Asi se ejercita el binario emitido de verdad (multi-pagina, bss lejano, cadenas,
-llamadas, entry por LC_MAIN) sin necesidad de macOS, y se separa un fallo de
-codegen/fixups de un fallo del contenedor Mach-O o de la firma.
+This exercises the real emitted binary (multi-page, distant bss, strings, calls,
+LC_MAIN entry point) with no need for macOS, and separates a codegen/fixup
+failure from a Mach-O container or signature failure.
 
-Uso: macho_exec.py <macho> <elf_salida>   y luego: qemu-aarch64 <elf_salida>
+Usage: macho_exec.py <macho> <output_elf>   then: qemu-aarch64 <output_elf>
 """
 import os
 import struct
@@ -26,8 +26,8 @@ import subprocess
 import sys
 import tempfile
 
-PAGE = 0x10000          # alineacion de fichero/vaddr para los PT_LOAD
-SHIM_BASE = 0xFFF00000  # justo debajo de __TEXT: alcanzable con un `bl` (+-128MB)
+PAGE = 0x10000          # file/vaddr alignment for the PT_LOAD entries
+SHIM_BASE = 0xFFF00000  # just below __TEXT: reachable with a `bl` (+-128MB)
 
 SHIM_ASM = """
     .text
@@ -176,7 +176,7 @@ def main():
     shim, syms = build_shim(entry_va, shim_va, tmpdir)
     sys_va = syms["_tt_sys"]
 
-    # svc #0x80 -> bl _tt_sys, solo dentro de la seccion __text
+    # svc #0x80 -> bl _tt_sys, only inside the __text section
     tsec = [s for s in sects if s[1] == "__text"]
     if not tsec:
         die("sin seccion __text")

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Ejecuta bajo qemu-aarch64 un Mach-O emitido por el codegen de bytes (24.e).
+"""Runs a Mach-O emitted by the byte codegen (24.e) under qemu-aarch64.
 
-El binario usa la convencion de syscalls de macOS (x16 + svc #0x80), que qemu en
-modo Linux-user no entiende. Para validar el RESULTADO de un programa que solo
-computa y retorna (sin syscalls en el cuerpo), este harness:
-  - localiza __text y el entryoff (_tt_start) en el Mach-O,
-  - decodifica el primer 'bl' de _tt_start para hallar el offset de 'main',
-  - genera un ELF que copia __text tal cual y salta a main (blr), tomando su
-    valor de retorno como codigo de salida Linux.
-Asi se ejercita el codigo generado (prologos, llamadas bl relativas, aritmetica,
-control de flujo) realmente en la CPU, sin depender de macOS.
+The binary uses the macOS syscall convention (x16 + svc #0x80), which qemu in
+Linux-user mode does not understand. To validate the RESULT of a program that
+only computes and returns (with no syscalls in its body), this harness:
+  - locates __text and the entryoff (_tt_start) in the Mach-O,
+  - decodes the first 'bl' of _tt_start to find the offset of 'main',
+  - generates an ELF that copies __text verbatim and jumps to main (blr), taking
+    its return value as the Linux exit code.
+This exercises the generated code (prologues, relative bl calls, arithmetic,
+control flow) for real on the CPU, without depending on macOS.
 
-Uso: macho_run.py <macho_bin>   -> sale con el rc que devuelve main().
+Usage: macho_run.py <macho_bin>   -> exits with the rc main() returns.
 """
 import sys, struct, subprocess, tempfile, os
 
@@ -44,9 +44,10 @@ def main():
         off += cmdsize
     if text_off is None or entryoff is None:
         die("sin __text o LC_MAIN")
-    # Cargamos la pagina __TEXT completa (que incluye header, codigo y cstrings)
-    # en un blob alineado a pagina, para que la aritmetica adrp/add —calculada
-    # para el layout Mach-O con base alineada a pagina— coincida bit a bit.
+    # We load the complete __TEXT page (which includes header, code and
+    # cstrings) into a page-aligned blob, so that the adrp/add arithmetic
+    # -computed for the Mach-O layout with a page-aligned base- matches bit for
+    # bit.
     page = 0x4000
     blob = data[0:page]
     w = struct.unpack_from("<I", data, entryoff)[0]
@@ -54,11 +55,11 @@ def main():
         die("primer instr de _tt_start no es bl (%#x)" % w)
     imm26 = w & 0x03ffffff
     if imm26 & 0x02000000: imm26 -= 0x04000000
-    main_off = entryoff + imm26 * 4   # file offset de main() dentro del blob
+    main_off = entryoff + imm26 * 4   # file offset of main() inside the blob
     if main_off < 0 or main_off >= len(blob):
         die("main_off fuera de rango: %d" % main_off)
 
-    # ELF: code_blob alineado a pagina; _start salta a main y hace exit(x0) Linux
+    # ELF: page-aligned code_blob; _start jumps to main and does a Linux exit(x0)
     byts = ",".join(str(b) for b in blob)
     asm = f"""
     .text

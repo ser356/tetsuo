@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Hito 24.g Session C3a: aisla el layout Mach-O multi-pagina del volumen de
-# codigo. Emite /tmp/tt_macho_multipage (7 paginas de __TEXT, ~50MB de __bss,
-# apenas 40 instrucciones de codigo) y lo ejecuta: debe devolver 20.
+# Milestone 24.g Session C3a: isolates the multi-page Mach-O layout from the
+# code volume. It emits /tmp/tt_macho_multipage (7 pages of __TEXT, ~50MB of
+# __bss, barely 40 instructions of code) and runs it: it must return 20.
 #
-# Si este test pasa pero los binarios grandes de macos_build.sh mueren, el
-# problema NO es el layout multi-pagina ni los fixups lejanos contra __bss.
+# If this test passes but the large binaries from macos_build.sh die, the
+# problem is NOT the multi-page layout nor the distant fixups against __bss.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

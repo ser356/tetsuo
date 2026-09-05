@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Compila un .tt a Mach-O AArch64 firmado adhoc y lo ejecuta.
-# Sin clang, sin as, sin ld, sin codesign: el binario emitido por stage1
-# --emit=macho es directamente ejecutable en macOS 11+ arm64.
+# Compiles a .tt into an ad-hoc signed AArch64 Mach-O and runs it.
+# No clang, no as, no ld, no codesign: the binary emitted by stage1
+# --emit=macho is directly executable on macOS 11+ arm64.
 set -euo pipefail
 
 BUILD=build
@@ -14,11 +14,11 @@ ARGS=("$@")
 
 mkdir -p "$BUILD"
 
-# macOS cachea la firma de codigo por vnode: sobrescribir un Mach-O firmado
-# "in place" deja el blob viejo asociado al inodo y el kernel mata el proceso
-# con SIGKILL aunque `codesign -v` sobre el fichero nuevo sea limpio. Por eso
-# todo binario se escribe en un temporal y se mueve con rename() atomico, que
-# crea un inodo nuevo.
+# macOS caches the code signature per vnode: overwriting a signed Mach-O
+# "in place" leaves the old blob attached to the inode and the kernel kills the
+# process with SIGKILL even when `codesign -v` on the new file is clean. That is
+# why every binary is written to a temporary and moved with an atomic rename(),
+# which creates a new inode.
 if [[ ! -x $COMPILER ]]; then
   rm -f "$COMPILER"
   cp "$SEED" "$COMPILER.tmp"

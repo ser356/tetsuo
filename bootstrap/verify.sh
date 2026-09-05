@@ -24,13 +24,13 @@ check() {
 
 section() { printf '\n%s%s%s\n' "$BOLD" "$1" "$RESET"; }
 
-# Forzar rebuild del binario stage1: macos_build.sh cachea build/main.
+# Force a rebuild of the stage1 binary: macos_build.sh caches build/main.
 rm -f build/main build/main_mp
 
-# Sonda de aislamiento: mismo contenedor Mach-O que los binarios de abajo
-# (__TEXT de 7 paginas + ~50MB de __bss) pero con apenas 40 instrucciones de
-# codigo. Si esto muere, el problema es el contenedor/layout; si pasa y los
-# binarios grandes mueren, el problema no es el numero de paginas.
+# Isolation probe: the same Mach-O container as the binaries below (a 7-page
+# __TEXT + ~50MB of __bss) but with barely 40 instructions of code. If this
+# dies, the problem is the container/layout; if it passes and the large
+# binaries die, the problem is not the number of pages.
 section "Layout Mach-O multi-pagina (hito 24.g C3a)"
 check "macho_multipage (7 pag + 50MB bss)"  20  bash tests/macho_multipage_build.sh
 

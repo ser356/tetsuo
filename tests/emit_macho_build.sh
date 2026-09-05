@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Hito 24.g Session C1: stage1 con --emit=macho emite un Mach-O firmado
-# directamente. Compila un programa simple sin invocar clang para el output,
-# lo ejecuta nativo en macOS y espera rc=42.
+# Milestone 24.g Session C1: stage1 with --emit=macho emits a signed Mach-O
+# directly. It compiles a simple program without invoking clang for the output,
+# runs it natively on macOS and expects rc=42.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -16,14 +16,15 @@ if [[ ! -x $COMPILER ]]; then
   $CC -e _tt_start -o "$COMPILER" "$BUILD/main.o"
 fi
 
-# stage1 con soporte --emit=macho: se compila desde el entry extendido que
-# incluye codegen_bytes/asm/macho/sha256. clang linka la salida.
+# stage1 with --emit=macho support: built from the extended entry point that
+# includes codegen_bytes/asm/macho/sha256. clang links the output.
 "$COMPILER" --target=macos tests/fixpoint_entry.tt -o "$BUILD/main_macho.s"
 $CC -c "$BUILD/main_macho.s" -o "$BUILD/main_macho.o"
 $CC -e _tt_start -o "$BUILD/main_macho" "$BUILD/main_macho.o"
 
-# Ahora build/main_macho es un compilador que soporta --emit=macho.
-# Compila el smoke tests/emit_macho_test.tt directamente a Mach-O firmado.
+# build/main_macho is now a compiler that supports --emit=macho.
+# It compiles the tests/emit_macho_test.tt smoke test straight to a signed
+# Mach-O.
 rm -f /tmp/tt_emit_macho
 "$BUILD/main_macho" --emit=macho tests/emit_macho_test.tt -o /tmp/tt_emit_macho
 

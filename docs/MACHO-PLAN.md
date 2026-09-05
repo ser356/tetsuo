@@ -1,38 +1,38 @@
-# Plan Mach-O — hitos 24.a → 24.f
+# Mach-O plan — milestones 24.a → 24.f
 
-> **Estado: cerrado (24.a–24.f).** stage1 emite un Mach-O AArch64 firmado
-> ad-hoc ejecutable directamente, con cero herramientas externas. Verificado en
-> Linux vía `bootstrap/linux/verify_linux.sh` (fixpoint bit-a-bit + smokes
-> 24.a–24.f): los shifts (24.a), el encoder (24.b) contra `aarch64-linux-gnu-as`,
-> SHA-256 (24.c) contra `hashlib`, y el Mach-O firmado (24.d/24.f) cuyos hashes
-> de pagina se recalculan y comparan (lo que hace `codesign -v`), parseando
-> ademas limpio con `llvm-objdump`/`macholib`. El codegen a bytes (24.e) compila
-> programas reales (llamadas, recursion, comparaciones, literales de cadena) a un
-> Mach-O firmado que se ejecuta bajo qemu y devuelve el valor esperado.
-> Pendiente menor: bss en `__DATA` por la ruta de bytes (24.g), soportada ya por
-> la ruta textual.
+> **Status: closed (24.a–24.f).** stage1 emits a directly executable ad-hoc
+> signed AArch64 Mach-O, with zero external tools. Verified on Linux through
+> `bootstrap/linux/verify_linux.sh` (bit-for-bit fixpoint + 24.a–24.f smoke
+> tests): the shifts (24.a), the encoder (24.b) against `aarch64-linux-gnu-as`,
+> SHA-256 (24.c) against `hashlib`, and the signed Mach-O (24.d/24.f) whose page
+> hashes are recomputed and compared (what `codesign -v` does), and which also
+> parses cleanly with `llvm-objdump`/`macholib`. The byte codegen (24.e)
+> compiles real programs (calls, recursion, comparisons, string literals) into a
+> signed Mach-O that runs under qemu and returns the expected value.
+> Minor item pending: bss in `__DATA` through the byte route (24.g), already
+> supported by the textual route.
 
-Objetivo: **stage1 emite ejecutables Mach-O AArch64 auto-firmados directamente**, sin `clang` ni `as`/`ld` ni `codesign`. macOS 11+ (Apple Silicon).
+Goal: **stage1 emits self-signed AArch64 Mach-O executables directly**, with no `clang`, no `as`/`ld` and no `codesign`. macOS 11+ (Apple Silicon).
 
-Estado actual: stage1 emite `.s` textual → `clang -c` + `clang -e` produce el binario. clang funciona como `as`+`ld`; el ejecutable resultante lo firma clang implícitamente.
+Current state: stage1 emits textual `.s` → `clang -c` + `clang -e` produces the binary. clang acts as `as`+`ld`; the resulting executable is signed implicitly by clang.
 
-Salida deseada: `stage1 → binario Mach-O firmado, ejecutable directo`.
+Desired output: `stage1 → signed Mach-O binary, directly executable`.
 
-## Estado real de los sub-hitos (2026-08-25)
+## Real state of the submilestones (2026-08-25)
 
-| Hito  | Estado      | Piezas en repo                                                  |
+| Milestone | Status      | Pieces in the repo                                              |
 |-------|-------------|-----------------------------------------------------------------|
-| 24.a  | 🔴 pendiente | Ni `TK_LSHIFT`/`TK_RSHIFT` ni `OP_SHL`/`OP_SHR` en `src/lexer.tt`/`src/parser.tt`. `grep '<<\|>>'` sobre `src/*.tt` no encuentra nada. Es prerequisito de 24.b y 24.c. |
-| 24.b  | 🔴 pendiente | No existe `src/asm.tt` ni `tests/asm_test.tt`.                  |
-| 24.c  | 🔴 pendiente | No existe `lib/sha256.tt` ni `tests/sha256_test.tt`.             |
-| 24.d  | 🟡 en curso  | `src/macho.tt` existe con `out_u32_le`, `out_u64_le`, `out_zeros`, `out_segname` + esqueleto `write_macho_exit42` (header + `LC_SEGMENT_64` + `LC_MAIN`). Smoke `tests/macho42_test.tt` produce `/tmp/tt_macho42`; corre tras `codesign -s -` externo. Falta cerrar el resto de LCs (`LC_LOAD_DYLINKER`, `LC_SYMTAB`, `LC_DYSYMTAB`, `LC_UUID`, `LC_BUILD_VERSION`, `LC_CODE_SIGNATURE`) y el smoke automatizado en `bootstrap/verify.sh`. |
-| 24.e  | 🔴 pendiente | No existe `src/codegen_bytes.tt`.                                |
-| 24.f  | 🔴 pendiente | Depende de 24.c y 24.d completos.                                |
+| 24.a  | 🔴 pending  | Neither `TK_LSHIFT`/`TK_RSHIFT` nor `OP_SHL`/`OP_SHR` in `src/lexer.tt`/`src/parser.tt`. `grep '<<\|>>'` over `src/*.tt` finds nothing. It is a prerequisite of 24.b and 24.c. |
+| 24.b  | 🔴 pending  | Neither `src/asm.tt` nor `tests/asm_test.tt` exists.            |
+| 24.c  | 🔴 pending  | Neither `lib/sha256.tt` nor `tests/sha256_test.tt` exists.       |
+| 24.d  | 🟡 in progress | `src/macho.tt` exists with `out_u32_le`, `out_u64_le`, `out_zeros`, `out_segname` + a `write_macho_exit42` skeleton (header + `LC_SEGMENT_64` + `LC_MAIN`). The smoke test `tests/macho42_test.tt` produces `/tmp/tt_macho42`; it runs after an external `codesign -s -`. Still to close: the rest of the LCs (`LC_LOAD_DYLINKER`, `LC_SYMTAB`, `LC_DYSYMTAB`, `LC_UUID`, `LC_BUILD_VERSION`, `LC_CODE_SIGNATURE`) and the automated smoke test in `bootstrap/verify.sh`. |
+| 24.e  | 🔴 pending  | `src/codegen_bytes.tt` does not exist.                           |
+| 24.f  | 🔴 pending  | It depends on 24.c and 24.d being complete.                      |
 
-Este bloque manda: si un sub-hito de las secciones siguientes contradice esta tabla, la tabla gana.
+This block rules: if a submilestone in the following sections contradicts this table, the table wins.
 
 
-Estructura del binario destino:
+Structure of the target binary:
 
 ```
 [mach_header_64                              32B]
@@ -46,10 +46,10 @@ Estructura del binario destino:
 [LC_BUILD_VERSION macos 11.0                 24B]
 [LC_MAIN entryoff                            24B]
 [LC_CODE_SIGNATURE dataoff/datasize          16B]
-[padding hasta 0x1000                          ]
-[código __TEXT                                 ]
+[padding up to 0x1000                          ]
+[__TEXT code                                   ]
 [__cstring (literals)                          ]
-[padding a 0x4000                              ]
+[padding to 0x4000                             ]
 [__LINKEDIT: CS_SuperBlob                      ]
   [CS_CodeDirectory hdr]
   [ident "adhoc\0"]
@@ -58,23 +58,23 @@ Estructura del binario destino:
   [...]
 ```
 
-## Fase A — infraestructura del lenguaje y encoder
+## Phase A — language infrastructure and encoder
 
-### 24.a — Shifts `<<` y `>>`
+### 24.a — `<<` and `>>` shifts
 
-- **Objetivo**: operadores `<<` y `>>` binarios. Sin ellos, SHA-256 y encoding AArch64 son inviables.
-- **Ficheros**: `src/lexer.tt` (nuevos tokens `TK_LSHIFT` `TK_RSHIFT`), `src/parser.tt` (constantes `OP_SHL` `OP_SHR`, `bin_prec` prec 5, `parse_expr` mapping), `src/codegen.tt` (`out_binop_mnemonic` gana `lsl` y `lsr`), `src/ir.tt` (nada — `IR_BINOP` ya cubre).
-- **Smoke**: `tests/shifts_test.tt` con `let x: u64 = 1 << 5; if x != 32 { return 1 }; if (1024 >> 3) != 128 { return 2 }; return 0`. verify.sh: rc=0.
-- **LOC**: ~30. Regenerar seed (+/-500L).
-- **Deps**: ninguna.
+- **Goal**: binary `<<` and `>>` operators. Without them, SHA-256 and AArch64 encoding are unfeasible.
+- **Files**: `src/lexer.tt` (new `TK_LSHIFT` `TK_RSHIFT` tokens), `src/parser.tt` (`OP_SHL` `OP_SHR` constants, `bin_prec` prec 5, `parse_expr` mapping), `src/codegen.tt` (`out_binop_mnemonic` gains `lsl` and `lsr`), `src/ir.tt` (nothing — `IR_BINOP` already covers it).
+- **Smoke test**: `tests/shifts_test.tt` with `let x: u64 = 1 << 5; if x != 32 { return 1 }; if (1024 >> 3) != 128 { return 2 }; return 0`. verify.sh: rc=0.
+- **LOC**: ~30. Regenerate the seed (+/-500L).
+- **Deps**: none.
 
-### 24.b — Encoder de instrucciones AArch64
+### 24.b — AArch64 instruction encoder
 
-- **Objetivo**: para cada mnemónico que emitimos hoy en `.s`, devolver el `u32` codificado. Es la clave para saltar de texto a bytes.
-- **Ficheros**: nuevo `src/asm.tt`. Una función por familia de instrucciones:
+- **Goal**: for every mnemonic we emit today in `.s`, return the encoded `u32`. It is the key to jumping from text to bytes.
+- **Files**: a new `src/asm.tt`. One function per instruction family:
   - `enc_movz(rd, imm16, hw) -> u32`
   - `enc_movk(rd, imm16, hw) -> u32`
-  - `enc_mov_reg(rd, rm) -> u32`  (alias de `orr xd, xzr, xm`)
+  - `enc_mov_reg(rd, rm) -> u32`  (alias of `orr xd, xzr, xm`)
   - `enc_stp_pre(rt, rt2, rn, imm7) -> u32`
   - `enc_ldp_post(rt, rt2, rn, imm7) -> u32`
   - `enc_add_imm(rd, rn, imm12) -> u32`
@@ -86,24 +86,24 @@ Estructura del binario destino:
   - `enc_cmp_reg(rn, rm) -> u32`, `enc_cset(rd, cond) -> u32`
   - `enc_svc(imm16) -> u32`
   - `enc_ret() -> u32`
-- **Smoke**: `tests/asm_test.tt` valida 8 casos contra encodings conocidos (`enc_movz(0,42,0)==0xD2800540`, `enc_ret()==0xD65F03C0`, etc). bytes_eq contra tabla dorada.
+- **Smoke test**: `tests/asm_test.tt` validates 8 cases against known encodings (`enc_movz(0,42,0)==0xD2800540`, `enc_ret()==0xD65F03C0`, etc). bytes_eq against a golden table.
 - **LOC**: ~250.
-- **Deps**: 24.a (usa shifts para packing).
+- **Deps**: 24.a (it uses shifts for packing).
 
 ### 24.c — SHA-256
 
-- **Objetivo**: `sha256(msg: *u8, mlen: u64, out: *u8)` que escribe 32 bytes de hash. Fundamento de la firma ad-hoc.
-- **Ficheros**: nuevo `lib/sha256.tt`.
-- **Smoke**: `tests/sha256_test.tt` — hash de `''` (`e3b0c44298fc1c149afbf4c8996fb924...`), `'abc'` (`ba7816bf8f01cfea414140de5dae2223...`), y un input de 128 bytes. bytes_eq contra `.byte` array esperado.
+- **Goal**: `sha256(msg: *u8, mlen: u64, out: *u8)` writing 32 bytes of hash. The foundation of the ad-hoc signature.
+- **Files**: a new `lib/sha256.tt`.
+- **Smoke test**: `tests/sha256_test.tt` — the hash of `''` (`e3b0c44298fc1c149afbf4c8996fb924...`), of `'abc'` (`ba7816bf8f01cfea414140de5dae2223...`), and of a 128-byte input. bytes_eq against the expected `.byte` array.
 - **LOC**: ~250 (K constants table + h init + message schedule + compression + padding).
 - **Deps**: 24.a (shifts).
 
-## Fase B — Mach-O writer
+## Phase B — Mach-O writer
 
-### 24.d — Headers y load commands
+### 24.d — Headers and load commands
 
-- **Objetivo**: emitir un Mach-O válido con TODOS los LC requeridos por macOS 11+ arm64, con un section `__text` que contiene código dummy `exit(42)`. El binario debe pasar `otool -l` y aceptar `codesign -s -`. Con `codesign` externo, debe ejecutarse y rc=42.
-- **Ficheros**: nuevo `src/macho.tt`. Funciones:
+- **Goal**: emit a valid Mach-O with EVERY LC required by macOS 11+ arm64, with a `__text` section holding dummy `exit(42)` code. The binary must pass `otool -l` and accept `codesign -s -`. With external `codesign`, it must run with rc=42.
+- **Files**: a new `src/macho.tt`. Functions:
   - `mo_write_header(o, ncmds, sizeofcmds)`
   - `mo_write_seg_pagezero(o)`
   - `mo_write_seg_text(o, text_size, text_offset, cs_offset, ...)`
@@ -115,30 +115,30 @@ Estructura del binario destino:
   - `mo_write_build_version(o)`
   - `mo_write_main(o, entryoff)`
   - `mo_write_code_signature(o, dataoff, datasize)` (placeholder LC)
-- **Smoke**: `tests/macho42_test.tt` emite el binario con solo `exit(42)`. `tests/macho42_build.sh` hace `codesign -s -` externo, ejecuta, verifica rc=42.
+- **Smoke test**: `tests/macho42_test.tt` emits the binary with only `exit(42)`. `tests/macho42_build.sh` runs an external `codesign -s -`, executes it and verifies rc=42.
 - **LOC**: ~400.
-- **Deps**: 24.a, 24.b (encoder para las 3 instrucciones del cuerpo).
+- **Deps**: 24.a, 24.b (the encoder for the 3 instructions of the body).
 
-### 24.e — Two-pass codegen bytes
+### 24.e — Two-pass byte codegen
 
-- **Objetivo**: reemplazar la ruta de `.s` textual por bytes ARM64 directamente. Coexisten `codegen.tt` (texto) y `codegen_bytes.tt` (bytes) hasta que la ruta bytes esté completa.
-- **Ficheros**: nuevo `src/codegen_bytes.tt` con la misma superficie que `codegen.tt` pero output bytes.
-  - Two-pass:
-    1. Pass 1: computar posiciones absolutas de cada función y label. Recorrer todas las Ins llevando cuenta del offset actual.
-    2. Pass 2: emitir bytes. Para `bl _sym` computar `(target_offset − current_offset) / 4` y encodear en imm26. Para `b .LN` igual con label local.
-  - Emisión de string literals en un segmento `__cstring` dentro de `__TEXT`. `IR_LABEL_ADDR` → `adrp` + `add` con relocaciones internas.
-  - Emisión de bss como parte de `__DATA,__bss` con `LC_SEGMENT_64 __DATA`.
-- **Smoke**: `tests/codegen_bytes_test.tt` emite el equivalente de `fun main(){return 42}` a bytes, hace `codesign -s -` externo, corre, rc=42.
-- **LOC**: ~800 (mayoría desplazamiento + relocation logic).
+- **Goal**: replace the textual `.s` route with ARM64 bytes directly. `codegen.tt` (text) and `codegen_bytes.tt` (bytes) coexist until the byte route is complete.
+- **Files**: a new `src/codegen_bytes.tt` with the same surface as `codegen.tt` but with byte output.
+  - Two passes:
+    1. Pass 1: compute the absolute positions of every function and label. Walk every Ins keeping track of the current offset.
+    2. Pass 2: emit bytes. For `bl _sym` compute `(target_offset − current_offset) / 4` and encode it in imm26. For `b .LN`, the same with a local label.
+  - Emission of string literals into a `__cstring` segment inside `__TEXT`. `IR_LABEL_ADDR` → `adrp` + `add` with internal relocations.
+  - Emission of bss as part of `__DATA,__bss` with `LC_SEGMENT_64 __DATA`.
+- **Smoke test**: `tests/codegen_bytes_test.tt` emits the equivalent of `fun main(){return 42}` as bytes, runs an external `codesign -s -`, executes it, rc=42.
+- **LOC**: ~800 (mostly displacement + relocation logic).
 - **Deps**: 24.b, 24.d.
 
-### 24.f — Firma ad-hoc embebida
+### 24.f — Embedded ad-hoc signature
 
-- **Objetivo**: eliminar `codesign` externo. Escribir el `CS_SuperBlob` completo en `__LINKEDIT` y hashear las páginas de 4KB.
-- **Ficheros**: `src/macho.tt` gana:
+- **Goal**: remove the external `codesign`. Write the complete `CS_SuperBlob` into `__LINKEDIT` and hash the 4KB pages.
+- **Files**: `src/macho.tt` gains:
   - `mo_write_code_signature_full(o, page_hashes[], nhashes, ident)`.
   - `mo_compute_page_hashes(binary_bytes, code_limit) -> [nhashes][32]`.
-  - Estructura CS_SuperBlob:
+  - CS_SuperBlob structure:
     ```
     magic = 0xFADE0CC0
     length = total_bytes
@@ -150,51 +150,51 @@ Estructura del binario destino:
       magic = 0xFADE0C02
       length
       version = 0x20400
-      flags = 0x20002 (adhoc | linkerSigned) o solo adhoc 0x2
+      flags = 0x20002 (adhoc | linkerSigned) or just adhoc 0x2
       hashOffset = size_of_hdr + ident_len
       identOffset = size_of_hdr
       nSpecialSlots = 0
       nCodeSlots = ceil(codeLimit / 4096)
-      codeLimit = fileoff hasta antes de CS
+      codeLimit = fileoff up to just before the CS
       hashSize = 32
       hashType = 2 (SHA-256)
       hashPageShift = 12
       spare1 = 0
       spare2 = 0
     [ident bytes "adhoc\0" 6B]
-    [slot_hashes cada 32B]
+    [slot_hashes, 32B each]
     ```
-- **Reto de orden**: el hash de cada página incluye bytes que dependen del propio LC_CODE_SIGNATURE (dataoff/datasize) pero NO del cuerpo de la signature. Por eso el layout escribe primero todo con placeholders correctos para dataoff/datasize del CS_SuperBlob (calculable a priori: tras conocer `codeLimit`), y solo la parte del CS_SuperBlob se rellena al final.
-- **Algoritmo**:
-  1. Calcular todos los tamaños a priori: text_size, linkedit_size (incluye CS_SuperBlob size), signature_offset, signature_size.
-  2. Escribir headers con signature_offset/size correctos.
-  3. Escribir __TEXT.
-  4. Padding hasta signature_offset.
-  5. Escribir CS_SuperBlob header + CodeDirectory header + ident (con hashOffset/identOffset correctos).
-  6. **En este punto, todos los bytes del 0 al signature_offset+hashOffset están definitivos.**
-  7. Releer/re-hashear el buffer completo hasta `codeLimit` en trozos de 4KB con SHA-256 (24.c) y escribir 32 bytes cada uno donde toque.
-- **Smoke**: `tests/macho_signed_test.tt` genera binario firmado. `codesign -v` acepta. `spctl -a` (opcional) evalúa. Ejecutar → rc=42. **Cero herramientas externas.**
-- **LOC**: ~200 (encima de 24.d y 24.c).
+- **Ordering challenge**: the hash of every page includes bytes that depend on the LC_CODE_SIGNATURE itself (dataoff/datasize) but NOT on the body of the signature. That is why the layout first writes everything with correct placeholders for the CS_SuperBlob's dataoff/datasize (computable a priori, once `codeLimit` is known), and only the CS_SuperBlob part is filled in at the end.
+- **Algorithm**:
+  1. Compute every size a priori: text_size, linkedit_size (including the CS_SuperBlob size), signature_offset, signature_size.
+  2. Write the headers with the correct signature_offset/size.
+  3. Write __TEXT.
+  4. Pad up to signature_offset.
+  5. Write the CS_SuperBlob header + the CodeDirectory header + ident (with correct hashOffset/identOffset).
+  6. **At this point, every byte from 0 to signature_offset+hashOffset is final.**
+  7. Re-read/re-hash the complete buffer up to `codeLimit` in 4KB chunks with SHA-256 (24.c) and write 32 bytes for each one where it belongs.
+- **Smoke test**: `tests/macho_signed_test.tt` generates a signed binary. `codesign -v` accepts it. `spctl -a` (optional) evaluates it. Run → rc=42. **Zero external tools.**
+- **LOC**: ~200 (on top of 24.d and 24.c).
 - **Deps**: 24.c, 24.d, 24.e.
 
-## Camino de merge
+## Merge path
 
-Con las 6 sub-hitos:
+With the 6 submilestones:
 
-1. Se puede **parar en 24.d + codesign externo** — funcional, un solo tool externo.
-2. Se puede **cerrar 24.f para MVP total** — cero externos más allá del kernel.
-3. **24.g fixpoint bytes**: el seed committeado pasa de `.s` (18KL texto) a `.macho` (~300KB binario). Diff se hace con `cmp` bit-a-bit.
+1. It is possible to **stop at 24.d + external codesign** — functional, a single external tool.
+2. It is possible to **close 24.f for a total MVP** — zero externals beyond the kernel.
+3. **24.g byte fixpoint**: the committed seed goes from `.s` (18KL of text) to `.macho` (~300KB binary). The diff is done with a bit-for-bit `cmp`.
 
-## Estimación agregada
+## Aggregate estimate
 
-| Hito  | LOC  | Riesgo | Ganancia |
+| Milestone | LOC  | Risk   | Gain |
 |-------|------|--------|----------|
-| 24.a  | 30   | bajo   | Habilita 24.b, 24.c |
-| 24.b  | 250  | medio  | Fundamento del writer |
-| 24.c  | 250  | medio  | Fundamento firma |
-| 24.d  | 400  | alto   | MVP con codesign externo |
-| 24.e  | 800  | alto   | Codegen bytes real |
-| 24.f  | 200  | medio  | Cierra la promesa |
-| **Total** | **~1930** | | **stage1 → .macho firmado, cero tools** |
+| 24.a  | 30   | low    | Enables 24.b, 24.c |
+| 24.b  | 250  | medium | Foundation of the writer |
+| 24.c  | 250  | medium | Foundation of the signature |
+| 24.d  | 400  | high   | MVP with external codesign |
+| 24.e  | 800  | high   | Real byte codegen |
+| 24.f  | 200  | medium | Delivers on the promise |
+| **Total** | **~1930** | | **stage1 → signed .macho, zero tools** |
 
-Cada sub-hito con smoke propio + fixpoint intermedio. Regenerar `bootstrap/tetsuoc.s` (o `.macho` tras 24.g) en cada uno.
+Every submilestone with its own smoke test + an intermediate fixpoint. Regenerate `bootstrap/tetsuoc.s` (or `.macho` after 24.g) in each one.

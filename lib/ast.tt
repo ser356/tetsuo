@@ -1,33 +1,33 @@
 // ============================================================================
-// lib/ast.tt - arena del arbol sintactico
+// lib/ast.tt - syntax tree arena
 // ============================================================================
 //
-// El compilador reparte la memoria dinamica en arenas separadas, una por fase,
-// en vez de tener un unico heap. Las tres grandes son:
+// The compiler splits dynamic memory into separate arenas, one per stage,
+// instead of having a single heap. The three big ones are:
 //
-//     AST_BUF  (aqui, 16MB)  nodos de parser.tt: Expr, Stmt, Func, Type, StrLit
-//     IR_BUF   (src/ir.tt)   instrucciones y funciones del IR
-//     PP_ARENA (src/main.tt) fuentes leidas por el preprocesador
+//     AST_BUF  (here, 16MB)  parser.tt nodes: Expr, Stmt, Func, Type, StrLit
+//     IR_BUF   (src/ir.tt)   IR instructions and functions
+//     PP_ARENA (src/main.tt) sources read by the preprocessor
 //
-// Separarlas no es por higiene: es lo que permite que cada fase razone sobre su
-// consumo por separado y que un desbordamiento diga QUE fase se paso. Los tres
-// bloques juntos dominan el tamano de __bss del binario emitido (~57MB de los
-// cuales 48MB son estos tres), que es lo que se ve como `__DATA vmsize` en
-// `otool -l` sobre cualquier binario producido con --emit=macho.
+// Splitting them is not about hygiene: it is what lets every stage reason
+// about its own consumption separately and makes an overflow say WHICH stage
+// went over. The three blocks together dominate the __bss size of the emitted
+// binary (~57MB of which 48MB are these three), which is what shows up as
+// `__DATA vmsize` in `otool -l` on any binary produced with --emit=macho.
 //
-// 16MB da de sobra: el propio compilador (el fichero .tt combinado mas grande
-// que se parsea, ~139KB de fuente) consume del orden de 3MB de nodos.
+// 16MB is plenty: the compiler itself (the largest combined .tt file that gets
+// parsed, ~139KB of source) consumes on the order of 3MB of nodes.
 //
-// El struct Arena y arena_take viven en src/runtime/io.tt.
+// The Arena struct and arena_take live in src/runtime/io.tt.
 // ============================================================================
 
 bss AST_BUF: 268435456
 bss AST_ARENA_STORE: 24
 
-// Devuelve el arena del AST, ya inicializado. AST_ARENA_STORE es un bss de 24
-// bytes (sizeof Arena) en vez de una variable local para que el struct
-// sobreviva al retorno: no hay heap donde ponerlo y devolver un puntero a un
-// local seria devolver un puntero a la pila ya liberada.
+// Returns the AST arena, already initialized. AST_ARENA_STORE is a 24-byte bss
+// block (sizeof Arena) rather than a local variable so that the struct
+// outlives the return: there is no heap to put it in, and returning a pointer
+// to a local would be returning a pointer to an already released stack.
 fun ast_init() -> *Arena {
     let a: *Arena = AST_ARENA_STORE
     arena_init(a, AST_BUF, 268435456)

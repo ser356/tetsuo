@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 #
-# Pipeline completa: compilador -> ASM -> objeto -> ELF -> QEMU
+# Full pipeline: compiler -> ASM -> object -> ELF -> QEMU
 #
-#   ./test.sh                    compila y arranca tests/hello.tt
-#   ./test.sh tests/otro.tt      compila y arranca otro fuente
-#   ./test.sh -d                 arranca congelado, esperando a GDB en :1234
-#   ./test.sh -a                 solo genera el ASM y lo muestra, sin arrancar
+#   ./test.sh                    builds and boots tests/hello.tt
+#   ./test.sh tests/other.tt     builds and boots another source
+#   ./test.sh -d                 boots frozen, waiting for GDB on :1234
+#   ./test.sh -a                 only generates the ASM and shows it, no boot
 #
-# Salir de QEMU: Ctrl-A, luego X
+# To leave QEMU: Ctrl-A, then X
 #
 set -euo pipefail
 
-# ---------------------------------------------------------------- configuración
-CC=${CC:-clang}                       # compilador del host, para construir mycc
-XPREFIX=${XPREFIX:-aarch64-elf-}      # toolchain cruzada: as, ld, gdb
+# --------------------------------------------------------------- configuration
+CC=${CC:-clang}                       # host compiler, used to build mycc
+XPREFIX=${XPREFIX:-aarch64-elf-}      # cross toolchain: as, ld, gdb
 QEMU=${QEMU:-qemu-system-aarch64}
 MACHINE=virt
 CPU=cortex-a72
-LOAD_ADDR=0x40000000                  # donde -kernel deposita la imagen en -M virt
+LOAD_ADDR=0x40000000                  # where -kernel drops the image under -M virt
 
 SRC_DIR=src
 BUILD=build
@@ -27,7 +27,7 @@ LINKER_SCRIPT=$BUILD/link.ld
 INPUT=tests/hello.tt
 MODE=run
 
-# ---------------------------------------------------------------------- opciones
+# ---------------------------------------------------------------------- options
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -d|--debug) MODE=debug; shift ;;
@@ -40,7 +40,7 @@ done
 step() { printf '\033[1;34m==>\033[0m %s\n' "$1"; }
 die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$1" >&2; exit 1; }
 
-# ------------------------------------------------------------ comprobación previa
+# ------------------------------------------------------------------ preflight
 for tool in "$CC" "${XPREFIX}as" "${XPREFIX}ld" "$QEMU"; do
   command -v "$tool" >/dev/null || die "no encontrado: $tool"
 done
@@ -50,7 +50,8 @@ mkdir -p "$BUILD"
 BASE=$BUILD/$(basename "${INPUT%.*}")
 
 # ------------------------------------------------------------------ linker script
-# Se regenera solo si no existe, para poder editarlo a mano sin que lo pise.
+# Regenerated only when missing, so it can be edited by hand without being
+# overwritten.
 if [[ ! -f $LINKER_SCRIPT ]]; then
   step "generando $LINKER_SCRIPT"
   cat > "$LINKER_SCRIPT" <<EOF
@@ -68,7 +69,7 @@ SECTIONS
 EOF
 fi
 
-# ------------------------------------------------------------- 1. build compilador
+# --------------------------------------------------------------- 1. build compiler
 step "construyendo el compilador"
 $CC -std=c11 -O0 -g -Wall -Wextra -Wswitch -Werror \
     -fsanitize=address,undefined \
@@ -99,7 +100,7 @@ step "ensamblando"
 step "enlazando"
 "${XPREFIX}ld" -T "$LINKER_SCRIPT" -nostdlib -o "$BASE.elf" "$BASE.o"
 
-# Vuelco de secciones y desensamblado: la primera parada cuando algo no arranca.
+# Section dump and disassembly: the first stop when something fails to boot.
 "${XPREFIX}objdump" -d "$BASE.elf" > "$BASE.dis"
 "${XPREFIX}size"    "$BASE.elf"
 

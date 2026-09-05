@@ -1,7 +1,7 @@
 # Microbenchmarks
 
-Tres kernels comparan el backend tetsuo con Clang `-O0` y `-O2`: recorrido de bytes, aritmética en bucle y llamadas encadenadas.
+Three kernels compare the tetsuo backend against Clang `-O0` and `-O2`: byte traversal, arithmetic in a loop, and chained calls.
 
-Ejecutar `bash bench/run.sh`. Cada binario valida el mismo checksum. Los tiempos son segundos de pared y deben compararse dentro de una misma ejecución; no forman parte de `bootstrap/verify.sh`.
+Run `bash bench/run.sh`. Every binary validates the same checksum. The timings are wall-clock seconds and must be compared within a single run; they are not part of `bootstrap/verify.sh`.
 
-El script también mide `tests/fixpoint_macho_build.sh`. Ejecutar varias veces y comparar medianas; cerrar otras cargas antes de tomar una línea base.
+The script also measures `tests/fixpoint_macho_build.sh`. Run it several times and compare medians; close other workloads before taking a baseline.

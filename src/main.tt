@@ -1,66 +1,66 @@
 // ============================================================================
-// src/main.tt - driver del compilador y preprocesador de imports
+// src/main.tt - compiler driver and import preprocessor
 // ============================================================================
 //
-// Es el punto de entrada de tetsuoc y el sitio donde se encadenan todas las
-// fases:
+// This is the entry point of tetsuoc and the place where all the stages are
+// chained together:
 //
-//     fichero.tt
-//        |  pp_expand          resuelve los `import` a un unico buffer
+//     file.tt
+//        |  pp_expand          resolves the `import`s into a single buffer
 //        v
 //     PP_OUT
 //        |  parse              lexer + parser -> *Program        (parser.tt)
 //        v
 //     AST
-//        |  lower              -> lista de IrFn                  (ir.tt)
+//        |  lower              -> list of IrFn                   (ir.tt)
 //        v
 //     IR
-//        |  codegen            -> texto .s                       (codegen.tt)
+//        |  codegen            -> .s text                        (codegen.tt)
 //        |  codegen_bytes      -> bytes + emit_macho_code_bss    (codegen_bytes.tt)
 //        v
-//     salida
+//     output
 //
-// MODOS DE INVOCACION
+// INVOCATION MODES
 //
-//     tetsuoc --dump-tokens f.tt              vuelca la secuencia de tokens
-//     tetsuoc --dump-ir f.tt                  vuelca el IR en texto
-//     tetsuoc [--target=macos] f.tt -o s.s    emite ensamblador
-//     tetsuoc --emit=macho f.tt -o binario    emite un Mach-O firmado, listo
-//                                             para ejecutar en macOS/arm64
+//     tetsuoc --dump-tokens f.tt              dumps the token sequence
+//     tetsuoc --dump-ir f.tt                  dumps the IR as text
+//     tetsuoc [--target=macos] f.tt -o s.s    emits assembly
+//     tetsuoc --emit=macho f.tt -o binary     emits a signed Mach-O, ready to
+//                                             run on macOS/arm64
 //
-// El ultimo es el que cierra el auto-hospedaje: no necesita clang, as, ld ni
+// The last one is what closes self-hosting: it needs neither clang, as, ld nor
 // codesign.
 //
-// EL PREPROCESADOR
+// THE PREPROCESSOR
 //
-// `import 'ruta'` es textual: se sustituye la linea por el contenido del
-// fichero, recursivamente, saltando lo ya incluido (guarda de inclusion por
-// ruta, ver pp_seen). No hay espacios de nombres ni simbolos privados; todo
-// acaba en un unico buffer plano, y por eso el orden de los import importa (el
-// primero que declare un bss se lleva el offset 0).
+// `import 'path'` is textual: the line is replaced by the contents of the
+// file, recursively, skipping whatever was already included (include guard by
+// path, see pp_seen). There are no namespaces and no private symbols;
+// everything ends up in a single flat buffer, and that is why the order of the
+// imports matters (the first one to declare a bss slot gets offset 0).
 //
-// Es deliberadamente tonto: reconoce una linea que EMPIECE por "import " y
-// extrae lo que hay entre comillas simples. Un import sangrado o dentro de un
-// comentario no se reconoce.
+// It is deliberately dumb: it recognizes a line that STARTS with "import " and
+// extracts whatever sits between single quotes. An indented import, or one
+// inside a comment, is not recognized.
 //
-// LOS BUFFERS Y SUS LIMITES
+// THE BUFFERS AND THEIR LIMITS
 //
-// Casi todo el bss del compilador se declara aqui o en los arenas de las fases.
-// Los limites son duros y estan comprobados: pasarse aborta con un mensaje, no
-// trunca en silencio. Esa comprobacion no siempre estuvo: pp_expand leia cada
-// fichero en un buffer fijo de 128KB sin mirar si cabia, y una fuente mayor
-// perdia la cola, con lo que el error salia mucho despues disfrazado de fallo
-// de sintaxis en mitad del fichero.
+// Almost all of the compiler bss is declared here or in the arenas of the
+// stages. The limits are hard and they are checked: going over aborts with a
+// message, it does not truncate silently. That check was not always there:
+// pp_expand read every file into a fixed 128KB buffer without checking whether
+// it fit, and a larger source lost its tail, so the error showed up much later
+// disguised as a syntax failure in the middle of the file.
 // ============================================================================
 
-bss SRC_BUF: 262144       // fuente cruda, solo para los modos --dump-*
-bss OUT_BUF: 65536        // buffer de salida del backend textual
-bss OUT_STORAGE: 64       // el struct Out (no cabe en un local por el retorno)
-bss DUMP_TOK_STORE: 40    // el Tok de --dump-tokens
-bss PP_OUT: 4194304       // fuente ya expandida: lo que ve el parser
+bss SRC_BUF: 262144       // raw source, only for the --dump-* modes
+bss OUT_BUF: 65536        // output buffer of the textual backend
+bss OUT_STORAGE: 64       // the Out struct (does not fit in a local, returned)
+bss DUMP_TOK_STORE: 40    // the Tok used by --dump-tokens
+bss PP_OUT: 4194304       // already expanded source: what the parser sees
 bss PP_OUT_LEN: 8
 bss PP_ARENA_STORE: 24
-bss PP_ARENA_BUF: 268435456  // arena del preprocesador: rutas y ficheros leidos
+bss PP_ARENA_BUF: 268435456  // preprocessor arena: paths and files read
 bss PP_SEEN_VEC: 8
 
 struct PPSeen {
@@ -83,20 +83,21 @@ fun pp_arena_init() -> *Arena {
     return a
 }
 
-// tamano maximo de un .tt suelto. pp_expand reserva este buffer por fichero y
-// devuelve al arena lo que no use, asi que subirlo no cuesta memoria real.
+// maximum size of a single .tt file. pp_expand reserves this buffer per file
+// and returns the unused part to the arena, so raising it costs no real
+// memory.
 fun pp_file_cap() -> u64 {
     return 1048576
 }
 
 fun pp_out_cap() -> u64 { return 4194304 }
 
-// Guarda de inclusion: 1 si esta ruta ya se incluyo.
+// Include guard: 1 if this path was already included.
 //
-// La comparacion es por TEXTO de la ruta, no por fichero real. Dos rutas
-// distintas que apunten al mismo fichero (una relativa y otra con ./) se
-// incluirian dos veces y darian funciones duplicadas. En la practica todos los
-// entries usan rutas canonicas desde la raiz del repo.
+// The comparison is by path TEXT, not by real file. Two different paths
+// pointing at the same file (a relative one and one with ./) would be included
+// twice and would yield duplicate functions. In practice every entry point
+// uses canonical paths from the repo root.
 fun pp_seen(pth: *u8, plen: u64) -> u64 {
     let vp: **Vec = PP_SEEN_VEC
     let v: *Vec = vp[0]
@@ -140,8 +141,8 @@ fun pp_out_append(bytes: *u8, n: u64) {
     lp[0] = cur + n
 }
 
-// Si la linea que empieza en `off` es un `import `. Exige que las siete letras
-// esten al PRINCIPIO de la linea, sin sangrado.
+// Whether the line starting at `off` is an `import `. It requires the seven
+// letters to be at the START of the line, with no indentation.
 fun is_import_line(src: *u8, off: u64, srclen: u64) -> u64 {
     let kw: str = 'import '
     if off + 7 > srclen { return 0 }
@@ -153,18 +154,19 @@ fun is_import_line(src: *u8, off: u64, srclen: u64) -> u64 {
     return 1
 }
 
-// Expande un fichero y sus imports a PP_OUT.
+// Expands a file and its imports into PP_OUT.
 //
-// Recorre el fichero linea a linea. Si la linea es un import, extrae la ruta
-// entre comillas simples y se llama a si misma; si no, copia la linea tal cual.
+// It walks the file line by line. If the line is an import, it extracts the
+// path between single quotes and calls itself; otherwise it copies the line
+// verbatim.
 //
-// La ruta se copia al arena antes de marcarla como vista, porque `path` puede
-// apuntar al buffer del fichero que la contiene y ese buffer sigue vivo pero es
-// mas simple no depender de ello.
+// The path is copied into the arena before being marked as seen, because
+// `path` may point into the buffer of the file that contains it and, although
+// that buffer is still alive, it is simpler not to depend on that.
 //
-// Las lineas de import NO se sustituyen por una linea en blanco, asi que los
-// numeros de linea de los errores se refieren al fichero EXPANDIDO, no al
-// original. Es la limitacion mas visible del preprocesador.
+// Import lines are NOT replaced by a blank line, so the line numbers in the
+// errors refer to the EXPANDED file, not to the original one. It is the most
+// visible limitation of the preprocessor.
 fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
     if pp_seen(path, plen) == 1 { return }
     let pcopy: *u8 = arena_take(ar, plen + 1)
@@ -175,9 +177,10 @@ fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
     }
     pcopy[plen] = 0
     pp_mark(ar, pcopy, plen)
-    // El buffer se reserva al maximo y luego se devuelve el sobrante al arena:
-    // leer con un tope fijo y sin comprobarlo truncaba el fichero en silencio y
-    // el error salia mucho despues, como un fallo de sintaxis en mitad del .tt.
+    // The buffer is reserved at full size and the leftover is then returned to
+    // the arena: reading with a fixed, unchecked cap truncated the file
+    // silently and the error showed up much later, as a syntax failure in the
+    // middle of the .tt.
     let cap: u64 = pp_file_cap()
     let buf_pos: u64 = ar.pos
     let buf: *u8 = arena_take(ar, cap)
@@ -270,11 +273,11 @@ fun pp_expand(ar: *Arena, path: *u8, plen: u64) {
     }
 }
 
-// Modo --dump-tokens: imprime kind/start/len/line de cada token hasta EOF.
+// --dump-tokens mode: prints kind/start/len/line of every token up to EOF.
 //
-// Sirve para dos cosas: depurar el lexer, y comparar generaciones del
-// compilador sin depender del codigo generado (bootstrap/verify.sh comprueba
-// que dos generaciones producen la misma secuencia de tokens).
+// It serves two purposes: debugging the lexer, and comparing compiler
+// generations without depending on the generated code (bootstrap/verify.sh
+// checks that two generations produce the same token sequence).
 fun dump_tokens(o: *Out, src: *u8, srclen: u64) {
     let lx: *Lexer = LX_STATE
     lex_init(lx, src, srclen)
@@ -298,12 +301,12 @@ fun dump_tokens(o: *Out, src: *u8, srclen: u64) {
     }
 }
 
-// Lee un fichero entero a un buffer. Solo lo usan los modos --dump-*; la ruta
-// normal de compilacion pasa por pp_expand.
+// Reads a whole file into a buffer. Only the --dump-* modes use it; the normal
+// compilation path goes through pp_expand.
 //
-// Como pp_expand antes del arreglo, no distingue "fichero de cap bytes" de
-// "fichero mas grande truncado". Aqui importa menos porque los modos --dump-*
-// son herramientas de depuracion.
+// Like pp_expand before the fix, it does not tell "a file of cap bytes" from
+// "a larger file, truncated". It matters less here because the --dump-* modes
+// are debugging tools.
 fun read_all(path: *u8, buf: *u8, cap: u64) -> u64 {
     let err: u64 = 0
     let fd: u64 = io_open_read_checked(path, &err)
@@ -341,15 +344,15 @@ fun cstr_eq(a: *u8, lit: *u8, n: u64) -> u64 {
 // ---------------------------------------------------------------------------
 // Driver
 //
-// Codigos de salida:
-//   0  todo bien
-//   2  argumentos insuficientes (o error de sintaxis, via die_line)
-//   3  la fuente esta vacia o no se pudo leer
-//   4  no se pudo abrir el fichero de salida
+// Exit codes:
+//   0  all good
+//   2  not enough arguments (or a syntax error, through die_line)
+//   3  the source is empty or could not be read
+//   4  the output file could not be opened
 //
-// Los argumentos se leen desde el FINAL (argv[argc-3] es la entrada y
-// argv[argc-1] la salida) para que los flags opcionales del principio no
-// desplacen las posiciones.
+// The arguments are read from the END (argv[argc-3] is the input and
+// argv[argc-1] the output) so that the optional flags at the front do not
+// shift the positions.
 // ---------------------------------------------------------------------------
 const EXIT_OK: u32 = 0
 const EXIT_BAD_ARGS: u32 = 2
@@ -446,11 +449,11 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let fd: u64 = io_open_write_checked(output, &out_err)
     if out_err != 0 { return EXIT_OPEN_OUT_FAIL }
 
-    // Camino --emit=macho: bytes en vez de texto.
+    // --emit=macho path: bytes instead of text.
     //
-    // El orden importa. cgb_bss_layout tiene que ir ANTES de codegen_bytes
-    // porque el codigo generado referencia los simbolos bss por indice y esos
-    // indices los asigna el layout.
+    // The order matters. cgb_bss_layout has to run BEFORE codegen_bytes
+    // because the generated code references the bss symbols by index and those
+    // indices are assigned by the layout.
     if is_macho == 1 {
         let bvsz: u64 = cgb_bss_layout(prog)
         codegen_bytes(TGT_MACOS, prog, irhead)
