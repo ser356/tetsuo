@@ -52,11 +52,12 @@ _tt_sys:
     b .Lsys_result
 .Lsys_result:
     tbnz x0, #63, .Lsys_error
-    cmp xzr, #1
+    mov x9, #1
+    cmp xzr, x9
     ret
 .Lsys_error:
     neg x0, x0
-    cmp xzr, #0
+    cmp xzr, xzr
     ret
 
     .globl _linux_start

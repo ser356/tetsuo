@@ -5,9 +5,10 @@ $build = "build/windows-native"
 New-Item -ItemType Directory -Force $build | Out-Null
 
 function Build-TetsuoExe($compiler, $output) {
+    $compilerPath = (Resolve-Path $compiler).Path
     $assembly = "$output.s"
     $object = "$output.obj"
-    & $compiler --target=windows-x64 tests/fixpoint_entry.tt -o $assembly
+    & $compilerPath --target=windows-x64 tests/fixpoint_entry.tt -o $assembly
     if ($LASTEXITCODE -ne 0) { throw "$compiler failed" }
     clang --target=x86_64-windows-msvc -c $assembly -o $object
     if ($LASTEXITCODE -ne 0) { throw "clang failed" }
@@ -24,7 +25,8 @@ if ($stage1Hash -ne $stage2Hash) { throw "Windows x64 fixpoint failed: stage1 !=
 
 $smokeSource = "$build/smoke.tt"
 Set-Content -NoNewline $smokeSource "fun main() -> u64 { return 42 }"
-& "$build/stage2.exe" --target=windows-x64 $smokeSource -o "$build/smoke.s"
+$stage2Path = (Resolve-Path "$build/stage2.exe").Path
+& $stage2Path --target=windows-x64 $smokeSource -o "$build/smoke.s"
 if ($LASTEXITCODE -ne 0) { throw "stage2 failed to compile smoke" }
 clang --target=x86_64-windows-msvc -c "$build/smoke.s" -o "$build/smoke.obj"
 if ($LASTEXITCODE -ne 0) { throw "clang failed to assemble smoke" }
