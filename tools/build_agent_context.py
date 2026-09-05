@@ -10,7 +10,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "AGENT-CONTEXT.md"
 VERSION = "2026.09.05"
 SOURCES = [
-    ROOT / "LENGUAJE.md",
+    ROOT / "LANGUAGE.md",
     ROOT / "idioms.md",
     ROOT / "docs/agent/COOKBOOK.md",
     ROOT / "docs/agent/ERRORS.md",

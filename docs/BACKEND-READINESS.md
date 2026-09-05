@@ -103,7 +103,7 @@ off if the module is stable and rarely touched.
 
 ### 3. Expressiveness gaps that make any port more expensive
 
-Verified against `src/lexer.tt` and `LENGUAJE.md`:
+Verified against `src/lexer.tt` and `LANGUAGE.md`:
 
 - **There is no `%`.** There is no `TK_PERCENT` and no `OP_MOD`. You have to
   write `a - (a / b) * b` by hand at every site.

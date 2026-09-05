@@ -38,7 +38,7 @@ bootstrap/
   linux/          qemu-aarch64 harness to verify the fixpoint on Linux
 test.sh         virt pipeline: compile, assemble, link and boot under QEMU
 docs/MACHO-PLAN.md  plan of the Mach-O writer + ad-hoc signature (milestones 24.a → 24.f)
-LENGUAJE.md     language reference and correct-usage guide
+LANGUAGE.md     language reference and correct-usage guide
 idioms.md       idiomatic patterns observed in real code
 SELFHOST-STATE.md  log of the self-hosting progress
 ```
@@ -175,7 +175,7 @@ Rules:
   file; across imported files the order must respect the dependencies exactly
   as if you concatenated them by hand.
 
-Details and idiomatic patterns are in `LENGUAJE.md` and `idioms.md`.
+Details and idiomatic patterns are in `LANGUAGE.md` and `idioms.md`.
 
 ## Status
 

@@ -69,7 +69,7 @@ silently diverges from the textual path.
 | 5 | `src/asm.tt` + `src/codegen_bytes.tt` | encoder + a case in `cgb_alu` (byte backend) |
 | 6 | `tests/*_test.tt` + `bootstrap/verify.sh` + `bootstrap/linux/verify_linux.sh` | smoke test with a distinct rc per failure case |
 | 7 | `bootstrap/tetsuoc.s` | regenerated seed |
-| 8 | `LENGUAJE.md` | precedence / operator table |
+| 8 | `LANGUAGE.md` | precedence / operator table |
 
 **The `TK_*` and `OP_*` tokens are a numeric contract.** Always add at the end
 of the series. Inserting in the middle renumbers everything after it, and
