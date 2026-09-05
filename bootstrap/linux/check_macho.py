@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""Valida un Mach-O AArch64 firmado ad-hoc emitido por tetsuo, sin macOS.
+"""Validates an ad-hoc signed AArch64 Mach-O emitted by tetsuo, without macOS.
 
-Comprueba lo que codesign/dyld exigirian:
- - cabecera y load commands consistentes (magic, cputype, ncmds, sizeofcmds),
- - presencia de los LC requeridos (SEGMENT __PAGEZERO/__TEXT/__LINKEDIT,
+It checks what codesign/dyld would require:
+ - a consistent header and load commands (magic, cputype, ncmds, sizeofcmds),
+ - the presence of the required LCs (SEGMENT __PAGEZERO/__TEXT/__LINKEDIT,
    LOAD_DYLINKER, SYMTAB, DYSYMTAB, UUID, BUILD_VERSION, MAIN, CODE_SIGNATURE),
- - el CS_SuperBlob y el CS_CodeDirectory bien formados,
- - que los hashes SHA-256 de cada pagina de 4KB hasta codeLimit coincidan con
-   los almacenados en el CodeDirectory (esto es exactamente lo que verifica
-   codesign -v),
- - que el cuerpo en entryoff sea la secuencia exit(code) esperada.
+ - a well formed CS_SuperBlob and CS_CodeDirectory,
+ - that the SHA-256 hashes of every 4KB page up to codeLimit match the ones
+   stored in the CodeDirectory (this is exactly what codesign -v verifies),
+ - that the body at entryoff is the expected exit(code) sequence.
 
-Uso: check_macho.py <binario> <exit_code_esperado>
-Sale 0 si todo cuadra; imprime el fallo y sale !=0 en caso contrario.
+Usage: check_macho.py <binary> <expected_exit_code>
+Exits 0 if everything matches; prints the failure and exits !=0 otherwise.
 """
 import sys, struct, hashlib
 
@@ -77,7 +76,7 @@ def main():
     _check_signature(data, sig, entryoff, path)
 
 def _check_signature(data, sig, entryoff, path):
-    # firma
+    # signature
     dataoff, datasize = sig
     if dataoff + datasize > len(data): die("firma fuera del fichero")
     sb = data[dataoff:dataoff+datasize]
@@ -104,7 +103,7 @@ def _check_signature(data, sig, entryoff, path):
     if nCode != exp_slots: die("nCodeSlots %d != ceil(codeLimit/page)=%d" % (nCode, exp_slots))
     ident = cd[identOffset:cd.index(b"\0", identOffset)].decode(errors="replace")
 
-    # recalcula los hashes de pagina y comparalos (lo que hace codesign -v)
+    # recompute the page hashes and compare them (what codesign -v does)
     for slot in range(nCode):
         start = slot * pagesize
         end = min(start + pagesize, codeLimit)

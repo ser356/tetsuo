@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Hito 24.g Session B: prueba multi-page __TEXT. Genera un programa con un literal
-# de 20000 'A' que fuerza text_size > 16384 -> text_pages=2. Compila con stage1,
-# emite el binario Mach-O firmado (multi-page), lo ejecuta y espera rc=65 ('A').
+# Milestone 24.g Session B: multi-page __TEXT test. It generates a program with
+# a 20000-'A' literal that forces text_size > 16384 -> text_pages=2. It builds
+# with stage1, emits the signed (multi-page) Mach-O binary, runs it and expects
+# rc=65 ('A').
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

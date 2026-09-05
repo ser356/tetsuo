@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Hito 24.d/24.f: stage1 emite un Mach-O firmado ad-hoc (exit 42) y en macOS
-# nativo se ejecuta DIRECTAMENTE, sin clang/as/ld/codesign. Devuelve 42.
+# Milestone 24.d/24.f: stage1 emits an ad-hoc signed Mach-O (exit 42) which on
+# native macOS runs DIRECTLY, with no clang/as/ld/codesign. It returns 42.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -19,12 +19,12 @@ fi
 $CC -c "$BUILD/macho42_emit.s" -o "$BUILD/macho42_emit.o"
 $CC -e _tt_start -o "$BUILD/macho42_emit" "$BUILD/macho42_emit.o"
 
-# ejecuta el emisor: escribe /tmp/tt_macho42
+# runs the emitter: writes /tmp/tt_macho42
 rm -f /tmp/tt_macho42
 "$BUILD/macho42_emit"
 
 chmod +x /tmp/tt_macho42
-# ejecuta el binario Mach-O firmado por tetsuo, sin ninguna herramienta externa
+# runs the Mach-O binary signed by tetsuo, with no external tool at all
 /tmp/tt_macho42
 rc=$?
 echo "--- tt_macho42 exit=$rc ---"

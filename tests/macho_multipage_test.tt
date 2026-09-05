@@ -1,12 +1,13 @@
-// Hito 24.g Session C3a: reproductor minimo del layout que rompia con
-// __TEXT multi-pagina + __bss grande, SIN depender del compilador entero.
+// Milestone 24.g Session C3a: minimal reproducer of the layout that broke with
+// a multi-page __TEXT + a large __bss, WITHOUT depending on the whole
+// compiler.
 //
-// Genera al vuelo un programa cuyo unico contenido pesado es un literal de
-// 100000 bytes (fuerza text_pages = 7, igual que los binarios de verify.sh) y
-// dos simbolos bss separados por ~50MB (fuerza fixups ADRP/ADD contra paginas
-// muy lejanas del inicio de __DATA). El binario emitido hace apenas cuatro
-// accesos y devuelve 20: si muere (SIGKILL/SIGILL/SIGSEGV) el problema esta en
-// el contenedor Mach-O o en los fixups, no en el volumen de codigo.
+// It generates on the fly a program whose only heavy content is a 100000-byte
+// literal (forcing text_pages = 7, just like the verify.sh binaries) and two
+// bss symbols ~50MB apart (forcing ADRP/ADD fixups against pages very far from
+// the start of __DATA). The emitted binary performs barely four accesses and
+// returns 20: if it dies (SIGKILL/SIGILL/SIGSEGV) the problem is in the Mach-O
+// container or in the fixups, not in the code volume.
 
 bss MP_SRC: 262144
 

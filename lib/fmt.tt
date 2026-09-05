@@ -1,40 +1,40 @@
 // ============================================================================
-// lib/fmt.tt - salida con buffer y formato de numeros
+// lib/fmt.tt - buffered output and number formatting
 // ============================================================================
 //
-// Toda la salida del compilador pasa por aqui. Hay dos razones para no llamar a
-// io_write directamente:
+// All the compiler output goes through here. There are two reasons not to call
+// io_write directly:
 //
-//   1. Rendimiento. El backend textual (src/codegen.tt) emite el asm byte a
-//      byte; una syscall por byte serian millones de syscalls para el fichero
-//      de 700KB que produce el compilador compilandose a si mismo.
+//   1. Performance. The textual backend (src/codegen.tt) emits the asm byte by
+//      byte; one syscall per byte would be millions of syscalls for the 700KB
+//      file the compiler produces while compiling itself.
 //
-//   2. Uniformidad. `Out` es el unico sitio donde se decide a que fd va algo,
-//      asi que redirigir la salida (a stdout, a un fichero, a stderr para los
-//      errores) es cambiar un campo.
+//   2. Uniformity. `Out` is the only place where the destination fd is
+//      decided, so redirecting the output (to stdout, to a file, to stderr for
+//      errors) is a matter of changing one field.
 //
-// El buffer NO se vacia solo al terminar: hay que llamar a out_flush(). Olvidar
-// ese flush es la forma clasica de producir un fichero truncado; ver
-// src/main.tt, donde cada rama que abre un Out lo cierra.
+// The buffer is NOT flushed automatically at the end: out_flush() has to be
+// called. Forgetting that flush is the classic way of producing a truncated
+// file; see src/main.tt, where every branch that opens an Out closes it.
 //
-// El backend de bytes (src/codegen_bytes.tt) no usa Out: construye la imagen
-// completa en memoria y la vuelca de una sola escritura.
+// The byte backend (src/codegen_bytes.tt) does not use Out: it builds the
+// complete image in memory and flushes it in a single write.
 // ============================================================================
 
-// Scratch para out_u64: los digitos salen del algoritmo en orden inverso y hay
-// que darles la vuelta. 32 bytes cubren de sobra los 20 digitos de un u64.
-// Es un bss global y no un local porque una variable local de 32 bytes forzaria
-// un frame mas grande en un camino que se ejecuta millones de veces.
+// Scratch for out_u64: the digits come out of the algorithm in reverse order
+// and have to be flipped. 32 bytes comfortably cover the 20 digits of a u64.
+// It is a global bss block and not a local because a 32-byte local variable
+// would force a larger frame on a path that runs millions of times.
 bss DIGITS: 32
 
 // ---------------------------------------------------------------------------
-// Out: fichero con buffer. `buf`/`cap` los aporta el llamante (siempre un bss),
-// asi que Out no reserva memoria y puede vivir en un bss de 64 bytes.
+// Out: a buffered file. `buf`/`cap` are supplied by the caller (always a bss
+// block), so Out allocates no memory and can live in a 64-byte bss block.
 // ---------------------------------------------------------------------------
 struct Out {
     fd:  u64,
     buf: *u8,
-    pos: u64,   // bytes pendientes en buf
+    pos: u64,   // bytes pending in buf
     cap: u64,
 }
 
@@ -45,8 +45,8 @@ fun out_init(o: *Out, fd: u64, buf: *u8, cap: u64) {
     o.cap = cap
 }
 
-// Escribe lo pendiente y vacia el buffer. Idempotente: llamarlo con el buffer
-// vacio no hace nada, asi que se puede llamar sin miedo al terminar.
+// Writes what is pending and empties the buffer. Idempotent: calling it with
+// an empty buffer does nothing, so it can be called freely at the end.
 fun out_flush(o: *Out) {
     if o.pos > 0 {
         io_write(o.fd, o.buf, o.pos)
@@ -54,8 +54,8 @@ fun out_flush(o: *Out) {
     }
 }
 
-// Encola un byte, vaciando antes si el buffer esta lleno. Esta es la primitiva:
-// todo lo demas en este fichero acaba llamando aqui.
+// Queues a byte, flushing first if the buffer is full. This is the primitive:
+// everything else in this file ends up calling it.
 fun out_byte(o: *Out, c: u8) {
     if o.pos >= o.cap {
         out_flush(o)
@@ -64,9 +64,9 @@ fun out_byte(o: *Out, c: u8) {
     o.pos = o.pos + 1
 }
 
-// Encola n bytes. Va de uno en uno en vez de hacer un mem_copy con corte por
-// el borde del buffer: mas simple, y el coste queda enterrado bajo el del
-// propio codegen.
+// Queues n bytes. It goes one at a time instead of doing a mem_copy split at
+// the buffer boundary: simpler, and the cost is buried under the codegen's
+// own.
 fun out_bytes(o: *Out, p: *u8, n: u64) {
     let i: u64 = 0
     while i < n {
@@ -75,14 +75,14 @@ fun out_bytes(o: *Out, p: *u8, n: u64) {
     }
 }
 
-// Imprime un u64 en decimal.
+// Prints a u64 in decimal.
 //
-// Divide por 10 acumulando digitos en DIGITS (que salen de menos a mas
-// significativo) y luego los emite al reves. El resto se calcula como
-// `v - q * 10` en lugar de con un operador de modulo porque el lenguaje no
-// tiene `%`; el codegen emite udiv y msub igualmente.
+// It divides by 10 accumulating digits in DIGITS (which come out from least to
+// most significant) and then emits them backwards. The remainder is computed
+// as `v - q * 10` instead of with a modulo operator because the language has
+// no `%`; the codegen emits udiv and msub anyway.
 //
-// El cero se trata aparte: el bucle `while v > 0` no daria ningun digito.
+// Zero is handled separately: the `while v > 0` loop would yield no digit.
 fun out_u64(o: *Out, v: u64) {
     if v == 0 {
         out_byte(o, 48)
@@ -101,7 +101,7 @@ fun out_u64(o: *Out, v: u64) {
     }
 }
 
-// Un digito hexadecimal en minuscula. 48 = '0', 87 = 'a' - 10.
+// A lowercase hexadecimal digit. 48 = '0', 87 = 'a' - 10.
 fun out_nibble(o: *Out, n: u64) {
     if n < 10 {
         out_byte(o, 48 + n)
@@ -110,15 +110,15 @@ fun out_nibble(o: *Out, n: u64) {
     out_byte(o, 87 + n)
 }
 
-// Cuatro digitos hexadecimales, con ceros a la izquierda.
+// Four hexadecimal digits, zero padded on the left.
 //
-// Lo usa el codegen textual para los inmediatos de movz/movk, que se emiten
-// siempre como `#0xNNNN` de ancho fijo. Ancho fijo importa: el fixpoint compara
-// la salida .s byte a byte, asi que el formato tiene que ser determinista.
+// The textual codegen uses it for the movz/movk immediates, which are always
+// emitted as a fixed-width `#0xNNNN`. Fixed width matters: the fixpoint
+// compares the .s output byte for byte, so the format has to be deterministic.
 //
-// Va dividiendo por 4096/256/16 en vez de desplazando porque este fichero es
-// anterior al hito 24.a (que anadio << y >>) y cambiarlo ahora obligaria a
-// regenerar las seeds sin ganar nada.
+// It divides by 4096/256/16 instead of shifting because this file predates
+// milestone 24.a (which added << and >>) and changing it now would force
+// regenerating the seeds for no gain.
 fun out_hex4(o: *Out, v: u64) {
     let d0: u64 = v / 4096
     let r0: u64 = v - d0 * 4096
@@ -133,12 +133,13 @@ fun out_hex4(o: *Out, v: u64) {
 }
 
 // ---------------------------------------------------------------------------
-// Errores fatales
+// Fatal errors
 // ---------------------------------------------------------------------------
 
-// Buffers propios para el canal de error. Separados de los de la salida normal
-// porque die_line se llama con la salida a medias y no queremos mezclarlas ni
-// vaciar un Out que quiza este en un estado inconsistente.
+// Dedicated buffers for the error channel. Kept apart from the normal output
+// ones because die_line is called with the output half written and we want
+// neither to mix them nor to flush an Out that may be in an inconsistent
+// state.
 bss ERR_STORAGE: 64
 bss ERR_BUF: 4096
 bss DIAGNOSTIC_JSON: 8
@@ -153,15 +154,15 @@ fun diagnostics_json() -> u64 {
     return p[0]
 }
 
-// Imprime "error linea N: mensaje" en stderr (fd 2) y termina con codigo 2.
+// Prints `error linea N: <message>` on stderr (fd 2) and exits with code 2.
 //
-// No retorna. Es el unico mecanismo de error del compilador: no hay excepciones
-// ni codigos de retorno propagados, asi que cualquier fase que detecte algo
-// imposible llama aqui y se acaba el proceso. El envoltorio die_here de
-// src/parser.tt rellena la linea con la del token actual.
+// Does not return. It is the compiler's only error mechanism: there are no
+// exceptions and no propagated return codes, so any stage that detects
+// something impossible calls here and the process ends. The die_here wrapper
+// in src/parser.tt fills the line in with that of the current token.
 //
-// Linea 0 significa "sin posicion util" y lo usan los errores del
-// preprocesador, que ocurren antes de que exista un lexer.
+// Line 0 means "no useful position" and is used by the preprocessor errors,
+// which happen before a lexer exists.
 fun die_line(msg: *u8, mlen: u64, line: u64) {
     if diagnostics_json() == 1 {
         let empty: str = ''

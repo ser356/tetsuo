@@ -1,52 +1,51 @@
 // ============================================================================
-// src/lexer.tt - analizador lexico
+// src/lexer.tt - lexical analyzer
 // ============================================================================
 //
-// Convierte una secuencia de bytes en tokens. Es la primera fase del pipeline:
+// Turns a byte sequence into tokens. It is the first stage of the pipeline:
 //
-//     fuente -> [lexer] -> tokens -> [parser] -> AST -> [ir] -> IR
+//     source -> [lexer] -> tokens -> [parser] -> AST -> [ir] -> IR
 //               -> [codegen | codegen_bytes] -> asm .s | Mach-O
 //
-// DECISIONES DE DISENO QUE CONVIENE CONOCER
+// DESIGN DECISIONS WORTH KNOWING
 //
-// 1. No hay tabla de simbolos ni internalizacion. Un token de identificador NO
-//    guarda una copia del nombre: guarda `start` y `tlen`, es decir un rango
-//    dentro del buffer de fuente original. Comparar dos nombres es comparar
-//    bytes con bytes_eq. Esto obliga a que el buffer de fuente siga vivo
-//    durante TODA la compilacion (el parser, el lowering y hasta el codegen
-//    leen de el a traves de LX_STATE), pero elimina toda la gestion de memoria
-//    de cadenas.
+// 1. There is no symbol table and no interning. An identifier token does NOT
+//    hold a copy of the name: it holds `start` and `tlen`, that is, a range
+//    inside the original source buffer. Comparing two names means comparing
+//    bytes with bytes_eq. This forces the source buffer to stay alive for the
+//    WHOLE compilation (the parser, the lowering and even the codegen read
+//    from it through LX_STATE), but it removes all string memory management.
 //
-// 2. Un token por vez, sin lista. El parser mantiene UN token actual en el bss
-//    TOK_CUR y pide el siguiente cuando lo necesita. No existe un vector de
-//    tokens; no hace falta porque la gramatica se parsea con un solo simbolo de
-//    anticipacion (mas los dos caracteres que mira el propio lexer).
+// 2. One token at a time, no list. The parser keeps ONE current token in the
+//    bss slot TOK_CUR and asks for the next one when it needs it. There is no
+//    token vector; none is needed because the grammar parses with a single
+//    symbol of lookahead (plus the two characters the lexer itself peeks at).
 //
-// 3. Los caracteres se comparan por su valor ASCII en decimal, porque el
-//    lenguaje no tiene literales de caracter. La equivalencia mas usada:
-//        9 tab   10 \n   13 \r   32 espacio   33 !    38 &    39 '    40 (
+// 3. Characters are compared by their decimal ASCII value, because the
+//    language has no character literals. The most used equivalences:
+//        9 tab   10 \n   13 \r   32 space   33 !    38 &    39 '    40 (
 //       41 )     42 *    43 +    44 ,    45 -    46 .    47 /    48-57 0-9
 //       58 :     59 ;    60 <    61 =    62 >    64 @    65-90 A-Z   91 [
 //       92 \     93 ]    94 ^    95 _    97-122 a-z   120 x   123 {   124 |
 //      125 }
 //
-// 4. Las cadenas van entre COMILLAS SIMPLES, no dobles. Es una eleccion del
-//    lenguaje: deja las dobles libres y evita escapar comillas en el asm que
-//    genera el propio compilador.
+// 4. Strings are delimited by SINGLE QUOTES, not double ones. It is a language
+//    choice: it leaves the double quotes free and avoids escaping quotes in
+//    the asm that the compiler itself generates.
 //
-// El lexer se prueba de dos formas: `--dump-tokens` (ver src/main.tt) vuelca la
-// secuencia de tokens de un fichero, y bootstrap/verify.sh compara esa salida
-// entre generaciones del compilador.
+// The lexer is tested in two ways: `--dump-tokens` (see src/main.tt) dumps the
+// token sequence of a file, and bootstrap/verify.sh compares that output
+// across compiler generations.
 // ============================================================================
 
 // ---------------------------------------------------------------------------
-// Clases de token. Son const, o sea que el codegen las materializa como
-// inmediatos; no hay enum en el lenguaje.
+// Token classes. They are const, which means the codegen materializes them as
+// immediates; the language has no enum.
 //
-// El orden importa poco salvo por TK_EOF = 0, que es el valor por defecto de un
-// Tok sin inicializar y tambien el que devuelve lex_next ante un byte que no
-// reconoce (ver el final del fichero): un caracter invalido termina el flujo de
-// tokens y el parser falla en el sitio con die_here.
+// The order barely matters except for TK_EOF = 0, which is the default value
+// of an uninitialized Tok and also what lex_next returns for a byte it does
+// not recognize (see the end of the file): an invalid character ends the token
+// stream and the parser fails on the spot with die_here.
 // ---------------------------------------------------------------------------
 const TK_EOF: u32     = 0
 const TK_FUN: u32     = 1
@@ -100,9 +99,8 @@ const TK_BANG: u32 = 48
 const TK_ANDAND: u32 = 49
 const TK_PIPEPIPE: u32 = 50
 
-// Estado del lexer: cursor sobre el buffer de fuente mas el contador de linea
-// para los mensajes de error. No guarda nada mas; es totalmente reiniciable con
-// lex_init.
+// Lexer state: a cursor over the source buffer plus the line counter used by
+// error messages. It holds nothing else; it is fully resettable with lex_init.
 struct Lexer {
     src: *u8,
     pos: u64,
@@ -110,16 +108,16 @@ struct Lexer {
     line: u64,
 }
 
-// Un token.
+// A token.
 //
-//   kind   una de las constantes TK_*
-//   start  offset del primer byte DENTRO del buffer de fuente
-//   tlen   longitud en bytes
-//   ival   valor numerico, solo para TK_NUM
-//   tline  linea en la que empieza, para die_line
+//   kind   one of the TK_* constants
+//   start  offset of the first byte INSIDE the source buffer
+//   tlen   length in bytes
+//   ival   numeric value, only for TK_NUM
+//   tline  line where it starts, for die_line
 //
-// start/tlen son la clave del diseno sin internalizacion: el "texto" del token
-// es siempre `lx.src + start` durante `tlen` bytes.
+// start/tlen are the key to the interning-free design: the "text" of the token
+// is always `lx.src + start` for `tlen` bytes.
 struct Tok {
     kind: u32,
     start: u64,
@@ -128,7 +126,7 @@ struct Tok {
     tline: u64,
 }
 
-// Las lineas se cuentan desde 1 porque asi las cuentan los editores.
+// Lines are counted from 1 because that is how editors count them.
 fun lex_init(lx: *Lexer, src: *u8, len: u64) {
     lx.src = src
     lx.pos = 0
@@ -137,8 +135,8 @@ fun lex_init(lx: *Lexer, src: *u8, len: u64) {
 }
 
 // ---------------------------------------------------------------------------
-// Clasificacion de caracteres. Los rangos van escritos como dos comparaciones
-// anidadas porque el lenguaje no tiene && ni ||.
+// Character classification. Ranges are written as two nested comparisons
+// because the language has neither && nor ||.
 // ---------------------------------------------------------------------------
 
 fun is_digit(c: u8) -> u32 {
@@ -165,7 +163,7 @@ fun hex_val(c: u8) -> u32 {
     return c - 65 + 10
 }
 
-// El guion bajo cuenta como letra, asi que puede iniciar un identificador.
+// The underscore counts as a letter, so it can start an identifier.
 fun is_alpha(c: u8) -> u32 {
     if c == 95 { return 1 }
     if c >= 97 {
@@ -183,10 +181,10 @@ fun is_alnum(c: u8) -> u32 {
     return 0
 }
 
-// peek/peek1: el caracter actual y el siguiente, con 0 al pasarse del final.
-// Devolver 0 en vez de comprobar limites en cada sitio simplifica lex_next: el
-// byte nulo no coincide con ningun operador, asi que un token de dos caracteres
-// cortado por el final del fichero degrada solo al de un caracter.
+// peek/peek1: the current character and the next one, returning 0 past the
+// end. Returning 0 instead of bounds-checking at every site simplifies
+// lex_next: the null byte matches no operator, so a two-character token cut
+// short by the end of the file degrades to the one-character token.
 fun peek(lx: *Lexer) -> u8 {
     if lx.pos >= lx.len { return 0 }
     return lx.src[lx.pos]
@@ -198,12 +196,12 @@ fun peek1(lx: *Lexer) -> u8 {
     return lx.src[p]
 }
 
-// Salta espacios, tabuladores, retornos de carro, saltos de linea y comentarios
-// `//` hasta fin de linea. Es el UNICO sitio donde se incrementa `line`.
+// Skips spaces, tabs, carriage returns, newlines and `//` comments up to the
+// end of the line. It is the ONLY place where `line` is incremented.
 //
-// Solo hay comentarios de linea; no existe /* */. La comprobacion es: si veo
-// una barra (47) y la siguiente tambien lo es, consumo hasta el salto de linea;
-// si no, salgo del bucle y la barra se lexara como TK_SLASH (division).
+// There are only line comments; /* */ does not exist. The check is: if I see a
+// slash (47) and the next one is a slash too, I consume up to the newline;
+// otherwise I leave the loop and the slash is lexed as TK_SLASH (division).
 fun skip_ws(lx: *Lexer) {
     while lx.pos < lx.len {
         let c: u8 = lx.src[lx.pos]
@@ -227,17 +225,17 @@ fun skip_ws(lx: *Lexer) {
     }
 }
 
-// Decide si un identificador ya lexado es en realidad una palabra clave.
+// Decides whether an already lexed identifier is in fact a keyword.
 //
-// La estrategia es "primero filtra por longitud, luego compara bytes": agrupar
-// por len evita la mayoria de las comparaciones, porque casi todos los
-// identificadores reales de un programa no miden 2, 3, 4, 5 ni 6.
+// The strategy is "filter by length first, then compare bytes": grouping by
+// len skips most comparisons, because almost all the real identifiers of a
+// program are not 2, 3, 4, 5 or 6 bytes long.
 //
-// Las palabras clave se declaran como literales `str` locales en vez de
-// constantes globales porque el lenguaje no tiene constantes de cadena; el
-// codegen las coloca igualmente una sola vez en __cstring.
+// The keywords are declared as local `str` literals instead of global
+// constants because the language has no string constants; the codegen places
+// them in __cstring exactly once anyway.
 //
-// Si nada coincide, es un identificador corriente.
+// If nothing matches, it is an ordinary identifier.
 fun kw_kind(src: *u8, len: u64) -> u32 {
     let kw_fun: str    = 'fun'
     let kw_let: str    = 'let'
@@ -284,15 +282,16 @@ fun kw_kind(src: *u8, len: u64) -> u32 {
     return TK_IDENT
 }
 
-// Numero decimal o hexadecimal.
+// Decimal or hexadecimal number.
 //
-// El prefijo 0x (48 = '0', 120 = 'x') cambia la base. No hay signo: un `-5` son
-// dos tokens y el parser lo trata como negacion unaria. Tampoco hay separadores
-// ni sufijos de tipo; el tipo lo decide el contexto.
+// The 0x prefix (48 = '0', 120 = 'x') changes the base. There is no sign: a
+// `-5` is two tokens and the parser treats it as unary negation. There are no
+// digit separators and no type suffixes either; the type is decided by the
+// context.
 //
-// No se detecta desbordamiento: un literal mayor que 2^64-1 envuelve en
-// silencio. En la practica todos los literales del arbol son direcciones,
-// tamanos u opcodes, muy por debajo del limite.
+// Overflow is not detected: a literal larger than 2^64-1 wraps silently. In
+// practice every literal in the tree is an address, a size or an opcode, well
+// below the limit.
 fun lex_number(lx: *Lexer, t: *Tok) {
     t.kind = TK_NUM
     t.start = lx.pos
@@ -320,8 +319,8 @@ fun lex_number(lx: *Lexer, t: *Tok) {
     t.tlen = lx.pos - t.start
 }
 
-// Identificador o palabra clave. Ya se sabe que el primer caracter es alfa
-// (lo comprobo lex_next), asi que basta con consumir alfanumericos.
+// Identifier or keyword. The first character is already known to be alphabetic
+// (lex_next checked it), so consuming alphanumerics is enough.
 fun lex_ident(lx: *Lexer, t: *Tok) {
     t.start = lx.pos
     while lx.pos < lx.len {
@@ -332,18 +331,18 @@ fun lex_ident(lx: *Lexer, t: *Tok) {
     t.kind = kw_kind(lx.src + t.start, t.tlen)
 }
 
-// Literal de cadena entre comillas simples (39).
+// String literal delimited by single quotes (39).
 //
-// OJO con lo que guarda: `start` apunta a la comilla de APERTURA y `tlen`
-// incluye AMBAS comillas. El desescapado y el recorte de comillas los hace el
-// parser al crear el StrLit (ver str_intern en parser.tt), no el lexer.
+// MIND what it stores: `start` points at the OPENING quote and `tlen` includes
+// BOTH quotes. Unescaping and quote trimming are done by the parser when it
+// creates the StrLit (see str_intern in parser.tt), not by the lexer.
 //
-// La barra invertida (92) escapa el siguiente caracter, y aqui solo sirve para
-// que una comilla escapada no cierre la cadena: se saltan dos bytes de golpe.
-// La traduccion real de \n, \t, \' y \\ ocurre mas adelante.
+// The backslash (92) escapes the next character, and here it only serves to
+// keep an escaped quote from closing the string: two bytes are skipped at
+// once. The real translation of \n, \t, \' and \\ happens later.
 //
-// Una cadena sin cerrar consume hasta el final del fichero y el parser fallara
-// despues; no se emite un error especifico.
+// An unterminated string consumes up to the end of the file and the parser
+// fails afterwards; no specific error is emitted.
 fun lex_string(lx: *Lexer, t: *Tok) {
     t.kind = TK_STRING
     t.start = lx.pos
@@ -363,24 +362,23 @@ fun lex_string(lx: *Lexer, t: *Tok) {
     t.tlen = lx.pos - t.start
 }
 
-// Produce el siguiente token en `t`.
+// Produces the next token in `t`.
 //
-// El orden de las comprobaciones es el que define la gramatica lexica:
+// The order of the checks is what defines the lexical grammar:
 //
-//   1. blancos y comentarios
-//   2. fin de fichero
-//   3. numero / identificador / cadena, por el primer caracter
-//   4. operadores de DOS caracteres, que hay que probar antes que los de uno
-//      para que `->`, `==`, `!=`, `<=`, `>=`, `<<` y `>>` no se partan
-//   5. operadores de un caracter
+//   1. whitespace and comments
+//   2. end of file
+//   3. number / identifier / string, by the first character
+//   4. TWO-character operators, which must be tried before the one-character
+//      ones so that `->`, `==`, `!=`, `<=`, `>=`, `<<` and `>>` are not split
+//   5. one-character operators
 //
-// El paso 4 es el unico delicado: `<` aparece en tres reglas (`<`, `<=`, `<<`)
-// y el orden entre ellas no importa porque el segundo caracter las distingue,
-// pero todas tienen que ir antes del paso 5.
+// Step 4 is the only delicate one: `<` appears in three rules (`<`, `<=`,
+// `<<`) and their relative order does not matter because the second character
+// tells them apart, but all of them have to come before step 5.
 //
-// Cualquier byte que no encaje en nada devuelve TK_EOF, lo que hace que el
-// parser aborte en ese punto con el mensaje de la construccion que estuviera
-// esperando.
+// Any byte that fits nothing returns TK_EOF, which makes the parser abort at
+// that point with the message of whatever construct it was expecting.
 fun lex_next(lx: *Lexer, t: *Tok) {
     skip_ws(lx)
     t.tline = lx.line
@@ -477,8 +475,8 @@ fun lex_next(lx: *Lexer, t: *Tok) {
         }
     }
 
-    // Operadores de un solo caracter. El cursor ya ha avanzado, asi que a
-    // partir de aqui solo queda etiquetar.
+    // Single-character operators. The cursor has already advanced, so from
+    // here on all that is left is labelling.
     t.start = lx.pos
     t.tlen = 1
     lx.pos = lx.pos + 1

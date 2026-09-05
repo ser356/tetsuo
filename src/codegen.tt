@@ -1,46 +1,47 @@
 // ============================================================================
-// src/codegen.tt - backend TEXTUAL: del IR a ensamblador AArch64
+// src/codegen.tt - TEXTUAL backend: from IR to AArch64 assembly
 // ============================================================================
 //
-// Emite el .s que despues ensambla y enlaza clang. Es el backend original y
-// sigue siendo el camino de referencia: cuando algo falla en el binario que
-// produce src/codegen_bytes.tt, la pregunta es siempre "y por este camino que
-// sale", porque este esta validado por un ensamblador de verdad.
+// Emits the .s that clang later assembles and links. It is the original
+// backend and it remains the reference path: when something fails in the
+// binary that src/codegen_bytes.tt produces, the question is always "and what
+// does this path emit", because this one is validated by a real assembler.
 //
-// LA RELACION CON codegen_bytes.tt
+// THE RELATION WITH codegen_bytes.tt
 //
-// Los dos ficheros son la misma funcion escrita dos veces, una a texto y otra a
-// bytes. Cada emit_i_* de aqui tiene su cgb_i_* alli, en el mismo orden,
-// haciendo las mismas elecciones de registro y emitiendo las mismas
-// instrucciones. Esa correspondencia es lo que permite comparar los dos
-// caminos instruccion a instruccion, que es la prueba mas fuerte que hay de que
-// el backend de bytes es correcto (ver bootstrap/linux/verify_macho_linux.sh).
+// Both files are the same function written twice, once to text and once to
+// bytes. Every emit_i_* here has its cgb_i_* over there, in the same order,
+// making the same register choices and emitting the same instructions. That
+// correspondence is what allows comparing both paths instruction by
+// instruction, which is the strongest evidence there is that the byte backend
+// is correct (see bootstrap/linux/verify_macho_linux.sh).
 //
-// Si tocas uno, toca el otro. Y si dudas de cual es la verdad, es este.
+// If you touch one, touch the other. And if you doubt which one is the truth,
+// it is this one.
 //
-// COMO SE EMITE EL TEXTO
+// HOW THE TEXT IS EMITTED
 //
-// No hay printf ni formato: todo se construye concatenando literales y numeros
-// con las funciones de lib/fmt.tt. Las funciones out_* de este fichero son los
-// trozos reutilizables (un registro, una cola `, [sp, #N]`, un mnemonico con su
-// sangrado). Por eso el codigo se lee raro: cada instruccion son varias
-// llamadas seguidas.
+// There is no printf and no formatting: everything is built by concatenating
+// literals and numbers with the functions from lib/fmt.tt. The out_* functions
+// in this file are the reusable pieces (a register, a `, [sp, #N]` tail, a
+// mnemonic with its indentation). That is why the code reads oddly: every
+// instruction is several calls in a row.
 //
-// El formato de salida tiene que ser DETERMINISTA hasta el ultimo espacio: el
-// fixpoint (tests/fixpoint_build.sh) compara el .s generado byte a byte entre
-// generaciones del compilador. De ahi el sangrado de ancho fijo y los
-// inmediatos siempre en hexadecimal de 4 digitos.
+// The output format has to be DETERMINISTIC down to the last space: the
+// fixpoint (tests/fixpoint_build.sh) compares the generated .s byte for byte
+// across compiler generations. Hence the fixed-width indentation and the
+// immediates always in 4-digit hexadecimal.
 //
-// LOS DOS TARGETS
+// THE TWO TARGETS
 //
-//   TGT_VIRT   salida "neutra", sin secciones ni prefijo de simbolo. Es la que
-//              usan las pruebas del propio codegen.
-//   TGT_MACOS  Mach-O real: secciones __TEXT,__text y __TEXT,__cstring, bss con
-//              .zerofill __DATA,__bss, simbolos con guion bajo delante y el
-//              punto de entrada _tt_start.
+//   TGT_VIRT   "neutral" output, with no sections and no symbol prefix. It is
+//              the one the codegen's own tests use.
+//   TGT_MACOS  real Mach-O: __TEXT,__text and __TEXT,__cstring sections, bss
+//              through .zerofill __DATA,__bss, symbols with a leading
+//              underscore and the _tt_start entry point.
 //
-// El target se guarda en un global (G_TARGET) por la misma razon que el parser
-// guarda el suyo: evitar arrastrar un parametro por decenas de funciones.
+// The target is kept in a global (G_TARGET) for the same reason the parser
+// keeps its own: to avoid dragging a parameter through dozens of functions.
 // ============================================================================
 
 const TGT_VIRT:  u64 = 0
@@ -60,12 +61,12 @@ fun get_target() -> u64 {
 }
 
 // ---------------------------------------------------------------------------
-// Piezas de texto reutilizables
+// Reusable text pieces
 // ---------------------------------------------------------------------------
 
-// Un registro asignado por el regalloc: el numero logico r se imprime como
-// x(r+9) o w(r+9). El desplazamiento de 9 es el que reserva x0..x8 para
-// argumentos y retorno. 120 = 'x', 119 = 'w'.
+// A register assigned by the regalloc: the logical number r is printed as
+// x(r+9) or w(r+9). The offset of 9 is what reserves x0..x8 for arguments and
+// return values. 120 = 'x', 119 = 'w'.
 fun out_reg_x(o: *Out, r: u64) {
     out_byte(o, 120)
     out_u64(o, ir_phys_reg(r))
@@ -86,7 +87,7 @@ fun out_w_n(o: *Out, n: u64) {
     out_u64(o, n)
 }
 
-// Un registro fisico concreto, en su forma de 64 o de 32 bits segun `wide`.
+// A specific physical register, in its 64- or 32-bit form depending on `wide`.
 fun out_reg_wx(o: *Out, n: u64, wide: u64) {
     if wide == 1 {
         out_x_n(o, n)
@@ -95,11 +96,11 @@ fun out_reg_wx(o: *Out, n: u64, wide: u64) {
     out_w_n(o, n)
 }
 
-// Mnemonico de acceso a memoria, ya sangrado y con el relleno hasta la columna
-// de los operandos: 0=ldr, 1=str, 2=ldrb, 3=strb.
+// Memory access mnemonic, already indented and padded up to the operand
+// column: 0=ldr, 1=str, 2=ldrb, 3=strb.
 //
-// El ancho fijo del sangrado no es cosmetico: el fixpoint compara el .s byte a
-// byte.
+// The fixed width of the indentation is not cosmetic: the fixpoint compares
+// the .s byte for byte.
 fun out_mn(o: *Out, mn: u64) {
     if mn == 0 { let s0: str = '    ldr     '; out_bytes(o, s0.ptr, s0.len); return }
     if mn == 1 { let s1: str = '    str     '; out_bytes(o, s1.ptr, s1.len); return }
@@ -108,8 +109,9 @@ fun out_mn(o: *Out, mn: u64) {
     out_bytes(o, s3.ptr, s3.len)
 }
 
-// La cola `, [sp, #N]` de un acceso a un local, y `, [xN]` de un acceso por
-// puntero. Se llaman "tail" porque completan una linea que empezo con out_mn.
+// The `, [sp, #N]` tail of an access to a local, and the `, [xN]` of an access
+// through a pointer. They are called "tail" because they complete a line that
+// out_mn started.
 fun out_sp_tail(o: *Out, off: u64) {
     let s0: str = ', [sp, #'
     out_bytes(o, s0.ptr, s0.len)
@@ -126,14 +128,14 @@ fun out_mem_tail(o: *Out, addr_x: u64) {
     out_bytes(o, s1.ptr, s1.len)
 }
 
-// Carga una constante de 64 bits, en trozos de 16 bits.
+// Loads a 64-bit constant, in 16-bit chunks.
 //
-// Es el equivalente textual de b_movi en codegen_bytes.tt y sigue la misma
-// logica: movz para el primer grupo no nulo (limpia el resto del registro) y
-// movk para los demas, saltando los que valen cero.
+// It is the textual equivalent of b_movi in codegen_bytes.tt and follows the
+// same logic: movz for the first non-zero group (it clears the rest of the
+// register) and movk for the others, skipping the ones that are zero.
 //
-// La division por 65536 sustituye a un desplazamiento porque este fichero es
-// anterior a que el lenguaje tuviera >>.
+// The division by 65536 stands in for a shift because this file predates the
+// language having >>.
 fun emit_movi(o: *Out, xreg: u64, imm: u64) {
     let a: u64 = imm / 65536
     let g0: u64 = imm - a * 65536
@@ -200,8 +202,8 @@ fun emit_movi(o: *Out, xreg: u64, imm: u64) {
     }
 }
 
-// Puntero al buffer de fuente, para recuperar nombres de simbolo a partir de
-// los rangos (start, len) que guardan el AST y el IR.
+// Pointer to the source buffer, to recover symbol names from the (start, len)
+// ranges that the AST and the IR store.
 bss G_SRC: 8
 
 fun set_src(p: *u8) {
@@ -215,10 +217,10 @@ fun get_src() -> *u8 {
 }
 
 // ---------------------------------------------------------------------------
-// Registro contra pila: el mismo criterio que en codegen_bytes.tt.
+// Register versus stack: the same criterion as in codegen_bytes.tt.
 //
-// reg_of[slot] < NREGS  ->  vive en x(reg_of[slot] + 9)
-// en otro caso          ->  esta derramado, en [sp, #slot*8]
+// reg_of[slot] < NREGS  ->  it lives in x(reg_of[slot] + 9)
+// otherwise             ->  it is spilled, at [sp, #slot*8]
 // ---------------------------------------------------------------------------
 
 fun slot_off(fn: *IrFn, slot: u64) -> u64 {
@@ -303,8 +305,8 @@ fun emit_spill_x(o: *Out, fn: *IrFn, slot: u64, xreg: u64) {
     emit_str_x(o, xreg, slot_off(fn, slot))
 }
 
-// Devuelve el registro del que leer un slot, emitiendo el load a `scratch` si
-// esta derramado. Espejo de cgb_src_x.
+// Returns the register to read a slot from, emitting the load into `scratch`
+// if it is spilled. Mirror of cgb_src_x.
 fun ensure_src_x(o: *Out, fn: *IrFn, slot: u64, scratch: u64) -> u64 {
     let ro: *u64 = fn.reg_of
     let r: u64 = ro[slot]
@@ -337,7 +339,7 @@ fun out_binop_mnemonic(o: *Out, op: u64, signed: u64) {
 }
 
 // ---------------------------------------------------------------------------
-// Un emisor por opcode del IR. Cada uno tiene su gemelo cgb_i_* en
+// One emitter per IR opcode. Each one has its cgb_i_* twin in
 // codegen_bytes.tt.
 // ---------------------------------------------------------------------------
 
@@ -347,13 +349,13 @@ fun emit_i_movi(o: *Out, fn: *IrFn, i: *Ins) {
     emit_spill_x(o, fn, i.dst, xd)
 }
 
-// Direccion de un literal o de un bloque bss, con el par adrp + add.
+// Address of a literal or of a bss block, with the adrp + add pair.
 //
-// En texto se escribe con los modificadores del ensamblador:
+// In text it is written with the assembler modifiers:
 //     adrp x9, L_str3@PAGE
 //     add  x9, x9, L_str3@PAGEOFF
-// y es el enlazador quien calcula los desplazamientos. El backend de bytes
-// tiene que hacer esa cuenta a mano (ver mo_resolve_strings_bss).
+// and it is the linker that computes the displacements. The byte backend has
+// to do that arithmetic by hand (see mo_resolve_strings_bss).
 fun emit_i_label_addr(o: *Out, fn: *IrFn, i: *Ins) {
     let xd: u64 = dst_x_reg(fn, i.dst)
     if i.callee_len > 0 {
@@ -572,11 +574,11 @@ fun emit_i_binop(o: *Out, fn: *IrFn, i: *Ins) {
     emit_spill_x(o, fn, i.dst, rd)
 }
 
-// Sufijo de condicion para cset: eq, ne, lo, ls, hi, hs.
+// Condition suffix for cset: eq, ne, lo, ls, hi, hs.
 //
-// Todas sin signo, porque el lenguaje no tiene tipos con signo. Aqui se escribe
-// la condicion DIRECTA (el ensamblador ya invierte al expandir el alias cset);
-// el backend de bytes tiene que invertirla el mismo, ver cgb_invcond.
+// All unsigned, because the language has no signed types. Here the DIRECT
+// condition is written (the assembler already inverts it when expanding the
+// cset alias); the byte backend has to invert it itself, see cgb_invcond.
 fun out_cc(o: *Out, cc: u64) {
     if cc == 0 { let s: str = 'eq'; out_bytes(o, s.ptr, s.len); return }
     if cc == 1 { let s: str = 'ne'; out_bytes(o, s.ptr, s.len); return }
@@ -625,11 +627,11 @@ fun emit_i_cmp(o: *Out, fn: *IrFn, i: *Ins, cc: u64) {
     emit_spill_x(o, fn, i.dst, rd)
 }
 
-// El builtin syscall: numero en x16, argumentos en x0.., y `svc #0x80`.
+// The syscall builtin: number in x16, arguments in x0.., and `svc #0x80`.
 //
-// Este `svc #0x80` es lo unico especifico de macOS en el codigo generado, y es
-// justo lo que bootstrap/linux/macho2elf.sh reescribe como `bl _tt_sys` para
-// poder ejecutar la salida bajo qemu en Linux.
+// This `svc #0x80` is the only macOS-specific thing in the generated code, and
+// it is exactly what bootstrap/linux/macho2elf.sh rewrites as `bl _tt_sys` in
+// order to run the output under qemu on Linux.
 fun emit_i_syscall(o: *Out, fn: *IrFn, i: *Ins) {
     let args: *u64 = i.args
     let ro: *u64 = fn.reg_of
@@ -832,8 +834,8 @@ fun emit_instr(o: *Out, fn: *IrFn, i: *Ins, epi_label: u64) {
     if op == IR_CAST        { emit_i_cast(o, fn, i);        return }
 }
 
-// Escribe un nombre de simbolo, con guion bajo delante si el target es macOS.
-// Es la unica diferencia de nomenclatura entre los dos targets.
+// Writes a symbol name, with a leading underscore when the target is macOS.
+// It is the only naming difference between the two targets.
 fun emit_sym(o: *Out, ns: u64, nl: u64) {
     if get_target() == TGT_MACOS {
         out_byte(o, 95)
@@ -873,13 +875,13 @@ fun emit_restore_callee(o: *Out, count: u64) {
     }
 }
 
-// Prologo: guardar x29/x30, fijar el frame pointer y reservar los locales.
+// Prologue: save x29/x30, set the frame pointer and reserve the locals.
 //
-// Como en cgb_prologue, la reserva tiene dos caminos porque `sub sp, sp, #imm`
-// solo llega a 4095; por encima se carga el tamano en x16. Aqui basta con
-// escribir `sub sp, sp, x16` y dejar que el ensamblador elija el encoding
-// correcto, que es precisamente lo que el backend de bytes tuvo que aprender a
-// hacer a mano (enc_sub_ext_sp).
+// As in cgb_prologue, the reservation has two paths because `sub sp, sp, #imm`
+// only reaches 4095; above that the size is loaded into x16. Here it is enough
+// to write `sub sp, sp, x16` and let the assembler pick the right encoding,
+// which is precisely what the byte backend had to learn to do by hand
+// (enc_sub_ext_sp).
 fun emit_prologue(o: *Out, fn: *IrFn) {
     let s1: str = '\n    .globl   '
     out_bytes(o, s1.ptr, s1.len)
@@ -941,8 +943,8 @@ fun emit_text_section(o: *Out) {
     out_bytes(o, s.ptr, s.len)
 }
 
-// Derrama el parametro k a su hueco de pila nada mas entrar, con el ancho de su
-// tipo. Ver la explicacion en cgb_param_spill.
+// Spills parameter k to its stack slot right on entry, with the width of its
+// type. See the explanation in cgb_param_spill.
 fun emit_param_spill(o: *Out, fn: *IrFn, k: u64) {
     let w: u64 = 8
     let pts: **Type = fn.param_types
@@ -997,10 +999,11 @@ fun emit_fn(o: *Out, fn: *IrFn, epi_label: u64) {
     emit_epilogue(o, fn, epi_label)
 }
 
-// Un byte de literal como `.byte 0xNN`.
+// One literal byte as `.byte 0xNN`.
 //
-// Se emiten byte a byte, y no como `.asciz`, por dos razones: permite cualquier
-// byte sin escapar y evita que el ensamblador o el enlazador toquen nada.
+// They are emitted byte by byte, rather than as `.asciz`, for two reasons: it
+// allows any byte without escaping and it keeps the assembler and the linker
+// from touching anything.
 fun emit_string_byte(o: *Out, v: u64) {
     let s: str = '    .byte   0x'
     out_bytes(o, s.ptr, s.len)
@@ -1011,12 +1014,12 @@ fun emit_string_byte(o: *Out, v: u64) {
     out_byte(o, 10)
 }
 
-// Los literales, en __TEXT,__cstring, alineados a 8 y con terminador nulo.
+// The literals, in __TEXT,__cstring, aligned to 8 and null terminated.
 //
-// El terminador explicito es OBLIGATORIO y no un detalle: sin el, el enlazador
-// de macOS fusiona cadenas que comparten sufijo, y a partir de unas 60 cadenas
-// eso corrompe el `.ptr` de los literales. Fue un bug real del hito 17.3, y
-// latente hasta que el compilador tuvo suficientes cadenas para dispararlo.
+// The explicit terminator is MANDATORY and not a detail: without it, the macOS
+// linker merges strings that share a suffix, and beyond about 60 strings that
+// corrupts the `.ptr` of the literals. It was a real bug in milestone 17.3,
+// and it stayed latent until the compiler had enough strings to trigger it.
 fun emit_strings(o: *Out, prog: *Program) {
     if prog.strs == nil { return }
     if get_target() == TGT_LINUX {
@@ -1043,15 +1046,15 @@ fun emit_strings(o: *Out, prog: *Program) {
     }
 }
 
-// El punto de entrada. Llama a main y convierte su valor de retorno en el
-// codigo de salida del proceso con exit(), sin pasar por libc.
+// The entry point. It calls main and turns its return value into the exit code
+// of the process with exit(), without going through libc.
 fun emit_macos_start(o: *Out) {
     let s: str = '    .globl   _tt_start\n_tt_start:\n    bl      _main\n    mov     x16, #1\n    svc     #0x80\n'
     out_bytes(o, s.ptr, s.len)
 }
 
-// Los bloques bss, como `.zerofill __DATA,__bss,_NOMBRE,tamano,3`.
-// El 3 final es log2 de la alineacion, o sea 8 bytes.
+// The bss blocks, as `.zerofill __DATA,__bss,_NAME,size,3`.
+// The trailing 3 is log2 of the alignment, that is 8 bytes.
 fun emit_bsses(o: *Out, prog: *Program) {
     if prog.bsses == nil { return }
     out_byte(o, 10)
@@ -1083,10 +1086,11 @@ fun emit_bsses(o: *Out, prog: *Program) {
     }
 }
 
-// Driver del backend textual: seccion, entrada, funciones, literales y bsses.
+// Driver of the textual backend: section, entry point, functions, literals and
+// bss blocks.
 //
-// Los labels de epilogo se numeran a partir del maximo usado por el lowering,
-// igual que en codegen_bytes.tt, para que no colisionen.
+// The epilogue labels are numbered starting from the maximum used by the
+// lowering, just as in codegen_bytes.tt, so that they do not collide.
 fun codegen(o: *Out, target: u64, no_entry: u64, prog: *Program, funcs: *IrFn) {
     set_target(target)
     emit_text_section(o)

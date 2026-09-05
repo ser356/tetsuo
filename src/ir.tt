@@ -1,71 +1,73 @@
 // ============================================================================
-// src/ir.tt - representacion intermedia, lowering y asignacion de registros
+// src/ir.tt - intermediate representation, lowering and register allocation
 // ============================================================================
 //
-// Es la fase que va del AST a algo que un backend pueda emitir instruccion a
-// instruccion. Hace tres cosas, en este orden:
+// This is the stage that goes from the AST to something a backend can emit
+// instruction by instruction. It does three things, in this order:
 //
 //   1. LOWERING (lower_expr / lower_stmt / lower_one_fn)
-//      Aplana el arbol a una lista lineal de instrucciones de tres direcciones.
-//      Las expresiones anidadas se convierten en una cadena de operaciones
-//      sobre SLOTS temporales; el control de flujo (if, while, loop, break) se
-//      convierte en labels y saltos explicitos.
+//      Flattens the tree into a linear list of three-address instructions.
+//      Nested expressions become a chain of operations over temporary SLOTS;
+//      control flow (if, while, loop, break) becomes explicit labels and
+//      jumps.
 //
-//   2. ASIGNACION DE REGISTROS (regalloc)
-//      Decide que slots viven en registro fisico y cuales se derraman a pila,
-//      por analisis de rango de vida sobre la lista ya lineal.
+//   2. REGISTER ALLOCATION (regalloc)
+//      Decides which slots live in a physical register and which ones spill to
+//      the stack, by live range analysis over the already linear list.
 //
-//   3. CIERRE DEL FRAME (finalize_frame)
-//      Fija cuantos bytes de pila necesita la funcion.
+//   3. FRAME CLOSING (finalize_frame)
+//      Fixes how many stack bytes the function needs.
 //
-// EL MODELO DE SLOTS
+// THE SLOT MODEL
 //
-// Un "slot" es un valor con nombre numerico. Los primeros nlocals slots son las
-// variables declaradas del programa (parametros incluidos) y los siguientes son
-// temporales creados por el lowering. Todos comparten un mismo espacio de
-// numeracion y todos tienen un hueco reservado en el frame, en [sp, #slot*8].
+// A "slot" is a value with a numeric name. The first nlocals slots are the
+// declared variables of the program (parameters included) and the following
+// ones are temporaries created by the lowering. They all share a single
+// numbering space and they all have a reserved place in the frame, at
+// [sp, #slot*8].
 //
-// Eso significa que un slot SIEMPRE tiene sitio en pila; el regalloc solo
-// decide si ademas se le da un registro para no ir a memoria. Es lo que hace
-// que derramar sea trivial: no hay que buscar hueco, ya lo tiene.
+// That means a slot ALWAYS has room on the stack; regalloc only decides
+// whether it additionally gets a register so as not to go to memory. That is
+// what makes spilling trivial: there is no need to find room, the slot already
+// has it.
 //
-// Un detalle que sorprende: `next_slot` se reinicia por sentencia (ver
-// lower_stmt), asi que los temporales se REUTILIZAN entre sentencias. `max_slot`
-// se queda con el maximo historico, que es lo que determina el tamano del
-// frame. Sin eso, una funcion con muchas sentencias gastaria un hueco por cada
-// temporal de cada una.
+// One detail that surprises: `next_slot` is reset per statement (see
+// lower_stmt), so temporaries are REUSED across statements. `max_slot` keeps
+// the historical maximum, which is what determines the frame size. Without it,
+// a function with many statements would burn one slot per temporary of each.
 //
-// LAS INSTRUCCIONES
+// THE INSTRUCTIONS
 //
-// Todas comparten un unico struct Ins con todos los campos posibles, en vez de
-// una union o una jerarquia: el lenguaje no tiene ninguna de las dos cosas. Que
-// campos son validos depende del opcode:
+// They all share a single Ins struct with every possible field, instead of a
+// union or a hierarchy: the language has neither. Which fields are valid
+// depends on the opcode:
 //
 //   IR_MOVI         dst <- imm
-//   IR_LABEL_ADDR   dst <- direccion de un literal (str_id) o de un bss
-//                   (callee_start/callee_len con el nombre)
-//   IR_ADDR_LOCAL   dst <- direccion del hueco de pila de `local`
-//   IR_LOAD_LOCAL   dst <- local, con `width`
-//   IR_STORE_LOCAL  local <- a, con `width`
-//   IR_LOAD_MEM     dst <- [a], con `width`
-//   IR_STORE_MEM    [a] <- b, con `width`
+//   IR_LABEL_ADDR   dst <- address of a literal (str_id) or of a bss symbol
+//                   (callee_start/callee_len holding the name)
+//   IR_ADDR_LOCAL   dst <- address of the stack slot of `local`
+//   IR_LOAD_LOCAL   dst <- local, with `width`
+//   IR_STORE_LOCAL  local <- a, with `width`
+//   IR_LOAD_MEM     dst <- [a], with `width`
+//   IR_STORE_MEM    [a] <- b, with `width`
 //   IR_BINOP        dst <- a `binop` b
-//   IR_CMPxx        dst <- (a cmp b) como 0 o 1
+//   IR_CMPxx        dst <- (a cmp b) as 0 or 1
 //   IR_CALL         dst <- callee(args[0..nargs))
-//   IR_RET          devuelve a  (imm != 0 = return sin valor)
-//   IR_JMP          salta a label
-//   IR_JZ           salta a label si a es cero
-//   IR_LABEL        destino de salto
+//   IR_RET          returns a  (imm != 0 = return with no value)
+//   IR_JMP          jumps to label
+//   IR_JZ           jumps to label if a is zero
+//   IR_LABEL        jump target
 //
-// Se puede ver el resultado con `tetsuoc --dump-ir fichero.tt`.
+// The result can be inspected with `tetsuoc --dump-ir file.tt`.
 //
-// Los dos backends (src/codegen.tt textual y src/codegen_bytes.tt a bytes)
-// consumen exactamente esta estructura, y por eso producen codigo equivalente.
+// Both backends (src/codegen.tt textual and src/codegen_bytes.tt to bytes)
+// consume exactly this structure, and that is why they produce equivalent
+// code.
 // ============================================================================
 
-bss IR_BUF: 268435456      // arena propio del IR, separado del AST
+bss IR_BUF: 268435456      // the IR's own arena, separate from the AST one
 bss IR_ARENA_STORE: 24
-bss IR_NEXT_LABEL: 8      // contador GLOBAL de labels, ver ir_new_label
+bss IR_NEXT_LABEL: 8      // GLOBAL label counter, see ir_new_label
 
 fun ir_init() -> *Arena {
     let a: *Arena = IR_ARENA_STORE
@@ -73,18 +75,19 @@ fun ir_init() -> *Arena {
     return a
 }
 
-// Ancho en bytes de un tipo, con valor por defecto si no hay tipo.
+// Width in bytes of a type, with a default value when there is no type.
 //
-// El "sin tipo" pasa cuando el parser no pudo inferirlo; el defecto es 8, que
-// es el ancho de un puntero y de un u64, o sea el caso conservador: leer u
-// escribir de mas nunca trunca un valor, mientras que asumir 1 byte si.
+// The "no type" case happens when the parser could not infer it; the default
+// is 8, which is the width of a pointer and of a u64, that is, the
+// conservative case: reading or writing too much never truncates a value,
+// whereas assuming 1 byte does.
 fun ir_width_of(t: *Type, dflt: u64) -> u64 {
     if t == nil { return dflt }
     return type_width(t)
 }
 
 // ---------------------------------------------------------------------------
-// Opcodes. Ver la tabla del encabezado para saber que campos usa cada uno.
+// Opcodes. See the table in the header for which fields each one uses.
 // ---------------------------------------------------------------------------
 const IR_MOVI:        u64 = 0
 const IR_LABEL_ADDR:  u64 = 1
@@ -107,11 +110,11 @@ const IR_JZ:          u64 = 17
 const IR_LABEL:       u64 = 18
 const IR_CAST:        u64 = 19
 
-// Una instruccion. Un solo struct para todos los opcodes: sin uniones ni
-// herencia, los campos que no aplican simplemente quedan a cero.
+// An instruction. A single struct for every opcode: with no unions and no
+// inheritance, the fields that do not apply simply stay at zero.
 //
-// 120 bytes por instruccion (ver mk_ins) es generoso, pero el IR del compilador
-// entero cabe de sobra en los 16MB de IR_BUF.
+// 120 bytes per instruction (see mk_ins) is generous, but the IR of the whole
+// compiler fits comfortably in the 16MB of IR_BUF.
 struct Ins {
     op:           u64,
     dst:          u64,
@@ -132,15 +135,15 @@ struct Ins {
     next:         *Ins,
 }
 
-// Una funcion ya bajada a IR.
+// A function already lowered to IR.
 //
-//   nlocals      variables declaradas (parametros incluidos)
-//   nslots       total de slots, o sea nlocals mas los temporales
-//   slot_types   tipo de cada slot, para decidir anchos de acceso
-//   frame_bytes  bytes de pila, multiplo de 16 (lo fija finalize_frame)
-//   reg_of       slot -> registro fisico, o >= NREGS si esta derramado
-//   last_use     indice de la ultima instruccion que usa cada slot
-//   head/tail    lista enlazada de instrucciones
+//   nlocals      declared variables (parameters included)
+//   nslots       total number of slots, that is nlocals plus the temporaries
+//   slot_types   type of every slot, to decide access widths
+//   frame_bytes  stack bytes, a multiple of 16 (set by finalize_frame)
+//   reg_of       slot -> physical register, or >= NREGS when spilled
+//   last_use     index of the last instruction that uses each slot
+//   head/tail    linked list of instructions
 struct IrFn {
     name_start:  u64,
     name_len:    u64,
@@ -161,10 +164,10 @@ struct IrFn {
     spill_slots: u64,
 }
 
-// Reserva e inicializa una instruccion. Poner TODOS los campos a cero
-// explicitamente importa: el arena no garantiza memoria limpia (los bloques se
-// reutilizan tras un vec_push que creciera) y un campo con basura se
-// interpretaria como un slot o un label validos.
+// Allocates and initializes an instruction. Zeroing EVERY field explicitly
+// matters: the arena does not guarantee clean memory (blocks are reused after
+// a vec_push that grew) and a field holding garbage would be read as a valid
+// slot or label.
 fun mk_ins(ar: *Arena, op: u64) -> *Ins {
     let i: *Ins = arena_take(ar, sizeof(Ins))
     i.op = op
@@ -209,8 +212,8 @@ fun mk_ir_fn(ar: *Arena, name_start: u64, name_len: u64) -> *IrFn {
     return f
 }
 
-// Anade una instruccion al final de la funcion. La lista lleva tail para que
-// esto sea O(1); el IR se construye estrictamente hacia delante.
+// Appends an instruction at the end of the function. The list carries a tail
+// so that this is O(1); the IR is built strictly forwards.
 fun ir_emit(fn: *IrFn, i: *Ins) {
     if fn.head == nil {
         fn.head = i
@@ -222,12 +225,12 @@ fun ir_emit(fn: *IrFn, i: *Ins) {
     fn.tail = i
 }
 
-// Estado del lowering de UNA funcion.
+// Lowering state of ONE function.
 //
-//   next_slot    proximo temporal libre; se reinicia en cada sentencia
-//   max_slot     maximo historico de next_slot -> tamano real del frame
-//   break_stack  pila de labels de salida de bucle, para que `break` sepa
-//                adonde saltar; permite bucles anidados
+//   next_slot    next free temporary; reset at every statement
+//   max_slot     historical maximum of next_slot -> real frame size
+//   break_stack  stack of loop exit labels, so that `break` knows where to
+//                jump; it is what makes nested loops work
 struct B {
     f:           *IrFn,
     ar:          *Arena,
@@ -279,10 +282,10 @@ fun lower_push_loop(b: *B, break_label: u64, continue_label: u64) {
     b.break_top = b.break_top + 1
 }
 
-// Reserva un slot temporal.
+// Reserves a temporary slot.
 //
-// La actualizacion de max_slot es lo unico que impide que la reutilizacion de
-// temporales entre sentencias infradimensione el frame.
+// Updating max_slot is the only thing that keeps the reuse of temporaries
+// across statements from undersizing the frame.
 fun ir_new_slot(b: *B, ty: *Type) -> u64 {
     let dst: u64 = b.next_slot
     b.next_slot = dst + 1
@@ -292,12 +295,12 @@ fun ir_new_slot(b: *B, ty: *Type) -> u64 {
     return dst
 }
 
-// Nuevo id de label.
+// New label id.
 //
-// El contador es GLOBAL a todo el programa, no por funcion. Podria ser por
-// funcion, pero siendo global los ids son unicos en toda la compilacion y el
-// backend puede usar una sola tabla plana label -> offset sin preocuparse de
-// colisiones entre funciones.
+// The counter is GLOBAL to the whole program, not per function. It could be
+// per function, but being global the ids are unique across the entire
+// compilation and the backend can use a single flat label -> offset table
+// without worrying about collisions between functions.
 fun ir_new_label(b: *B) -> u64 {
     let p: *u64 = IR_NEXT_LABEL
     let l: u64 = p[0]
@@ -325,11 +328,11 @@ fun ir_emit_jz(b: *B, cond_slot: u64, l: u64) {
 }
 
 // ---------------------------------------------------------------------------
-// Lowering de expresiones
+// Expression lowering
 //
-// Devuelve el SLOT donde queda el resultado. Cada caso emite las instrucciones
-// necesarias y crea un temporal para el resultado; las subexpresiones se bajan
-// recursivamente antes, con lo que la lista queda en orden de evaluacion.
+// Returns the SLOT where the result ends up. Each case emits the necessary
+// instructions and creates a temporary for the result; the subexpressions are
+// lowered recursively first, which leaves the list in evaluation order.
 // ---------------------------------------------------------------------------
 fun lower_expr(b: *B, e: *Expr) -> u64 {
     if e.kind == EX_INT {
@@ -583,8 +586,8 @@ fun lower_logical(b: *B, e: *Expr, is_or: u64) -> u64 {
     return dst
 }
 
-// Comparacion: baja los dos lados y emite un IR_CMPxx, que deja 0 o 1 en un
-// slot. El ancho sale del operando, no del resultado.
+// Comparison: lowers both sides and emits an IR_CMPxx, which leaves 0 or 1 in
+// a slot. The width comes from the operand, not from the result.
 fun lower_cmp(b: *B, e: *Expr, opk: u64) -> u64 {
     let la: u64 = lower_expr(b, e.lhs)
     let lb: u64 = lower_expr(b, e.rhs)
@@ -601,24 +604,23 @@ fun lower_cmp(b: *B, e: *Expr, opk: u64) -> u64 {
 }
 
 // ---------------------------------------------------------------------------
-// Lowering de sentencias
+// Statement lowering
 //
-// Aqui es donde el control de flujo estructurado se convierte en labels y
-// saltos. Los esquemas:
+// This is where structured control flow becomes labels and jumps. The shapes:
 //
 //   if c { A } else { B }        while c { A }         loop { A }
 //     jz c, Lelse                 Ltop:                  Ltop:
 //     A                             jz c, Lend             A
 //     jmp Lend                      A                      jmp Ltop
 //   Lelse:                          jmp Ltop             Lend:      <- break
-//     B                           Lend:                             salta aqui
+//     B                           Lend:                             jumps here
 //   Lend:
 //
-// `break` salta al label que hay en la cima de break_stack, que es lo que hace
-// que funcione dentro de bucles anidados.
+// `break` jumps to the label on top of break_stack, which is what makes it
+// work inside nested loops.
 //
-// Cada sentencia reinicia next_slot: los temporales de la anterior ya no hacen
-// falta y se pueden reutilizar.
+// Every statement resets next_slot: the temporaries of the previous one are no
+// longer needed and can be reused.
 // ---------------------------------------------------------------------------
 fun lower_stmt(b: *B, s: *Stmt) {
     if s.kind == ST_LET {
@@ -783,8 +785,8 @@ fun lower_block(b: *B, head: *Stmt) {
     }
 }
 
-// Baja una funcion entera del AST al IR: copia la firma, prepara el builder y
-// recorre el cuerpo.
+// Lowers a whole function from the AST to the IR: copies the signature,
+// prepares the builder and walks the body.
 fun lower_one_fn(ar: *Arena, sf: *Func) -> *IrFn {
     let nloc: u64 = sf.nlocals
     let locs: **Local = sf.locals
@@ -820,29 +822,29 @@ fun lower_one_fn(ar: *Arena, sf: *Func) -> *IrFn {
 }
 
 // ============================================================================
-// Asignacion de registros
+// Register allocation
 // ============================================================================
 //
-// ALGORITMO: rangos de vida sobre la lista lineal, con asignacion voraz.
+// ALGORITHM: live ranges over the linear list, with greedy assignment.
 //
-//   1. Se pasa la lista a un array para poder indexar por posicion.
-//   2. Para cada slot se calcula def_idx (donde se define) y last_use (ultimo
-//      uso), recorriendo las instrucciones y mirando sus operandos.
-//   3. Se marca `cross`: un slot CRUZA una llamada si su rango de vida contiene
-//      un IR_CALL. Como los registros que usamos son todos caller-saved, un
-//      slot que cruce una llamada no puede vivir en registro y se derrama
-//      directamente. Es la simplificacion clave: evita tener que guardar y
-//      restaurar registros alrededor de cada llamada.
-//   4. Los demas se asignan por orden a los NREGS registros disponibles,
-//      liberando cada uno cuando se pasa el last_use de su slot. Si no queda
-//      ninguno libre, el slot se derrama.
+//   1. The list is copied into an array so it can be indexed by position.
+//   2. For every slot, def_idx (where it is defined) and last_use (last use)
+//      are computed by walking the instructions and inspecting their operands.
+//   3. `cross` is marked: a slot CROSSES a call if its live range contains an
+//      IR_CALL. Since the registers we use are all caller-saved, a slot that
+//      crosses a call cannot live in a register and is spilled outright. This
+//      is the key simplification: it avoids having to save and restore
+//      registers around every call.
+//   4. The rest are assigned in order to the NREGS available registers,
+//      releasing each one once the last_use of its slot has passed. If none is
+//      free, the slot is spilled.
 //
-// El resultado va a fn.reg_of: un valor menor que NREGS es el registro fisico
-// (los backends le suman 9, o sea x9..x15) y cualquier valor mayor o igual
-// significa "en pila, en [sp, #slot*8]".
+// The result goes to fn.reg_of: a value lower than NREGS is the physical
+// register (the backends add 9 to it, that is x9..x15) and any value greater
+// than or equal means "on the stack, at [sp, #slot*8]".
 //
-// No es un asignador bueno; es un asignador correcto y predecible, que es lo
-// que hace falta para que los dos backends coincidan byte a byte.
+// It is not a good allocator; it is a correct and predictable one, which is
+// what is needed for both backends to agree byte for byte.
 const NREGS: u64 = 17
 
 fun ir_phys_reg(r: u64) -> u64 {
@@ -860,8 +862,9 @@ fun ir_count_ins(fn: *IrFn) -> u64 {
     return n
 }
 
-// Si el opcode escribe en i.dst. Junto con collect_uses define que slots toca
-// cada instruccion, que es todo lo que necesita el analisis de rangos de vida.
+// Whether the opcode writes to i.dst. Together with collect_uses it defines
+// which slots each instruction touches, which is all the live range analysis
+// needs.
 fun ir_has_dst(i: *Ins) -> u64 {
     if i.op == IR_MOVI { return 1 }
     if i.op == IR_LABEL_ADDR { return 1 }
@@ -879,10 +882,11 @@ fun ir_has_dst(i: *Ins) -> u64 {
     return 0
 }
 
-// Slots que LEE una instruccion. Los deja en `uses` y devuelve cuantos son.
+// Slots that an instruction READS. It leaves them in `uses` and returns how
+// many there are.
 //
-// El llamante pasa un buffer suficiente; el caso mayor es IR_CALL, que lee
-// tantos slots como argumentos tenga.
+// The caller passes a large enough buffer; the biggest case is IR_CALL, which
+// reads as many slots as it has arguments.
 fun collect_uses(i: *Ins, uses: *u64) -> u64 {
     if i.op == IR_STORE_LOCAL {
         uses[0] = i.a
@@ -955,11 +959,11 @@ fun collect_uses(i: *Ins, uses: *u64) -> u64 {
     return 0
 }
 
-// Ver la explicacion del algoritmo junto a NREGS.
+// See the explanation of the algorithm next to NREGS.
 //
-// Los `if X == 0 { X = 8 }` de los tamanos estan porque arena_take(0) devolveria
-// un puntero valido pero compartido con la siguiente reserva; pedir 8 bytes
-// para un array vacio evita ese aliasing.
+// The `if X == 0 { X = 8 }` lines on the sizes are there because arena_take(0)
+// would return a valid pointer, but one shared with the next allocation;
+// asking for 8 bytes for an empty array avoids that aliasing.
 fun regalloc(ar: *Arena, fn: *IrFn) {
     let n: u64 = ir_count_ins(fn)
     let nslots: u64 = fn.nslots
@@ -1138,12 +1142,13 @@ fun regalloc(ar: *Arena, fn: *IrFn) {
     fn.spill_slots = spill_slots
 }
 
-// Fija el tamano del frame: un hueco de 8 bytes por slot, redondeado a 16.
+// Fixes the frame size: an 8-byte slot per slot, rounded up to 16.
 //
-// El redondeo a 16 NO es opcional. La ABI de AArch64 en Darwin exige SP
-// alineado a 16 y el hardware falla en cualquier acceso relativo a un SP
-// desalineado. Como el prologo hace `sub sp, sp, #frame_bytes`, si frame_bytes
-// no fuera multiplo de 16 toda la funcion correria con SP invalido.
+// Rounding to 16 is NOT optional. The AArch64 ABI on Darwin requires SP to be
+// 16-byte aligned and the hardware faults on any access relative to a
+// misaligned SP. Since the prologue does `sub sp, sp, #frame_bytes`, if
+// frame_bytes were not a multiple of 16 the whole function would run with an
+// invalid SP.
 fun finalize_frame(fn: *IrFn) {
     let raw: u64 = fn.spill_slots * 8
     let fb: u64 = raw + 15
@@ -1173,9 +1178,9 @@ fun peephole(fn: *IrFn) {
     }
 }
 
-// Driver: baja todas las funciones del programa, y para cada una asigna
-// registros y cierra el frame. Devuelve la lista enlazada de IrFn que consumen
-// los backends.
+// Driver: lowers every function of the program and, for each one, allocates
+// registers and closes the frame. Returns the linked list of IrFn that the
+// backends consume.
 fun lower(ar: *Arena, prog: *Program) -> *IrFn {
     let lc: *u64 = IR_NEXT_LABEL
     lc[0] = 0
@@ -1199,8 +1204,8 @@ fun lower(ar: *Arena, prog: *Program) -> *IrFn {
     return head
 }
 
-// Vuelca el IR en texto legible. Es lo que imprime `--dump-ir` y la forma mas
-// rapida de ver por que un backend emite lo que emite.
+// Dumps the IR as readable text. It is what `--dump-ir` prints and the fastest
+// way to see why a backend emits what it emits.
 fun dump_ir(o: *Out, funcs: *IrFn) {
     let lx: *Lexer = LX_STATE
     let fn: *IrFn = funcs

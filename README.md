@@ -7,154 +7,156 @@ It contains the language reference, idioms, twenty recipes, stable diagnostic
 catalog, source hashes, and tokens-to-competence metric. Regenerate with
 `python3 tools/build_agent_context.py` and verify with `--check`.
 
-Compilador de un lenguaje de propósito general mínimo para CLI y sistemas,
-**totalmente autohospedado**: escrito y compilado por sí mismo. Incluye enteros
-signed/unsigned, casts, funciones, control estructurado, scopes léxicos,
-punteros, structs, arrays locales, imports y archivos. Emite AArch64 para:
+Compiler for a minimal general-purpose language aimed at CLI and systems
+programming, **fully self-hosted**: written in and compiled by itself. It
+includes signed/unsigned integers, casts, functions, structured control flow,
+lexical scopes, pointers, structs, local arrays, imports and files. It emits
+AArch64 for:
 
-- **virt** — bare metal sobre QEMU `-M virt` (Cortex-A72), E/S por UART PL011.
-- **macos** — ejecutable de usuario en macOS arm64, E/S por `syscall`.
-- **linux** — ensamblador ELF AArch64 mediante `--target=linux` y shim syscall.
+- **virt** — bare metal on QEMU `-M virt` (Cortex-A72), I/O through a PL011 UART.
+- **macos** — user-mode executable on macOS arm64, I/O through `syscall`.
+- **linux** — AArch64 ELF assembly through `--target=linux` and a syscall shim.
 
-## Estructura del repo
+## Repository layout
 
 ```
-src/            compilador stage1 en tetsuo puro
-  lexer.tt        tokenizador
-  parser.tt       parser descendente recursivo + AST + tipos
-  ir.tt           lowering a IR lineal + regalloc lineal
-  codegen.tt      emisión AArch64 textual (.s, target macos)
-  macho.tt        writer Mach-O binario + firma ad-hoc embebida
-  main.tt         CLI argv-driven: preprocessor `import` + parse + lower + codegen
+src/            stage1 compiler in pure tetsuo
+  lexer.tt        tokenizer
+  parser.tt       recursive descent parser + AST + types
+  ir.tt           lowering to linear IR + linear regalloc
+  codegen.tt      textual AArch64 emission (.s, macos target)
+  macho.tt        binary Mach-O writer + embedded ad-hoc signature
+  main.tt         argv-driven CLI: `import` preprocessor + parse + lower + codegen
   runtime/
-    io.tt         envoltorios de syscalls (target macos)
-lib/            runtime en tetsuo: str.tt, fmt.tt, vec.tt, ast.tt
-tests/          fuentes .tt de prueba + scripts de build por target
+    io.tt         syscall wrappers (macos target)
+lib/            runtime in tetsuo: str.tt, fmt.tt, vec.tt, ast.tt
+tests/          .tt test sources + per-target build scripts
 bootstrap/
-  tetsuoc.s       golden seed asm: salida de stage1 sobre sí mismo (~20 kL).
-                  Bootstraps el compilador sin dependencia de código externo.
-  verify.sh       batería de smoke tests + fixpoint bit-a-bit
-  linux/          harness qemu-aarch64 para verificar el fixpoint en Linux
-test.sh         pipeline virt: compila, ensambla, enlaza y arranca en QEMU
-docs/MACHO-PLAN.md  plan del writer Mach-O + firma ad-hoc (hitos 24.a → 24.f)
-LENGUAJE.md     referencia del lenguaje y guía de uso correcto
-idioms.md       patrones idiomáticos observados en el código real
-SELFHOST-STATE.md  bitácora del avance del autohospedaje
+  tetsuoc.s       golden seed asm: stage1's output over itself (~20 kL).
+                  Bootstraps the compiler with no dependency on external code.
+  verify.sh       smoke test battery + bit-for-bit fixpoint
+  linux/          qemu-aarch64 harness to verify the fixpoint on Linux
+test.sh         virt pipeline: compile, assemble, link and boot under QEMU
+docs/MACHO-PLAN.md  plan of the Mach-O writer + ad-hoc signature (milestones 24.a → 24.f)
+LANGUAGE.md     language reference and correct-usage guide
+idioms.md       idiomatic patterns observed in real code
+SELFHOST-STATE.md  log of the self-hosting progress
 ```
 
 ## Bootstrap
 
-El bootstrap nativo no necesita `gcc`, `clang`, `cc`, `as`, `ld`, `codesign`
-ni bibliotecas dinámicas. Arranca desde la seed Mach-O arm64 firmada y
-committeada en `bootstrap/tetsuoc.macho`. `tests/macos_build.sh` la copia a
-`build/main` cuando el compilador no existe.
+The native bootstrap needs no `gcc`, `clang`, `cc`, `as`, `ld`, `codesign` and
+no dynamic libraries. It starts from the signed arm64 Mach-O seed committed in
+`bootstrap/tetsuoc.macho`. `tests/macos_build.sh` copies it to `build/main`
+when the compiler does not exist.
 
-La seed compila fuentes tetsuo directamente a ejecutables Mach-O arm64 con
-firma ad-hoc embebida. La ruta histórica desde `bootstrap/tetsuoc.s` sigue
-disponible para verificar el backend textual, pero no forma parte del
-bootstrap autónomo.
+The seed compiles tetsuo sources directly into arm64 Mach-O executables with an
+embedded ad-hoc signature. The historical route from `bootstrap/tetsuoc.s` is
+still available to verify the textual backend, but it is not part of the
+self-contained bootstrap.
 
-## Uso del compilador
+## Using the compiler
 
 ```bash
-build/main --emit=macho fuente.tt -o salida    # ejecutable Mach-O firmado
-build/main --emit=obj fuente.tt -o modulo.s    # asm enlazable, sin entrypoint
-build/main fuente.tt -o salida.s               # backend textual legado
-build/main --dump-tokens fuente.tt             # imprime tokens
-build/main --dump-ir     fuente.tt             # imprime IR lineal
+build/main --emit=macho source.tt -o output      # signed Mach-O executable
+build/main --emit=obj source.tt -o module.s      # linkable asm, no entry point
+build/main source.tt -o output.s                 # legacy textual backend
+build/main --dump-tokens source.tt               # prints tokens
+build/main --dump-ir     source.tt               # prints the linear IR
 ```
 
-El driver ejecuta primero el preprocessor `import` sobre el fuente (una línea
-`import 'ruta/relativa.tt'` inlinea recursivamente el fichero citado; los
-paths ya vistos se saltan → sin ciclos ni duplicados). Después parsea, lowera
-y emite AArch64. macOS es el target predeterminado; Linux se selecciona con
+The driver first runs the `import` preprocessor over the source (a line
+`import 'relative/path.tt'` inlines the quoted file recursively; already seen
+paths are skipped → no cycles and no duplicates). It then parses, lowers and
+emits AArch64. macOS is the default target; Linux is selected with
 `--target=linux`.
 
-El modo `--emit=macho` no requiere pasos posteriores. El backend textual puede
-ensamblarse externamente para depuración:
+The `--emit=macho` mode requires no further steps. The textual backend can be
+assembled externally for debugging:
 
 ```bash
-clang -c salida.s -o salida.o
-clang -e _tt_start -o salida salida.o
-./salida
+clang -c output.s -o output.o
+clang -e _tt_start -o output output.o
+./output
 ```
 
-`--emit=obj` conserva la ABI C de macOS arm64 y omite `_tt_start`. Convierte
-su salida con `clang -c modulo.s -o modulo.o` y enlaza el objeto desde C o Rust.
+`--emit=obj` preserves the macOS arm64 C ABI and omits `_tt_start`. Convert its
+output with `clang -c module.s -o module.o` and link the object from C or Rust.
 
-## Ejecutar programas
+## Running programs
 
-### Target macos (arm64)
+### macos target (arm64)
 
 ```bash
 bash tests/macos_build.sh tests/macos_hello.tt [args...]
 ```
 
-Genera un entry con imports del runtime y compilador, invoca `build/main
---emit=macho` y ejecuta el Mach-O firmado resultante. No invoca ensamblador,
-linker ni firmador externo.
+It generates an entry point with the runtime and compiler imports, invokes
+`build/main --emit=macho` and runs the resulting signed Mach-O. It invokes no
+external assembler, linker or signing tool.
 
-### Target virt (bare metal, QEMU)
+### virt target (bare metal, QEMU)
 
-Requiere `qemu-system-aarch64` y una toolchain cruzada `aarch64-elf-*`. Nota:
-la CLI autónoma actual ofrece macOS y Linux; la ruta virt conserva su pipeline
-separado en `test.sh`.
+Requires `qemu-system-aarch64` and an `aarch64-elf-*` cross toolchain. Note:
+the current self-contained CLI offers macOS and Linux; the virt route keeps its
+separate pipeline in `test.sh`.
 
-## Biblioteca primitiva
+## Primitive library
 
-Existe una biblioteca pequeña escrita en tetsuo, sin enlaces contra
-libc/libSystem. Para programas CLI basta el módulo paraguas:
+There is a small library written in tetsuo, with no links against
+libc/libSystem. For CLI programs the umbrella module is enough:
 
 ```text
 import 'lib/std.tt'
 ```
 
-| módulo | equivalente aproximado | API actual |
+| module | rough equivalent | current API |
 |---|---|---|
-| `src/runtime/io.tt` | `stdio` + parte de `stdlib` | `io_open_read`, `io_open_write`, `io_read`, `io_write`, `io_close`, `io_exit`, `io_getpid`, `io_unlink`, `io_chdir`, `io_mkdir`, `Arena`, `arena_init`, `arena_take` |
-| `lib/arena.tt` | asignación freestanding | `Arena`, `arena_init`, `arena_take` sobre memoria del llamante |
-| `lib/str.tt` | `string.h` mínimo | `bytes_eq`, `mem_copy` |
-| `lib/string.tt` | operaciones de `str` | `string_eq`, `string_has_prefix`, `string_find_byte`, `str_next_codepoint` |
-| `lib/parse.tt` | conversión numérica | `parse_u64`, `parse_i64` con validación y detección de overflow |
-| `lib/fmt.tt` | formato/salida bufferizada | `Out`, `out_init`, `out_flush`, `out_byte`, `out_bytes`, `out_u64`, `out_hex4`, `die_line` |
-| `lib/stdio.tt` | stdout/stderr | `stdio_init`, `print`, `println`, `print_u64`, variantes `e*`, `flush`, `eflush` |
-| `lib/vec.tt` | contenedor dinámico | `Vec`, `vec_init`, `vec_push`, `vec_get` |
-| `lib/ast.tt` | soporte interno | arena global del AST mediante `ast_init` |
+| `src/runtime/io.tt` | `stdio` + part of `stdlib` | `io_open_read`, `io_open_write`, `io_read`, `io_write`, `io_close`, `io_exit`, `io_getpid`, `io_unlink`, `io_chdir`, `io_mkdir`, `Arena`, `arena_init`, `arena_take` |
+| `lib/arena.tt` | freestanding allocation | `Arena`, `arena_init`, `arena_take` over caller-supplied memory |
+| `lib/str.tt` | minimal `string.h` | `bytes_eq`, `mem_copy` |
+| `lib/string.tt` | `str` operations | `string_eq`, `string_has_prefix`, `string_find_byte`, `str_next_codepoint` |
+| `lib/parse.tt` | numeric conversion | `parse_u64`, `parse_i64` with validation and overflow detection |
+| `lib/fmt.tt` | formatting/buffered output | `Out`, `out_init`, `out_flush`, `out_byte`, `out_bytes`, `out_u64`, `out_hex4`, `die_line` |
+| `lib/stdio.tt` | stdout/stderr | `stdio_init`, `print`, `println`, `print_u64`, the `e*` variants, `flush`, `eflush` |
+| `lib/vec.tt` | dynamic container | `Vec`, `vec_init`, `vec_push`, `vec_get` |
+| `lib/ast.tt` | internal support | global AST arena through `ast_init` |
 
-`lib/freestanding.tt` importa arena, bytes, strings, parseo y vector sin añadir
-`bss`. Está destinado a objetos enlazables; cada llamada aporta su scratch.
+`lib/freestanding.tt` imports arena, bytes, strings, parsing and vector without
+adding any `bss`. It is meant for linkable objects; every caller supplies its
+own scratch.
 
-`stdio_init` debe ejecutarse antes de escribir y los buffers requieren `flush`
-o `eflush`. `parse_u64`/`parse_i64` devuelven 1 en éxito y escriben por puntero;
-devuelven 0 sin modificar la salida ante entrada inválida o overflow.
+`stdio_init` must run before writing and the buffers require `flush` or
+`eflush`. `parse_u64`/`parse_i64` return 1 on success and write through the
+pointer; they return 0 without modifying the output on invalid input or
+overflow.
 
-No existen aún `printf`, `malloc/free`, `fopen/FILE`, entrada tokenizada,
-sockets, procesos, entorno ni reloj. `arena_take` sustituye a `malloc` para
-cargas de vida única y libera todo al terminar el proceso.
+There is as yet no `printf`, `malloc/free`, `fopen/FILE`, tokenized input,
+sockets, processes, environment or clock. `arena_take` replaces `malloc` for
+single-lifetime workloads and frees everything when the process ends.
 
-### Batería de verificación
+### Verification battery
 
 ```bash
 bash bootstrap/verify.sh
 ```
 
-Ejecuta todos los smoke tests + el fixpoint bit-a-bit `s0==s1==s2` sobre el
-combined del propio compilador. Solo en macOS arm64: los binarios generados
-son Mach-O AArch64.
+Runs every smoke test plus the bit-for-bit `s0==s1==s2` fixpoint over the
+compiler's own combined source. macOS arm64 only: the generated binaries are
+AArch64 Mach-O.
 
-Para verificar en Linux x86_64 sin macOS:
+To verify on Linux x86_64 without macOS:
 
 ```bash
 bash bootstrap/linux/verify_linux.sh
 ```
 
-Usa `qemu-user` + un shim BSD→Linux para ejecutar los Mach-O emitidos.
+It uses `qemu-user` plus a BSD→Linux shim to run the emitted Mach-O binaries.
 
-## Módulos: `import` como preprocessor
+## Modules: `import` as a preprocessor
 
-tetsuo no tiene sistema de módulos separado. Una "biblioteca" es un fichero
-`.tt` y la "importación" es una directiva de línea del preprocessor integrado
-en el driver:
+tetsuo has no separate module system. A "library" is a `.tt` file and
+"importing" is a line directive of the preprocessor built into the driver:
 
 ```
 import 'lib/str.tt'
@@ -163,27 +165,28 @@ import 'lib/fmt.tt'
 fun main() -> u64 { ... }
 ```
 
-Reglas:
+Rules:
 
-- La directiva ocupa una línea entera y va **antes** de cualquier declaración.
-- La ruta es relativa al cwd desde el que se invoca `build/main`.
-- El expansor deduplica por path: importar dos veces el mismo fichero es
-  no-op, y los ciclos se resuelven trivialmente.
-- Las referencias hacia atrás (recursión mutua) siguen siendo válidas solo
-  **dentro** de un mismo fichero; entre importados el orden debe respetar las
-  dependencias tal como si los concatenases a mano.
+- The directive takes a whole line and comes **before** any declaration.
+- The path is relative to the cwd `build/main` is invoked from.
+- The expander deduplicates by path: importing the same file twice is a no-op,
+  and cycles resolve trivially.
+- Backward references (mutual recursion) remain valid only **within** a single
+  file; across imported files the order must respect the dependencies exactly
+  as if you concatenated them by hand.
 
-Detalles y patrones idiomáticos en `LENGUAJE.md` e `idioms.md`.
+Details and idiomatic patterns are in `LANGUAGE.md` and `idioms.md`.
 
-## Estado
+## Status
 
-Lenguaje de propósito general mínimo para programas CLI y de sistemas locales.
-No pretende sustituir aún a un entorno productivo completo: faltan namespaces,
-arrays/structs por valor, procesos hijo, red, entorno, reloj y build incremental.
+A minimal general-purpose language for CLI and local systems programs. It does
+not yet aim to replace a complete production environment: namespaces,
+arrays/structs by value, child processes, networking, environment, clock and
+incremental builds are missing.
 
-Autohospedado 100%. La seed Mach-O produce un compilador idéntico a sí mismo y
-el compilador producido vuelve a reproducir exactamente el mismo binario:
-`seed == stage1 == stage2` bit a bit. La ruta `--emit=macho` incluye encoder
-AArch64, layout Mach-O, fixups, SHA-256 y firma ad-hoc; no depende de toolchain
-externo. Verificación nativa más reciente: 2026-09-03. La bitácora detallada
-está en `SELFHOST-STATE.md`.
+100% self-hosted. The Mach-O seed produces a compiler identical to itself and
+the produced compiler reproduces exactly the same binary again:
+`seed == stage1 == stage2`, bit for bit. The `--emit=macho` route includes the
+AArch64 encoder, the Mach-O layout, the fixups, SHA-256 and the ad-hoc
+signature; it depends on no external toolchain. Most recent native
+verification: 2026-09-03. The detailed log is in `SELFHOST-STATE.md`.

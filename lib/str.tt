@@ -1,28 +1,29 @@
 // ============================================================================
-// lib/str.tt - operaciones sobre bloques de bytes
+// lib/str.tt - operations on byte blocks
 // ============================================================================
 //
-// tetsuo no tiene libreria estandar ni tipo "string" con operaciones: el tipo
-// `str` del lenguaje es solo un par (ptr, len) que el parser desugariza a dos
-// campos, y todo lo demas se hace a mano sobre *u8.
+// tetsuo has neither a standard library nor a "string" type with operations:
+// the language's `str` type is just a (ptr, len) pair that the parser desugars
+// into two fields, and everything else is done by hand over *u8.
 //
-// Estas dos funciones son el minimo que necesita el resto del compilador:
-// comparar identificadores (el lexer no internaliza, asi que cada comparacion
-// de nombre de funcion o de variable acaba aqui) y copiar bytes (arenas,
-// buffers de salida, literales).
+// These two functions are the minimum the rest of the compiler needs:
+// comparing identifiers (the lexer does not intern, so every comparison of a
+// function or variable name ends up here) and copying bytes (arenas, output
+// buffers, literals).
 //
-// Ambas son deliberadamente ingenuas, byte a byte. Copiar de 8 en 8 seria mas
-// rapido pero exigiria tratar alineacion y solapamiento, y el compilador pasa
-// mucho mas tiempo en el parser que aqui.
+// Both are deliberately naive, byte by byte. Copying 8 at a time would be
+// faster but would require handling alignment and overlap, and the compiler
+// spends far more time in the parser than here.
 // ============================================================================
 
-// Compara n bytes. Devuelve 1 si son iguales, 0 si no.
+// Compares n bytes. Returns 1 if they are equal, 0 otherwise.
 //
-// Devuelve u32 y no un bool porque el lenguaje no tiene bool; la convencion en
-// todo el arbol es 1 = si, 0 = no, y los llamantes escriben `== 1`.
+// It returns u32 and not a bool because the language has no bool; the
+// convention across the tree is 1 = yes, 0 = no, and the callers write `== 1`.
 //
-// No comprueba longitudes: es responsabilidad del llamante haber verificado ya
-// que ambos lados tienen al menos n bytes. El patron habitual en parser.tt es
+// It does not check lengths: it is the caller's responsibility to have already
+// verified that both sides hold at least n bytes. The usual pattern in
+// parser.tt is
 //     if it.name_len == n { if bytes_eq(...) == 1 { ... } }
 fun bytes_eq(a: *u8, b: *u8, n: u64) -> u32 {
     let i: u64 = 0
@@ -35,12 +36,12 @@ fun bytes_eq(a: *u8, b: *u8, n: u64) -> u32 {
     return 1
 }
 
-// Copia n bytes de src a dst.
+// Copies n bytes from src to dst.
 //
-// Copia hacia delante, asi que solo es segura si dst <= src o si los rangos no
-// se solapan. Todos los usos en el arbol copian de un buffer a otro distinto
-// (de una fuente a un arena, de un arena a un buffer de salida), nunca dentro
-// del mismo bloque hacia arriba.
+// It copies forwards, so it is only safe if dst <= src or if the ranges do not
+// overlap. Every use in the tree copies from one buffer into a different one
+// (from a source into an arena, from an arena into an output buffer), never
+// upwards within the same block.
 fun mem_copy(dst: *u8, src: *u8, n: u64) {
     let i: u64 = 0
     while i < n {

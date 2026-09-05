@@ -1,40 +1,40 @@
 # tetsuo — idioms
 
-Patrones idiomáticos observados en el código tetsuo real del repo
+Idiomatic patterns observed in the real tetsuo code of the repo
 (`tests/uart.tt`, `tests/io.tt`, `tests/cat.tt`, `tests/hello.tt`,
 `tests/macos_hello.tt`, `tests/lexer.tt`, `tests/parser.tt`,
-`tests/expr.tt`), tal como los admite el compilador actual.
-Documento vivo: es también la bitácora de fricción del hito 11 —
-cada patrón marcado (workaround) es candidato a desaparecer cuando el
-lenguaje crezca.
+`tests/expr.tt`), exactly as the current compiler accepts them.
+A living document: it is also the friction log of milestone 11 —
+every pattern marked (workaround) is a candidate to disappear once the
+language grows.
 
 ## MMIO
 
-Registro mapeado: constante puntero tipada, en mayúsculas, una vez por
-fichero. El ancho del acceso viaja en el tipo.
+Mapped register: a typed pointer constant, in uppercase, once per file. The
+width of the access travels in the type.
 
 ```
 const UART_DR: *u8  = 0x09000000
 const UART_FR: *u32 = 0x09000018
 ```
 
-`@` lee y escribe a través del puntero:
+`@` reads and writes through the pointer:
 
 ```
-return @UART_FR & 32     // lectura de 4 bytes
-@UART_DR = c             // escritura de 1 byte
+return @UART_FR & 32     // 4-byte read
+@UART_DR = c             // 1-byte write
 ```
 
-Nota de estado: la forma `reg UART_DR: u8 at 0x09000000` decidida en el
-audit no está implementada; el idiom vigente es `const` con tipo
-puntero. Nota de semántica: hoy `@` compila a ldr/str simples — es
-"volátil" solo porque no existe optimizador. Cuando exista, la garantía
-debe pasar a la IR (instrucción marcada), no perderse.
+Status note: the `reg UART_DR: u8 at 0x09000000` form decided in the audit is
+not implemented; the current idiom is a `const` of pointer type. Semantic note:
+today `@` compiles to plain ldr/str — it is "volatile" only because there is no
+optimizer. Once there is one, the guarantee must move into the IR (a marked
+instruction), not be lost.
 
-## Espera de periférico
+## Waiting on a peripheral
 
-Bucle de sondeo con la condición en una función con nombre — el nombre
-documenta el bit:
+A polling loop with the condition in a named function — the name documents the
+bit:
 
 ```
 fun uart_ready() -> u32 {
@@ -47,8 +47,8 @@ fun putc(c: u8) {
 }
 ```
 
-Comparaciones existentes: `== != < <= > >=` (todas sin signo). Bucles
-contados idiomáticos:
+Existing comparisons: `== != < <= > >=` (all unsigned). Idiomatic counted
+loops:
 
 ```
 let i: u64 = 0
@@ -58,47 +58,45 @@ while i < s.len {
 }
 ```
 
-Con signo aún no hay tipos `i32/i64`; todo cálculo va con `u*` y las
-vueltas de bucle usan igualdad o ordenación exacta.
+There are no `i32/i64` signed types yet; every computation goes through `u*`
+and loop turns use equality or exact ordering.
 
-## Cadenas
+## Strings
 
-`str` es puntero + longitud; los campos se leen con `.ptr` y `.len`.
-Sin terminador nulo implícito.
-
-```
-let saludo: str = 'hola\n'
-print(saludo)
-```
-
-(workaround) Las syscalls que esperan C-string necesitan el nulo a mano:
+`str` is pointer + length; the fields are read with `.ptr` and `.len`. There is
+no implicit null terminator.
 
 ```
-let ruta: str = 'tests/hello.tt\0'
-let fd: u64 = io_open_read(ruta.ptr)
+let greeting: str = 'hola\n'
+print(greeting)
 ```
 
-Restricciones vigentes: el literal de cadena solo puede aparecer como
-inicializador de `let`; `.ptr`/`.len` solo sobre locales.
+(workaround) Syscalls that expect a C string need the null added by hand:
 
-## Memoria dinámica
+```
+let path: str = 'tests/hello.tt\0'
+let fd: u64 = io_open_read(path.ptr)
+```
 
-Arena como biblioteca, nunca como primitivo. El bloque base cambia por
-target:
+Current restrictions: a string literal can only appear as the initializer of a
+`let`; `.ptr`/`.len` only on locals.
 
-- **virt** (bare metal): dirección fija tras la imagen cargada.
+## Dynamic memory
+
+The arena is a library, never a primitive. The base block changes per target:
+
+- **virt** (bare metal): a fixed address after the loaded image.
   ```
   const HEAP_BASE: *u8 = 0x40100000
   ```
-- **macos**: buffer estático declarado con `bss`. El compilador emite
-  `.zerofill __DATA,__bss,_NAME,N,3` en macos y `.comm NAME,N,8` en
-  virt.
+- **macos**: a static buffer declared with `bss`. The compiler emits
+  `.zerofill __DATA,__bss,_NAME,N,3` on macos and `.comm NAME,N,8` on virt.
   ```
   bss IO_BUF: 65536
   ```
 
-Un nombre `bss` se resuelve en expresión como puntero al primer byte
-del buffer (equivalente a `&io_buf[0]` en C). Uso típico:
+A `bss` name resolves in an expression to a pointer to the first byte of the
+buffer (equivalent to `&io_buf[0]` in C). Typical use:
 
 ```
 let ar: Arena
@@ -106,7 +104,7 @@ arena_init(&ar, IO_BUF, 65536)
 let buf: *u8 = arena_take(&ar, 4096)
 ```
 
-Struct de arena y funciones inalteradas desde el primer diseño:
+The arena struct and functions, unchanged since the first design:
 
 ```
 struct Arena { base: *u8, pos: u64, cap: u64 }
@@ -124,20 +122,21 @@ fun arena_take(a: *Arena, n: u64) -> *u8 {
 }
 ```
 
-Los structs se pasan siempre por puntero (`a: *Arena`, llamada con
-`&ar`); el acceso `.campo` funciona sobre la local y sobre el puntero.
+Structs are always passed by pointer (`a: *Arena`, called with `&ar`); the
+`.field` access works both on the local and on the pointer.
 
-(workaround) `arena_take` no comprueba `cap` — sin manejo de errores
-decidido aún, el desbordamiento de arena es silencioso.
+(workaround) `arena_take` does not check `cap` — with no error handling decided
+yet, arena overflow is silent.
 
-## Buffers dinámicos
+## Dynamic buffers
 
-Código destinado a `--emit=obj` no declara `bss`. Recibe el bloque del llamante,
-construye `Arena` como local y pasa `&ar`. Un scratch por llamada permite uso
-concurrente sin estado compartido; `lib/freestanding.tt` reúne este subconjunto.
+Code aimed at `--emit=obj` declares no `bss`. It receives the block from the
+caller, builds an `Arena` as a local and passes `&ar`. One scratch per call
+allows concurrent use with no shared state; `lib/freestanding.tt` gathers this
+subset.
 
-Con arena, los buffers de tamaño runtime salen gratis y sustituyen al
-truco del struct-de-u64:
+With an arena, runtime-sized buffers come for free and replace the
+struct-of-u64 trick:
 
 ```
 let nl: NameList
@@ -145,22 +144,22 @@ nl.starts = arena_take(ar, cap * 8)
 nl.lens   = arena_take(ar, cap * 8)
 ```
 
-Escritura elemento-a-elemento con aritmética de puntero:
+Element-by-element writing with pointer arithmetic:
 
 ```
 let slot: *u64 = nl.starts + i * 8
 @slot = start
 ```
 
-(workaround) `[N]T` sigue sin existir; el compilador escribe `@ptr` y
-el programador cuenta el tamaño del elemento a mano.
+(workaround) `[N]T` still does not exist; the compiler writes `@ptr` and the
+programmer counts the element size by hand.
 
-## Control de flujo
+## Control flow
 
-- `if cond { ... } else if cond2 { ... } else { ... }` con `else if`
-  sin llaves entre medias.
-- `return` sin valor (para funciones sin `->` o para salida temprana).
-- `while cond { ... }` y `loop { ... }` con `break`.
+- `if cond { ... } else if cond2 { ... } else { ... }` with `else if` and no
+  braces in between.
+- `return` with no value (for functions with no `->` or for an early exit).
+- `while cond { ... }` and `loop { ... }` with `break`.
 
 ```
 fun classify(c: u8) -> u32 {
@@ -171,13 +170,13 @@ fun classify(c: u8) -> u32 {
 }
 ```
 
-(workaround) Sin `continue`; el patrón es un `if` que envuelve el
-cuerpo del bucle.
+(workaround) No `continue`; the pattern is an `if` wrapping the body of the
+loop.
 
-## Structs recursivas
+## Recursive structs
 
-Los structs se registran con el nombre disponible antes de sus campos,
-lo que permite tipos recursivos vía puntero:
+Structs are registered with the name available before their fields, which
+allows recursive types through a pointer:
 
 ```
 struct Node {
@@ -188,12 +187,12 @@ struct Node {
 }
 ```
 
-Es el idiom para AST en tetsuo (usado en `tests/expr.tt`).
+It is the AST idiom in tetsuo (used in `tests/expr.tt`).
 
-## Peek de tokens
+## Token peeking
 
-El lexer no tiene lookahead nativo; el parser lo emula con un
-"parser state" que guarda el último token leído por adelantado:
+The lexer has no native lookahead; the parser emulates it with a "parser state"
+that holds the last token read ahead:
 
 ```
 struct PState {
@@ -207,25 +206,24 @@ struct PState {
 }
 ```
 
-(workaround) Copia campo-a-campo del `Tok` porque no existe `memcpy`
-inline; disciplina hasta que aparezca `[N]T` o punteros a struct como
-fuente de asignación por valor.
+(workaround) A field-by-field copy of the `Tok` because there is no inline
+`memcpy`; discipline until `[N]T` or pointers to struct as the source of an
+assignment by value appear.
 
-## Syscalls y E/S (target macos)
+## Syscalls and I/O (macos target)
 
-`syscall(n, a, b, c)` es el único intrínseco además de `@`. Se envuelve
-inmediatamente en funciones con nombre, prefijadas por módulo manual:
+`syscall(n, a, b, c)` is the only intrinsic besides `@`. It is wrapped
+immediately in named functions, prefixed by a manual module name:
 
 ```
 fun io_write(fd: u64, buf: *u8, len: u64) { syscall(4, fd, buf, len) }
 fun io_exit(code: u64) { syscall(1, code, 0, 0) }
 ```
 
-La "importación" es una directiva de línea del preprocessor integrado
-en el driver: `import 'ruta/relativa.tt'` una por línea al principio
-del fichero. El preprocessor expande recursivamente y deduplica por
-path, así que importar dos veces el mismo fichero (o cerrar un ciclo)
-es inofensivo. Ejemplo tipo:
+"Importing" is a line directive of the preprocessor built into the driver:
+`import 'relative/path.tt'`, one per line at the start of the file. The
+preprocessor expands recursively and deduplicates by path, so importing the
+same file twice (or closing a cycle) is harmless. A typical example:
 
 ```
 import 'src/runtime/io.tt'
@@ -234,49 +232,48 @@ import 'lib/str.tt'
 fun main() -> u64 { ... }
 ```
 
-El prefijo `io_`/`arena_`/`lex_` en los nombres sigue siendo la
-convención que sustituye al espacio de nombres — no hay scoping por
-fichero.
+The `io_`/`arena_`/`lex_` prefix in the names remains the convention that
+stands in for a namespace — there is no per-file scoping.
 
-Regla dura: nada de `syscall` en código destinado a `--target=virt` —
-compila igual pero `svc #0x80` sin handler cuelga la máquina.
+Hard rule: no `syscall` in code aimed at `--target=virt` — it compiles all the
+same, but an `svc #0x80` with no handler hangs the machine.
 
-## Convenciones generales
+## General conventions
 
-- Constantes en MAYÚSCULAS, funciones y campos en snake_case.
-- Anotación de tipo en `let` siempre (obligatoria hoy; la inferencia
-  decidida en el audit no está implementada).
-- Literales enteros: ancho decidido por el contexto del `let`/parámetro
-  que los recibe; sin casts (ni `as` ni `u8(x)` existen aún).
-- `loop {}` como cuelgue final de `main` en bare metal.
-- Un fichero = una "biblioteca" (uart.tt, io.tt); el usuario concatena.
-- `fun` sin `->` cuando no devuelve valor; `main() -> u32` en macos
-  (el runner comprueba el exit code), `main()` a secas en virt.
+- Constants in UPPERCASE, functions and fields in snake_case.
+- A type annotation on every `let` (mandatory today; the inference decided in
+  the audit is not implemented).
+- Integer literals: the width is decided by the context of the `let`/parameter
+  that receives them; no casts (neither `as` nor `u8(x)` exist yet).
+- `loop {}` as the final hang of `main` on bare metal.
+- One file = one "library" (uart.tt, io.tt); the user concatenates.
+- `fun` with no `->` when it returns no value; `main() -> u32` on macos (the
+  runner checks the exit code), a bare `main()` on virt.
 
-## Convenciones para el autohospedaje (stage1)
+## Conventions for self-hosting (stage1)
 
-Los patrones de esta sección no son opinión: son la única forma que
-tiene stage1 de reproducir el comportamiento de stage0 sin tipos con
-signo, sin `sizeof` y sin resolución adelantada explícita.
+The patterns in this section are not opinion: they are the only way stage1 has
+of reproducing stage0's behavior without signed types, without `sizeof` and
+without explicit forward resolution.
 
-### Puntero nulo = literal `0` (y `nil` como azúcar)
+### Null pointer = literal `0` (with `nil` as sugar)
 
-Verificado en `tests/nil.tt` y `tests/nil2.tt`: `let p: *T = 0` y `p == 0`
-compilan y se comportan como esperamos. La palabra reservada `nil` existe ya
-y es azúcar exacta del literal `0` — usa `nil` en contexto de puntero y `0`
-en contexto numérico. La comparación es siempre por igualdad:
+Verified in `tests/nil.tt` and `tests/nil2.tt`: `let p: *T = 0` and `p == 0`
+compile and behave as expected. The reserved word `nil` already exists and is
+exact sugar for the literal `0` — use `nil` in a pointer context and `0` in a
+numeric one. The comparison is always by equality:
 
 ```
 if p == nil { return }      // ok
 if p != nil { ... }         // ok
-if p < 0 { ... }            // PROHIBIDO — todas las comparaciones son
-                            // sin signo, esto siempre es falso
+if p < 0 { ... }            // FORBIDDEN — every comparison is
+                            // unsigned, so this is always false
 ```
 
-### Un `let` por rama: shadowing a la declaración más reciente
+### One `let` per branch: shadowing to the most recent declaration
 
-Sin ámbito de bloque, el patrón del parser stage1 es declarar la misma local
-en cada rama excluyente:
+With no block scope, the stage1 parser pattern is to declare the same local in
+every mutually exclusive branch:
 
 ```
 if k == TK_NUM {
@@ -291,24 +288,23 @@ if k == TK_IDENT {
 }
 ```
 
-Cada `let` crea un slot propio y cada uso resuelve a la declaración más
-reciente que lo precede en el texto (`lookup_local` busca de atrás hacia
-adelante). Regla de higiene: usa el patrón solo en ramas que terminan en
-`return`/`break`; después de un bloque con `let x` interno, el nombre `x`
-sigue haciendo sombra en el resto de la función y su slot puede estar sin
-inicializar si la rama no se ejecutó.
+Every `let` creates a slot of its own and every use resolves to the most recent
+declaration preceding it in the text (`lookup_local` searches backwards).
+Hygiene rule: use the pattern only in branches that end in `return`/`break`;
+after a block with an inner `let x`, the name `x` keeps shadowing in the rest of
+the function and its slot may be uninitialized if the branch did not run.
 
-(Histórico: hasta el fix del hito 15.7-8, `lookup_local` resolvía a la
-*primera* declaración: el `let e` de una rama posterior escribía su slot
-nuevo pero `e.campo` leía el slot de la primera rama, sin inicializar —
-el segfault del parser stage1 con `return IDENT`.)
+(Historical note: until the milestone 15.7-8 fix, `lookup_local` resolved to the
+*first* declaration: the `let e` of a later branch wrote its new slot but
+`e.field` read the slot of the first branch, uninitialized — the stage1 parser
+segfault with `return IDENT`.)
 
-### Centinelas: índices base 1
+### Sentinels: 1-based indices
 
-stage0 (C) usa `-1` como "sin asignar" en `reg_of`, `last_use`,
-`def_idx` y campos similares. Como tetsuo no tiene tipos con signo,
-`-1` se convertiría en `0xFFFF…FFFF` y cualquier `<` invertiría el
-sentido de las comparaciones. Solución mecánica al traducir:
+stage0 (C) uses `-1` as "unassigned" in `reg_of`, `last_use`, `def_idx` and
+similar fields. Since tetsuo has no signed types, `-1` would become
+`0xFFFF…FFFF` and any `<` would invert the sense of the comparisons. Mechanical
+solution when translating:
 
 | stage0 (C)             | stage1 (tetsuo)              |
 | ---------------------- | ---------------------------- |
@@ -316,39 +312,37 @@ sentido de las comparaciones. Solución mecánica al traducir:
 | `reg_of[s] = r`        | `reg_of[s] = r + 1`          |
 | `if reg_of[s] >= 0`    | `if reg_of[s] != 0`          |
 | `x_pool[reg_of[s]]`    | `x_pool[reg_of[s] - 1]`      |
-| `last_use[s] = -1`     | `last_use[s] = 0`, índices   |
-|                        | de instrucción base 1        |
+| `last_use[s] = -1`     | `last_use[s] = 0`, 1-based   |
+|                        | instruction indices          |
 
-Regla: cualquier tabla que en stage0 use `-1` como "vacío" pasa a
-usar `0` en stage1, y los índices reales se desplazan en 1.
+Rule: any table that in stage0 uses `-1` as "empty" switches to `0` in stage1,
+and the real indices shift by 1.
 
-### Tamaños de struct: `sizeof(T)`
+### Struct sizes: `sizeof(T)`
 
-El compilador resuelve `sizeof(T)` en tiempo de parse a través de
-`type_width`. Vale para primitivos, punteros y structs declarados:
+The compiler resolves `sizeof(T)` at parse time through `type_width`. It works
+for primitives, pointers and declared structs:
 
 ```
 let n:  u64 = sizeof(u64)     // 8
 let sp: u64 = sizeof(*u8)     // 8
-let sn: u64 = sizeof(N)       // 8 * numero de campos de N
+let sn: u64 = sizeof(N)       // 8 * number of fields of N
 ```
 
-Layout actual del backend: todos los campos ocupan hueco de 8 bytes,
-así que `sizeof(N)` = `nfields(N) * 8`. Cuando el layout cambie, la
-constante se recalcula sola sin tocar código de usuario.
+Current backend layout: every field takes an 8-byte slot, so `sizeof(N)` =
+`nfields(N) * 8`. When the layout changes, the constant recomputes itself
+without touching user code.
 
-### Un fichero = un conjunto mutuamente recursivo
+### One file = one mutually recursive set
 
-Verificado en `tests/io.tt`: `arena_take` llama a `io_exit` definido
-más abajo en el mismo fichero. `parse` completa el reconocimiento de
-todo el fichero antes de resolver nombres, de modo que dentro de un
-mismo `.tt` el orden de las funciones es libre.
+Verified in `tests/io.tt`: `arena_take` calls `io_exit`, defined further down in
+the same file. `parse` completes the recognition of the whole file before
+resolving names, so within a single `.tt` the order of the functions is free.
 
-Corolario práctico: el parser descendente recursivo del stage1 vive
-en un único `parser.tt` porque `parse_expr` ↔ `parse_primary` es
-mutuamente recursiva. La recursión **entre ficheros** distintos sí
-está prohibida: `io.tt`, `str.tt`, `fmt.tt`, `vec.tt`, `ast.tt`,
-`lexer.tt`, `parser.tt`, `ir.tt`, `codegen.tt`, `main.tt` se importan
-en ese orden (vía `import` en el driver o expandidos por `pp_expand`
-en `src/main.tt`) y toda referencia hacia atrás debe cerrarse dentro
-del mismo fichero.
+Practical corollary: the recursive descent parser of stage1 lives in a single
+`parser.tt` because `parse_expr` ↔ `parse_primary` is mutually recursive.
+Recursion **across** different files is forbidden: `io.tt`, `str.tt`, `fmt.tt`,
+`vec.tt`, `ast.tt`, `lexer.tt`, `parser.tt`, `ir.tt`, `codegen.tt`, `main.tt`
+are imported in that order (through `import` in the driver or expanded by
+`pp_expand` in `src/main.tt`) and every backward reference must be closed within
+the same file.

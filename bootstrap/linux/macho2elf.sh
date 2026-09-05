@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Traduce el asm macOS (Mach-O) emitido por tetsuo a asm ELF aarch64-linux.
+# Translates the macOS (Mach-O) asm emitted by tetsuo into aarch64-linux ELF asm.
 set -euo pipefail
 sed -e 's/^    \.section __TEXT,__text$/    .text/' \
     -e 's/^    \.section __TEXT,__cstring$/    .section .rodata/' \

@@ -1,24 +1,24 @@
 ---
 agent: agent
-description: Dispara swarm caveman + ponytail + graft + graph para una tarea
+description: Fires a caveman + ponytail + graft + graph swarm for a task
 ---
 
-activa modo swarm heredando del entorno:
-- caveman ultra desde turno 1
-- ponytail en cualquier edit
-- graft antes de cualquier read_file / grep
-- graph si el repo lo soporta
+activate swarm mode inheriting from the environment:
+- caveman ultra from turn 1
+- ponytail on any edit
+- graft before any read_file / grep
+- graph if the repo supports it
 
-tarea:
-${input:task:describe la tarea a paralelizar}
+task:
+${input:task:describe the task to parallelize}
 
-reglas:
-- localiza con graft primero.
-- resuelve `SWARM_MODEL` UNA vez desde tu system prompt
-  (formato `"<Model Name> (copilot)"`) y pásalo en TODA llamada `agent`.
-  Sin `model` no hay herencia — el subagente arranca con default.
-- reparte en `agent` paralelos (investigator / builder / reviewer),
-  cada uno con `model: SWARM_MODEL`.
-- consolida output. mantén contract de closing markers + añade
+rules:
+- locate with graft first.
+- resolve `SWARM_MODEL` ONCE from your system prompt
+  (format `"<Model Name> (copilot)"`) and pass it in EVERY `agent` call.
+  With no `model` there is no inheritance — the subagent starts with the
+  default.
+- split across parallel `agent` calls (investigator / builder / reviewer),
+  each one with `model: SWARM_MODEL`.
+- consolidate the output. keep the closing marker contract + add
   `🧬 swarm-model: <SWARM_MODEL> · subagents: <N>`.
-

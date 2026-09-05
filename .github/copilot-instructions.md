@@ -51,14 +51,14 @@ Every reply MUST end with these four lines. Silence on any = broken.
 
 ## Mode (style, always on)
 - Caveman ultra. No hedging, no politeness padding, verbs over
-  nominalisations (`verifica` > `realiza una verificación`).
+  nominalisations (`verify` > `perform a verification`).
 - Spanish reply when user writes Spanish.
 
 ## Retrieval (graft-first, size-gated)
 When `.claude/skills/graft/` or `mcp_graft_*` tools present:
 
 - **Localized edit** (path known AND ≤ 2 files touched AND no
-  call-graph question) → `read_file` directo, sin graft.
+  call-graph question) → direct `read_file`, no graft.
 - **Everything else** → graft-first. Use
   `graft_repo_map` / `graft_file_api` / `graft_find_code` /
   `graft_find_all` / `graft_trace_calls` **before** any
@@ -96,8 +96,8 @@ Before emitting any diff, verify:
   where N is lines you cut from your first draft. If N == 0, redraft.
 
 ## Editing
-- No comments in new code unless user asks — no docstrings, no `// nota:`,
-  no `# motivación:`. Context goes in chat.
+- No comments in new code unless user asks — no docstrings, no `// note:`,
+  no `# rationale:`. Context goes in chat.
 - No workarounds — root cause always. No swallow try/catch, no defensive
   `typeof x === 'function'`, no fallback at first friction.
 
@@ -107,6 +107,6 @@ Before emitting any diff, verify:
 - Conditional `cd`: `[ -d dir ] && cd dir; rest`.
 
 ## Swarm mode (opt-in)
-- Chatmode `swarm` (selector chat) o `/swarm` (prompt) para paralelizar via
-  `runSubagent`. Hereda caveman + ponytail + graft + graph. No repetir el
-  contract — se hereda de este archivo.
+- Chatmode `swarm` (chat selector) or `/swarm` (prompt) to parallelize through
+  `runSubagent`. It inherits caveman + ponytail + graft + graph. Do not repeat
+  the contract — it is inherited from this file.

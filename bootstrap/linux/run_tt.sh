@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Compila un fichero .tt (ya combinado con sus runtimes) usando el stage1
-# bootstrappeado desde la seed committeada, lo traduce a ELF aarch64 via
-# macho2elf.sh + shim de syscalls, y lo ejecuta bajo qemu-aarch64.
-# Uso: run_tt.sh <combined.tt> [args...]   -> sale con el rc del programa.
+# Compiles a .tt file (already combined with its runtimes) using the stage1
+# bootstrapped from the committed seed, translates it to aarch64 ELF through
+# macho2elf.sh + the syscall shim, and runs it under qemu-aarch64.
+# Usage: run_tt.sh <combined.tt> [args...]   -> exits with the program's rc.
 # Requiere: qemu-aarch64, binutils-aarch64-linux-gnu.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
@@ -24,7 +24,8 @@ mk_elf() { # $1=input.s $2=output_bin
     aarch64-linux-gnu-ld -e _linux_start -o "$2" "$2.o" "$BUILD/linux/shim.o"
 }
 
-# stage1 desde la seed committeada (entiende ya todo lo que la seed soporta).
+# stage1 from the committed seed (it already understands everything the seed
+# supports).
 if [[ ! -x "$BUILD/linux/stage1" ]]; then
     mk_elf bootstrap/tetsuoc.s "$BUILD/linux/stage1"
 fi

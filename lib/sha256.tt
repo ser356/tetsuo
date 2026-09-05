@@ -1,39 +1,40 @@
 // ============================================================================
-// lib/sha256.tt - SHA-256 (hito 24.c)
+// lib/sha256.tt - SHA-256 (milestone 24.c)
 // ============================================================================
 //
-// Implementacion directa de FIPS 180-4. Existe por una sola razon: firmar los
-// binarios Mach-O ad-hoc sin llamar a `codesign`. El CS_CodeDirectory que
-// escribe src/macho.tt guarda un SHA-256 por cada pagina de 4KB del binario, y
-// el kernel de macOS los recalcula al paginar; si no cuadran, mata el proceso.
-// Ver mo_sign_and_write_n en src/macho.tt.
+// A direct implementation of FIPS 180-4. It exists for a single reason: to
+// sign the ad-hoc Mach-O binaries without calling `codesign`. The
+// CS_CodeDirectory that src/macho.tt writes stores a SHA-256 for every 4KB
+// page of the binary, and the macOS kernel recomputes them while paging; if
+// they do not match, it kills the process. See mo_sign_and_write_n in
+// src/macho.tt.
 //
-// Tambien es la fuente del UUID del binario: mo_uuid_from_code hashea el codigo
-// y usa los 16 primeros bytes como LC_UUID.
+// It is also the source of the binary's UUID: mo_uuid_from_code hashes the
+// code and uses the first 16 bytes as the LC_UUID.
 //
-// ARITMETICA DE 32 BITS SOBRE u64
+// 32-BIT ARITHMETIC OVER u64
 //
-// tetsuo solo tiene u64 como tipo aritmetico util, y SHA-256 se define sobre
-// palabras de 32 bits con desbordamiento envolvente. La solucion es trabajar en
-// u64 y enmascarar con 4294967295 (0xffffffff) DESPUES de cada operacion que
-// pueda desbordar: sumas, rotaciones y xor. Un enmascarado que falte no rompe
-// nada visible hasta que un acarreo se propaga por encima del bit 31, momento
-// en el que el hash sale mal y `codesign -v` falla; por eso el patron es
-// mecanico y esta en todas partes.
+// tetsuo only has u64 as a usable arithmetic type, and SHA-256 is defined over
+// 32-bit words with wrapping overflow. The solution is to work in u64 and mask
+// with 4294967295 (0xffffffff) AFTER every operation that can overflow: adds,
+// rotations and xors. A missing mask breaks nothing visible until a carry
+// propagates above bit 31, at which point the hash comes out wrong and
+// `codesign -v` fails; that is why the pattern is mechanical and present
+// everywhere.
 //
-// ESTADO EN BSS
+// STATE IN BSS
 //
-// Las cuatro tablas son globales, no locales, porque son grandes y esta funcion
-// se llama en bucle (una vez por pagina del binario). Consecuencia: sha256() NO
-// es reentrante ni se puede usar de forma incremental desde dos sitios a la
-// vez. En el compilador se usa siempre de una en una, de principio a fin.
+// The four tables are global, not local, because they are large and this
+// function is called in a loop (once per page of the binary). Consequence:
+// sha256() is NOT reentrant and cannot be used incrementally from two places
+// at once. In the compiler it is always used one at a time, from start to end.
 //
-//     SHA_K   64 constantes de ronda (K[0..63]), 8 bytes por hueco
-//     SHA_W   el "message schedule" expandido, 64 palabras
-//     SHA_H   los 8 acumuladores del estado (H[0..7])
-//     SHA_BLK bloque de 64 bytes para el relleno final
+//     SHA_K   64 round constants (K[0..63]), 8 bytes per slot
+//     SHA_W   the expanded "message schedule", 64 words
+//     SHA_H   the 8 state accumulators (H[0..7])
+//     SHA_BLK a 64-byte block for the final padding
 //
-// Se prueba contra los vectores oficiales en tests/sha256_test.tt.
+// It is tested against the official vectors in tests/sha256_test.tt.
 // ============================================================================
 
 bss SHA_K: 512
@@ -41,24 +42,24 @@ bss SHA_W: 512
 bss SHA_H: 64
 bss SHA_BLK: 64
 
-// Rotacion a la derecha de 32 bits (ROTR^n). Como el valor vive en un u64, hay
-// que reconstruir la rotacion a mano: los bits que salen por la derecha se
-// meten por el bit 31 con `x << (32 - n)`, y el enmascarado final descarta la
-// basura que ese desplazamiento a la izquierda deja por encima del bit 31.
+// 32-bit rotate right (ROTR^n). Since the value lives in a u64, the rotation
+// has to be rebuilt by hand: the bits leaving on the right are fed back in at
+// bit 31 with `x << (32 - n)`, and the final mask discards the garbage that
+// left shift leaves above bit 31.
 //
-// Solo es correcta para 0 < n < 32; SHA-256 nunca usa otros valores.
+// It is only correct for 0 < n < 32; SHA-256 never uses other values.
 fun sha_rotr(x: u64, n: u64) -> u64 {
     return (x >> n | x << (32 - n)) & 4294967295
 }
 
-// Las 64 constantes de ronda: los 32 bits fraccionarios de la raiz cubica de
-// los 64 primeros primos. Se escriben en decimal porque el lenguaje no tenia
-// literales hexadecimales cuando se escribio el fichero.
+// The 64 round constants: the fractional 32 bits of the cube root of the first
+// 64 primes. They are written in decimal because the language had no
+// hexadecimal literals when the file was written.
 //
-// Se reinicializan en cada llamada a sha256() en vez de precalcularse una vez,
-// porque no hay inicializadores estaticos: el bss arranca a cero y la unica
-// forma de rellenarlo es codigo. El coste (64 escrituras por bloque hasheado)
-// es despreciable frente a las 64 rondas de mezcla.
+// They are reinitialized on every call to sha256() instead of being
+// precomputed once, because there are no static initializers: the bss starts
+// at zero and the only way to fill it is code. The cost (64 writes per hashed
+// block) is negligible next to the 64 mixing rounds.
 fun sha_k_init() {
     let kp: *u64 = SHA_K
     kp[0] = 1116352408
@@ -127,9 +128,9 @@ fun sha_k_init() {
     kp[63] = 3329325298
 }
 
-// Estado inicial: los 32 bits fraccionarios de la raiz cuadrada de los 8
-// primeros primos. Al reinicializarse aqui, cada llamada a sha256() empieza
-// limpia aunque la anterior dejara SHA_H con el hash previo.
+// Initial state: the fractional 32 bits of the square root of the first 8
+// primes. By being reinitialized here, every call to sha256() starts clean
+// even though the previous one left SHA_H holding the earlier hash.
 fun sha_h_init() {
     let hp: *u64 = SHA_H
     hp[0] = 1779033703
@@ -142,8 +143,8 @@ fun sha_h_init() {
     hp[7] = 1541459225
 }
 
-// Lee 4 bytes como un u32 BIG-endian. SHA-256 se define sobre big-endian y la
-// maquina es little-endian, asi que el reordenado es explicito.
+// Reads 4 bytes as a BIG-endian u32. SHA-256 is defined over big-endian and
+// the machine is little-endian, so the reordering is explicit.
 fun sha_w32be(p: *u8) -> u64 {
     let b0: u64 = p[0]
     let b1: u64 = p[1]
@@ -152,8 +153,8 @@ fun sha_w32be(p: *u8) -> u64 {
     return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
 }
 
-// Escribe un u64 big-endian. Solo se usa para la longitud en bits del mensaje,
-// que va en los ultimos 8 bytes del ultimo bloque.
+// Writes a big-endian u64. It is only used for the message length in bits,
+// which goes in the last 8 bytes of the last block.
 fun sha_put_be64(p: *u8, off: u64, v: u64) {
     p[off + 0] = (v >> 56) & 255
     p[off + 1] = (v >> 48) & 255
@@ -165,25 +166,27 @@ fun sha_put_be64(p: *u8, off: u64, v: u64) {
     p[off + 7] = v & 255
 }
 
-// Procesa UN bloque de 64 bytes y actualiza SHA_H. Es el nucleo del algoritmo.
+// Processes ONE 64-byte block and updates SHA_H. It is the core of the
+// algorithm.
 //
-// Tiene dos mitades:
+// It has two halves:
 //
-//   1. Expansion del mensaje. Las 16 palabras del bloque se copian a W[0..15] y
-//      las otras 48 se derivan con dos funciones de mezcla (s0 y s1) que
-//      combinan rotaciones y un desplazamiento. Esto es lo que hace que un
-//      cambio de un bit en la entrada afecte a todas las rondas.
+//   1. Message expansion. The 16 words of the block are copied into W[0..15]
+//      and the other 48 are derived with two mixing functions (s0 and s1) that
+//      combine rotations and a shift. This is what makes a one-bit change in
+//      the input affect every round.
 //
-//   2. Las 64 rondas de compresion. Ocho variables a..h rotan de posicion en
-//      cada ronda y solo dos reciben valor nuevo (a y e), a partir de:
-//        - be/ba: las funciones Sigma mayusculas (rotaciones puras)
-//        - ch:    "choose", elige bit a bit entre f y g segun e.
-//                 El `e ^ 4294967295` es el NOT de 32 bits, que el lenguaje no
-//                 tiene: xor con todo unos.
-//        - mj:    "majority", el bit mayoritario entre a, b y c.
+//   2. The 64 compression rounds. Eight variables a..h rotate position on
+//      every round and only two receive a new value (a and e), built from:
+//        - be/ba: the uppercase Sigma functions (pure rotations)
+//        - ch:    "choose", picks bit by bit between f and g according to e.
+//                 The `e ^ 4294967295` is the 32-bit NOT, which the language
+//                 does not have: an xor with all ones.
+//        - mj:    "majority", the majority bit among a, b and c.
 //
-// Al final los ocho acumuladores se SUMAN al estado anterior (construccion de
-// Davies-Meyer), que es lo que impide invertir la funcion.
+// At the end the eight accumulators are ADDED to the previous state (the
+// Davies-Meyer construction), which is what makes the function
+// non-invertible.
 fun sha256_block(blk: *u8) {
     let wp: *u64 = SHA_W
     let kp: *u64 = SHA_K
@@ -238,21 +241,21 @@ fun sha256_block(blk: *u8) {
     hp[7] = (hp[7] + h) & 4294967295
 }
 
-// Hashea mlen bytes desde msg y escribe 32 bytes big-endian en out.
+// Hashes mlen bytes from msg and writes 32 big-endian bytes into out.
 //
-// El relleno sigue la norma: un byte 0x80, luego ceros, y en los ultimos 8
-// bytes del ultimo bloque la longitud del mensaje EN BITS, big-endian.
+// The padding follows the standard: a 0x80 byte, then zeros, and in the last 8
+// bytes of the last block the message length IN BITS, big-endian.
 //
-// El caso `rem >= 56` es el que suele olvidarse: si tras el 0x80 no quedan 8
-// bytes libres, la longitud no cabe en ese bloque, asi que se procesa el bloque
-// tal cual (con el 0x80 y ceros), se limpia y se emite un bloque extra que solo
-// lleva la longitud. Sin esa rama, cualquier mensaje cuyo resto modulo 64 sea
-// 56..63 daria un hash incorrecto.
+// The `rem >= 56` case is the one usually forgotten: if fewer than 8 bytes are
+// left after the 0x80, the length does not fit in that block, so the block is
+// processed as is (with the 0x80 and zeros), cleared, and an extra block
+// carrying only the length is emitted. Without that branch, any message whose
+// remainder modulo 64 is 56..63 would give a wrong hash.
 //
-// Nota sobre el uso desde macho.tt: alli siempre se hashean exactamente 4096
-// bytes, o sea 64 bloques completos y rem = 0, con lo que el relleno acaba
-// siendo un bloque entero de padding. Es el camino menos interesante, pero
-// tests/sha256_test.tt cubre los demas con los vectores oficiales.
+// A note on the use from macho.tt: over there exactly 4096 bytes are always
+// hashed, that is 64 complete blocks and rem = 0, so the padding ends up being
+// a whole padding block. It is the least interesting path, but
+// tests/sha256_test.tt covers the others with the official vectors.
 fun sha256(msg: *u8, mlen: u64, out: *u8) {
     sha_k_init()
     sha_h_init()

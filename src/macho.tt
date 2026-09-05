@@ -1,93 +1,95 @@
 // ============================================================================
-// src/macho.tt - emisor de Mach-O AArch64 firmado ad-hoc (hitos 24.d / 24.f / 24.g)
+// src/macho.tt - ad-hoc signed AArch64 Mach-O emitter (milestones 24.d / 24.f / 24.g)
 // ============================================================================
 //
-// Escribe un ejecutable de macOS/arm64 completo y FIRMADO sin usar as, ld ni
-// codesign. Es la pieza que cierra el auto-hospedaje: con esto el compilador
-// produce binarios que macOS ejecuta directamente, sin cadena de herramientas
-// externa.
+// Writes a complete and SIGNED macOS/arm64 executable without using as, ld or
+// codesign. It is the piece that closes self-hosting: with it the compiler
+// produces binaries that macOS runs directly, with no external toolchain.
 //
-// COMO SE CONSTRUYE LA IMAGEN
+// HOW THE IMAGE IS BUILT
 //
-// Todo se ensambla en MO_IMG, un bloque bss, con un cursor global (MO_CUR) que
-// solo avanza; las funciones e8/e32/e64 escriben en la posicion del cursor y lo
-// adelantan. Al final se calculan los hashes y se vuelca el bloque entero con
-// UNA sola llamada a write(). No se escribe nada a disco hasta el final, lo que
-// permite volver atras a parchear (ver img_or en codegen_bytes.tt, que resuelve
-// los adrp/add cuando ya conoce las direcciones definitivas).
+// Everything is assembled in MO_IMG, a bss block, with a global cursor
+// (MO_CUR) that only moves forward; the e8/e32/e64 functions write at the
+// cursor position and advance it. At the end the hashes are computed and the
+// whole block is flushed with a SINGLE write() call. Nothing is written to
+// disk until the end, which makes it possible to go back and patch (see
+// img_or in codegen_bytes.tt, which resolves the adrp/add pairs once the final
+// addresses are known).
 //
-// HAY DOS CAMINOS, Y CONVIENE NO CONFUNDIRLOS
+// THERE ARE TWO PATHS, AND THEY SHOULD NOT BE CONFUSED
 //
-//   A) mo_emit_headers + emit_macho_image     (24.d, sin bss)
-//      11 - 1 = 10 load commands, sizeofcmds = 520, el codigo empieza en el
-//      offset 552, __TEXT ocupa EXACTAMENTE una pagina de 16KB. Sirve para
-//      binarios de juguete (tests/macho42_test.tt) y para el codegen de bytes
-//      cuando el programa no declara ningun bss.
+//   A) mo_emit_headers + emit_macho_image     (24.d, no bss)
+//      11 - 1 = 10 load commands, sizeofcmds = 520, the code starts at offset
+//      552, __TEXT takes EXACTLY one 16KB page. It serves toy binaries
+//      (tests/macho42_test.tt) and the byte codegen when the program declares
+//      no bss at all.
 //
-//   B) mo_emit_headers_bss + emit_macho_code_bss   (24.g, con bss, multi-pagina)
-//      Anade un LC_SEGMENT_64 __DATA con una seccion __bss S_ZEROFILL entre
-//      __TEXT y __LINKEDIT. Son 11 load commands, sizeofcmds = 672, el codigo
-//      empieza en 704 y __TEXT ocupa `text_pages` paginas de 16KB. Es el camino
-//      que usa `--emit=macho` para programas reales.
+//   B) mo_emit_headers_bss + emit_macho_code_bss  (24.g, with bss, multi-page)
+//      Adds an LC_SEGMENT_64 __DATA with an S_ZEROFILL __bss section between
+//      __TEXT and __LINKEDIT. That is 11 load commands, sizeofcmds = 672, the
+//      code starts at 704 and __TEXT takes `text_pages` 16KB pages. It is the
+//      path `--emit=macho` uses for real programs.
 //
-// El desplazamiento 552 -> 704 al anadir __DATA es la razon de que casi todos
-// los offsets aparezcan duplicados en codegen_bytes.tt (mo_string_layout vs
+// The 552 -> 704 shift caused by adding __DATA is the reason almost every
+// offset appears duplicated in codegen_bytes.tt (mo_string_layout vs
 // mo_string_layout_bss, mo_resolve_strings vs mo_resolve_strings_bss).
 //
-// LAYOUT DEL CAMINO B (el que importa)
+// LAYOUT OF PATH B (the one that matters)
 //
-//   fichero                        memoria
-//   -------                        -------
+//   file                           memory
+//   ----                           ------
 //   [0]        mach_header_64      __PAGEZERO  vmaddr 0,          vmsize 4GB
 //   [32]       11 load commands    __TEXT      vmaddr 0x100000000, N*16KB
-//   [704]      codigo (__text)                 mapeado r-x desde el fichero
-//   [...]      literales de cadena             al final de __text, alineados a 8
-//   [...]      ceros hasta N*16KB
+//   [704]      code (__text)                   mapped r-x from the file
+//   [...]      string literals                 at the end of __text, 8-aligned
+//   [...]      zeros up to N*16KB
 //   [N*16KB]   CS_SuperBlob        __DATA      vmaddr 0x100000000+N*16KB
 //                                              vmsize = bss, filesize 0 (zerofill)
-//                                  __LINKEDIT  vmaddr detras de __DATA
-//                                              contiene solo la firma
+//                                  __LINKEDIT  vmaddr right after __DATA
+//                                              holds only the signature
 //
-// Notese que __DATA y __LINKEDIT comparten fileoff: __DATA es S_ZEROFILL y no
-// ocupa nada en el fichero, asi que su rango de fichero esta vacio.
+// Note that __DATA and __LINKEDIT share a fileoff: __DATA is S_ZEROFILL and
+// takes nothing in the file, so its file range is empty.
 //
-// LA FIRMA
+// THE SIGNATURE
 //
-// macOS/arm64 NO ejecuta binarios sin firma. Una firma ad-hoc (sin certificado)
-// basta, y consiste en un CS_SuperBlob con un CS_CodeDirectory dentro que
-// guarda un SHA-256 por cada pagina de 4KB del fichero hasta `codeLimit`. El
-// kernel los recalcula al paginar; si uno no cuadra, mata el proceso.
+// macOS/arm64 does NOT run unsigned binaries. An ad-hoc signature (with no
+// certificate) is enough, and it consists of a CS_SuperBlob holding a
+// CS_CodeDirectory that stores one SHA-256 per 4KB page of the file up to
+// `codeLimit`. The kernel recomputes them while paging; if one does not match,
+// it kills the process.
 //
-// Dos cosas se pagan caras si se hacen mal:
-//   - los bytes hasheados tienen que ser EXACTAMENTE los del fichero final, con
-//     lo cual todo parcheo debe ocurrir ANTES de mo_sign_and_write_n;
-//   - nCodeSlots tiene que ser ceil(codeLimit / 4096) exacto.
+// Two things are expensive to get wrong:
+//   - the hashed bytes have to be EXACTLY those of the final file, so every
+//     patch must happen BEFORE mo_sign_and_write_n;
+//   - nCodeSlots has to be exactly ceil(codeLimit / 4096).
 //
-// bootstrap/linux/check_macho.py revalida ambas cosas recalculando los hashes
-// contra el fichero, que es lo mismo que hace `codesign -v`.
+// bootstrap/linux/check_macho.py revalidates both by recomputing the hashes
+// against the file, which is what `codesign -v` does.
 //
-// Depende de src/asm.tt (encoders) y lib/sha256.tt (hashes).
+// Depends on src/asm.tt (encoders) and lib/sha256.tt (hashes).
 // ============================================================================
 
-// La imagen completa. 1MB da para __TEXT de 64 paginas de 16KB mas la firma; el
-// compilador entero cabe en 7. mo_sign_and_write_n aborta si se pasa.
+// The complete image. 1MB is enough for a __TEXT of 64 16KB pages plus the
+// signature; the whole compiler fits in 7. mo_sign_and_write_n aborts if it
+// overflows.
 bss MO_IMG: 1048576
-bss MO_CUR: 8      // cursor de escritura dentro de MO_IMG
-bss MO_UUID: 16    // LC_UUID ya calculado, listo para emitir
-bss MO_DIGEST: 32  // scratch para el SHA-256 del que sale el UUID
+bss MO_CUR: 8      // write cursor inside MO_IMG
+bss MO_UUID: 16    // LC_UUID already computed, ready to emit
+bss MO_DIGEST: 32  // scratch for the SHA-256 the UUID comes from
 
-// capacidad de MO_IMG: la imagen completa (paginas de __TEXT + firma) tiene que
-// caber aqui. Si no cabe escribiriamos fuera del buffer y el binario saldria
-// truncado/corrupto sin ningun aviso.
+// capacity of MO_IMG: the complete image (__TEXT pages + signature) has to fit
+// here. If it does not, we would write past the buffer and the binary would
+// come out truncated/corrupt with no warning at all.
 fun mo_img_cap() -> u64 {
     return 1048576
 }
 
-// Deriva el UUID del CONTENIDO (SHA-256 del codigo, truncado a 16 bytes, con
-// los bits de version/variante de RFC 4122). Un UUID constante hace que dos
-// binarios distintos se presenten al kernel con la misma identidad; macOS
-// cachea informacion de carga por UUID y puede validar un binario contra los
-// datos cacheados de otro (sintoma: SIGKILL con `codesign -v` limpio).
+// Derives the UUID from the CONTENT (SHA-256 of the code, truncated to 16
+// bytes, with the RFC 4122 version/variant bits). A constant UUID would make
+// two different binaries present themselves to the kernel with the same
+// identity; macOS caches load information per UUID and can validate one binary
+// against another's cached data (symptom: SIGKILL with a clean `codesign -v`).
 fun mo_uuid_from_code(code: *u8, code_len: u64) {
     let dg: *u8 = MO_DIGEST
     sha256(code, code_len, dg)
@@ -101,10 +103,11 @@ fun mo_uuid_from_code(code: *u8, code_len: u64) {
     u[8] = (u[8] & 63) | 128
 }
 
-// Vuelca los 16 bytes del UUID ya calculado. Se separa de mo_uuid_from_code
-// porque el UUID hay que conocerlo ANTES de emitir las cabeceras (va dentro de
-// ellas) pero se deriva del codigo, que se copia DESPUES. El flujo es siempre:
-// calcular el UUID -> emitir cabeceras -> copiar codigo.
+// Dumps the 16 bytes of the already computed UUID. It is kept apart from
+// mo_uuid_from_code because the UUID has to be known BEFORE emitting the
+// headers (it goes inside them) but it is derived from the code, which is
+// copied AFTERWARDS. The flow is always: compute the UUID -> emit headers ->
+// copy code.
 fun mo_emit_uuid(img: *u8) {
     let u: *u8 = MO_UUID
     let i: u64 = 0
@@ -115,11 +118,11 @@ fun mo_emit_uuid(img: *u8) {
 }
 
 // ---------------------------------------------------------------------------
-// Cursor y primitivas de escritura
+// Cursor and write primitives
 //
-// El cursor vive en un bss y no en un parametro para que e8/e32/e64 tengan la
-// misma firma en todas partes y el codigo de emision se lea como una lista de
-// campos, sin arrastrar un puntero de posicion por cada llamada.
+// The cursor lives in a bss slot rather than in a parameter so that e8/e32/e64
+// have the same signature everywhere and the emission code reads as a list of
+// fields, without dragging a position pointer through every call.
 // ---------------------------------------------------------------------------
 
 fun mc_get() -> u64 {
@@ -132,18 +135,18 @@ fun mc_set(v: u64) {
     p[0] = v
 }
 
-// Escribe un byte en el cursor y lo avanza. Toda la emision pasa por aqui.
+// Writes a byte at the cursor and advances it. All emission goes through here.
 //
-// No comprueba el limite de MO_IMG: la comprobacion se hace una sola vez, sobre
-// el tamano total, en mo_sign_and_write_n y en emit_macho_image.
+// It does not check the MO_IMG limit: that check is done once, on the total
+// size, in mo_sign_and_write_n and in emit_macho_image.
 fun e8(img: *u8, v: u64) {
     let c: u64 = mc_get()
     img[c] = v & 255
     mc_set(c + 1)
 }
 
-// Little-endian: el orden de las estructuras Mach-O (cabecera, load commands,
-// secciones). Todo lo que describe el fichero va asi.
+// Little-endian: the order of the Mach-O structures (header, load commands,
+// sections). Everything that describes the file goes this way.
 fun e32(img: *u8, v: u64) {
     e8(img, v)
     e8(img, v >> 8)
@@ -156,10 +159,10 @@ fun e64(img: *u8, v: u64) {
     e32(img, v >> 32)
 }
 
-// Big-endian: el orden de las estructuras de FIRMA. El formato de code signing
-// de Apple es big-endian por herencia, al reves que el resto del fichero. Tener
-// las dos familias de funciones evita confundirse: si estas escribiendo la
-// firma usas eb*, si no, e*.
+// Big-endian: the order of the SIGNATURE structures. Apple's code signing
+// format is big-endian for historical reasons, the opposite of the rest of the
+// file. Having both families of functions avoids mistakes: if you are writing
+// the signature you use eb*, otherwise e*.
 fun eb32(img: *u8, v: u64) {
     e8(img, v >> 24)
     e8(img, v >> 16)
@@ -172,8 +175,8 @@ fun eb64(img: *u8, v: u64) {
     eb32(img, v)
 }
 
-// n bytes a cero. Se usa para el relleno de la ultima pagina de __TEXT y para
-// los campos reservados de los load commands.
+// n zero bytes. Used for the padding of the last __TEXT page and for the
+// reserved fields of the load commands.
 fun ezeros(img: *u8, n: u64) {
     let i: u64 = 0
     while i < n {
@@ -182,8 +185,9 @@ fun ezeros(img: *u8, n: u64) {
     }
 }
 
-// Nombre de segmento o seccion: 16 bytes fijos, rellenados con ceros. No lleva
-// terminador si el nombre mide justo 16; asi lo define el formato.
+// Segment or section name: a fixed 16 bytes, zero padded. It carries no
+// terminator if the name is exactly 16 long; that is how the format defines
+// it.
 fun ename16(img: *u8, name: *u8, nlen: u64) {
     let i: u64 = 0
     while i < nlen {
@@ -196,32 +200,32 @@ fun ename16(img: *u8, name: *u8, nlen: u64) {
     }
 }
 
-// CAMINO A: cabeceras sin __DATA. __TEXT es exactamente una pagina de 16KB.
+// PATH A: headers without __DATA. __TEXT is exactly one 16KB page.
 //
-// Emite la mach_header_64 y 10 load commands, 520 bytes en total, con lo que el
-// codigo empieza en el offset 552 (= 32 + 520). text_size es el tamano de la
-// seccion __text (codigo mas literales) y entry_off el desplazamiento del punto
-// de entrada dentro de ella.
+// Emits the mach_header_64 and 10 load commands, 520 bytes in total, so the
+// code starts at offset 552 (= 32 + 520). text_size is the size of the __text
+// section (code plus literals) and entry_off the displacement of the entry
+// point inside it.
 //
-// Los valores van en decimal por la ausencia de literales hex en el lenguaje
-// cuando se escribio. Los que aparecen sueltos:
+// The values are in decimal because the language had no hex literals when this
+// was written. The ones that appear bare:
 //
 //   4277009103 = 0xfeedfacf  MH_MAGIC_64
 //   16777228   = 0x0100000c  CPU_TYPE_ARM64
 //   2          = MH_EXECUTE
 //   2097285    = 0x00200085  MH_NOUNDEFS|MH_DYLDLINK|MH_TWOLEVEL|MH_PIE
-//   4294967296 = 0x100000000 tamano de __PAGEZERO y base de __TEXT
-//   4294967848 = 0x100000228 direccion de __text (= base + 552)
+//   4294967296 = 0x100000000 size of __PAGEZERO and base of __TEXT
+//   4294967848 = 0x100000228 address of __text (= base + 552)
 //   2147484672 = 0x80000400  S_ATTR_PURE_INSTRUCTIONS|S_ATTR_SOME_INSTRUCTIONS
 //   25 = LC_SEGMENT_64   14 = LC_LOAD_DYLINKER   2 = LC_SYMTAB
 //   11 = LC_DYSYMTAB     27 = LC_UUID            50 = LC_BUILD_VERSION
 //   29 = LC_CODE_SIGNATURE                       2147483688 = LC_MAIN
 //
-// MH_PIE esta puesto y es seguro: todas las referencias que emite el codegen
-// son relativas al PC (adrp/add, bl), asi que el binario funciona igual si el
-// cargador desliza la imagen, siempre que la deslice entera.
+// MH_PIE is set and it is safe: every reference the codegen emits is
+// PC-relative (adrp/add, bl), so the binary works the same if the loader
+// slides the image, as long as it slides all of it.
 fun mo_emit_headers(img: *u8, text_size: u64, entry_off: u64) {
-    // --- mach_header_64: magia, cpu, tipo, ncmds, sizeofcmds, flags ---
+    // --- mach_header_64: magic, cpu, type, ncmds, sizeofcmds, flags ---
     e32(img, 4277009103)
     e32(img, 16777228)
     e32(img, 0)
@@ -314,7 +318,7 @@ fun mo_emit_headers(img: *u8, text_size: u64, entry_off: u64) {
     e32(img, 80)
     ezeros(img, 72)
 
-    // --- LC_UUID (derivado del contenido) ---
+    // --- LC_UUID (derived from the content) ---
     e32(img, 27)
     e32(img, 24)
     mo_emit_uuid(img)
@@ -340,15 +344,16 @@ fun mo_emit_headers(img: *u8, text_size: u64, entry_off: u64) {
     e32(img, 238)
 }
 
-// CAMINO A completo: cabeceras + cuerpo + relleno + firma, y a disco.
+// Complete PATH A: headers + body + padding + signature, and out to disk.
 //
-// El cuerpo se copia tal cual desde code_ptr; no hay reubicaciones porque este
-// camino no soporta literales ni bss. Lo usa emit_macho_signed (el smoke de
-// 24.f) y, cuando el programa no declara ningun bss, emit_macho_code.
+// The body is copied verbatim from code_ptr; there are no relocations because
+// this path supports neither literals nor bss. It is used by emit_macho_signed
+// (the 24.f smoke test) and, when the program declares no bss, by
+// emit_macho_code.
 fun emit_macho_image(fd: u64, code_ptr: *u8, code_len: u64, entry_off: u64) {
     let img: *u8 = MO_IMG
-    // este path no esta parametrizado por paginas: __TEXT es exactamente una
-    // pagina de 16KB. Si el cuerpo no cabe hay que usar emit_macho_code_bss.
+    // this path is not parameterized by pages: __TEXT is exactly one 16KB
+    // page. If the body does not fit, emit_macho_code_bss has to be used.
     if 552 + code_len > 16384 {
         io_exit(72)
     }
@@ -356,72 +361,73 @@ fun emit_macho_image(fd: u64, code_ptr: *u8, code_len: u64, entry_off: u64) {
     mc_set(0)
     mo_emit_headers(img, code_len, entry_off)
 
-    // --- cuerpo __text: copia code_len bytes ---
+    // --- __text body: copies code_len bytes ---
     let bi: u64 = 0
     while bi < code_len {
         e8(img, code_ptr[bi])
         bi = bi + 1
     }
 
-    // relleno cero hasta 0x4000, firma ad-hoc y escritura
+    // zero padding up to 0x4000, ad-hoc signature and write
     let cur2: u64 = mc_get()
     ezeros(img, 16384 - cur2)
     mo_sign_and_write(fd, img)
 }
 
-// escribe el CS_SuperBlob, calcula los hashes de pagina y vuelca a fichero
-// Atajo para el caso de una sola pagina de 16KB.
+// writes the CS_SuperBlob, computes the page hashes and flushes to file
+// Shortcut for the single 16KB page case.
 fun mo_sign_and_write(fd: u64, img: *u8) {
     mo_sign_and_write_n(fd, img, 1)
 }
 
-// Escribe el CS_SuperBlob al final de la imagen, calcula los hashes de pagina y
-// vuelca todo a disco.
+// Writes the CS_SuperBlob at the end of the image, computes the page hashes
+// and flushes everything to disk.
 //
-// ESTRUCTURA QUE SE EMITE (todo big-endian)
+// STRUCTURE THAT IS EMITTED (all big-endian)
 //
 //   CS_SuperBlob            20 bytes
 //     magic      0xfade0cc0
-//     length     tamano total del blob
-//     count      1            un solo blob dentro
-//     index[0]   tipo 0 = CSSLOT_CODEDIRECTORY, offset 20
-//   CS_CodeDirectory        90 bytes de cabecera + los hashes
+//     length     total size of the blob
+//     count      1            a single blob inside
+//     index[0]   type 0 = CSSLOT_CODEDIRECTORY, offset 20
+//   CS_CodeDirectory        90 header bytes + the hashes
 //     magic      0xfade0c02
 //     length     cd_len
-//     version    0x20400      (132096) incluye los campos de exec segment
-//     flags      2            CS_ADHOC: firma sin certificado
-//     hashOffset 90           donde empiezan los hashes, relativo al CD
-//     identOffset 88          donde empieza el identificador ("a")
-//     nSpecialSlots 0         no hay slots negativos (requisitos, entitlements)
+//     version    0x20400      (132096) includes the exec segment fields
+//     flags      2            CS_ADHOC: signature with no certificate
+//     hashOffset 90           where the hashes start, relative to the CD
+//     identOffset 88          where the identifier ("a") starts
+//     nSpecialSlots 0         no negative slots (requirements, entitlements)
 //     nCodeSlots  text_pages*4
-//     codeLimit   text_vmsize  cuantos bytes del fichero cubre la firma
+//     codeLimit   text_vmsize  how many file bytes the signature covers
 //     hashSize 32, hashType 2 (SHA-256), platform 0, pageShift 12 (4KB)
-//     ... campos reservados y de version ...
+//     ... reserved and version fields ...
 //     execSegBase 0, execSegLimit text_vmsize, execSegFlags 1 (MAIN_BINARY)
 //     ident       "a\0"
 //     hashes      nCodeSlots * 32 bytes
 //
-// PUNTOS DELICADOS
+// DELICATE POINTS
 //
-//   - pageShift es 12 (paginas de 4KB) aunque las paginas VIRTUALES de arm64
-//     macOS sean de 16KB. Son cosas distintas: el tamano de pagina de la firma
-//     lo fija Apple en 4KB y por eso hay CUATRO hashes por cada pagina de 16KB
-//     de __TEXT. De ahi n_hashes = text_pages * 4.
+//   - pageShift is 12 (4KB pages) even though the VIRTUAL pages of arm64 macOS
+//     are 16KB. They are different things: the signature page size is fixed by
+//     Apple at 4KB and that is why there are FOUR hashes per 16KB page of
+//     __TEXT. Hence n_hashes = text_pages * 4.
 //
-//   - codeLimit tiene que coincidir con el dataoff del LC_CODE_SIGNATURE, o sea
-//     con donde empieza la propia firma: la firma no se firma a si misma.
+//   - codeLimit has to match the dataoff of the LC_CODE_SIGNATURE, that is,
+//     where the signature itself starts: the signature does not sign itself.
 //
-//   - Los hashes se calculan DESPUES de emitir la cabecera del blob, leyendo de
-//     la propia imagen (img + slot*4096). Como en ese momento las paginas de
-//     __TEXT ya estan completas y parcheadas, los bytes hasheados son
-//     exactamente los que iran al fichero. Cualquier modificacion posterior a
-//     esta funcion invalidaria la firma en silencio.
+//   - The hashes are computed AFTER emitting the blob header, reading from the
+//     image itself (img + slot*4096). Since by then the __TEXT pages are
+//     already complete and patched, the hashed bytes are exactly those that
+//     will go to the file. Any modification after this function would
+//     invalidate the signature silently.
 //
-//   - hbase = text_vmsize + 110 sale de: la firma empieza en text_vmsize, el
-//     SuperBlob ocupa 20, la cabecera del CodeDirectory 90, total 110.
+//   - hbase = text_vmsize + 110 comes from: the signature starts at
+//     text_vmsize, the SuperBlob takes 20, the CodeDirectory header 90, 110 in
+//     total.
 //
-// El identificador es "a" a secas. Podria ser cualquier cosa no vacia; ni el
-// kernel ni codesign lo interpretan en una firma ad-hoc.
+// The identifier is a plain "a". It could be anything non-empty; neither the
+// kernel nor codesign interpret it in an ad-hoc signature.
 fun mo_sign_and_write_n(fd: u64, img: *u8, text_pages: u64) {
     let n_hashes: u64 = text_pages * 4
     let cd_len: u64 = 88 + 2 + n_hashes * 32
@@ -468,19 +474,20 @@ fun mo_sign_and_write_n(fd: u64, img: *u8, text_pages: u64) {
     io_write(fd, img, text_vmsize + cs_len)
 }
 
-// Buffer para el cuerpo de 12 bytes de emit_macho_signed.
+// Buffer for the 12-byte body of emit_macho_signed.
 bss MO_CODE: 64
 
-// Smoke del hito 24.f: emite un binario cuyo unico contenido es `exit(code)`.
+// Smoke test of milestone 24.f: emits a binary whose only content is
+// `exit(code)`.
 //
 //     movz x0, #code
 //     movz x16, #1      (SYS_exit)
 //     svc  #0x80
 //
-// Se ensambla a mano byte a byte porque es anterior al buffer de codigo de
-// codegen_bytes.tt. Lo usa tests/macho42_test.tt, que produce un binario que
-// devuelve 42 y es el primer ejecutable que tetsuo genero sin ninguna
-// herramienta externa.
+// It is assembled by hand, byte by byte, because it predates the code buffer
+// of codegen_bytes.tt. It is used by tests/macho42_test.tt, which produces a
+// binary that returns 42 and is the first executable tetsuo generated without
+// any external tool.
 fun emit_macho_signed(fd: u64, exit_code: u64) {
     let code: *u8 = MO_CODE
     let w0: u64 = enc_movz(0, exit_code, 0)
@@ -502,17 +509,17 @@ fun emit_macho_signed(fd: u64, exit_code: u64) {
 }
 
 // ============================================================================
-// CAMINO B: cabeceras con __DATA/__bss y __TEXT multi-pagina (hito 24.g)
+// PATH B: headers with __DATA/__bss and multi-page __TEXT (milestone 24.g)
 // ============================================================================
 //
-// Inyecta un LC_SEGMENT_64 __DATA con una seccion __bss S_ZEROFILL entre __TEXT
-// y __LINKEDIT. Cuentas del tamano de las cabeceras:
+// Injects an LC_SEGMENT_64 __DATA with an S_ZEROFILL __bss section between
+// __TEXT and __LINKEDIT. Header size arithmetic:
 //
 //     32   mach_header_64
-//     72   LC_SEGMENT_64 __PAGEZERO   (sin secciones)
-//    152   LC_SEGMENT_64 __TEXT       (72 + 80 de la seccion __text)
-//    152   LC_SEGMENT_64 __DATA       (72 + 80 de la seccion __bss)
-//     72   LC_SEGMENT_64 __LINKEDIT   (sin secciones)
+//     72   LC_SEGMENT_64 __PAGEZERO   (no sections)
+//    152   LC_SEGMENT_64 __TEXT       (72 + 80 for the __text section)
+//    152   LC_SEGMENT_64 __DATA       (72 + 80 for the __bss section)
+//     72   LC_SEGMENT_64 __LINKEDIT   (no sections)
 //     32   LC_LOAD_DYLINKER
 //     24   LC_SYMTAB
 //     80   LC_DYSYMTAB
@@ -521,39 +528,39 @@ fun emit_macho_signed(fd: u64, exit_code: u64) {
 //     24   LC_MAIN
 //     16   LC_CODE_SIGNATURE
 //    ---
-//    704   total  ->  ncmds = 11, sizeofcmds = 672, codigo en el offset 704
+//    704   total  ->  ncmds = 11, sizeofcmds = 672, code at offset 704
 //
-// PARAMETROS
+// PARAMETERS
 //
-//   text_size    tamano de la seccion __text (codigo + literales)
-//   text_pages   cuantas paginas de 16KB ocupa __TEXT. Este es el parametro que
-//                faltaba antes de la sesion C3a: estaba fijado a 1 pagina y la
-//                direccion base de __bss se calculaba como 16384 + offset, lo
-//                que rompia cualquier binario de mas de una pagina.
-//   entry_off    entrada, relativa al inicio de __text
-//   bss_vmsize   tamano total del bss, ya redondeado a 16KB
+//   text_size    size of the __text section (code + literals)
+//   text_pages   how many 16KB pages __TEXT takes. This is the parameter that
+//                was missing before session C3a: it was pinned to 1 page and
+//                the base address of __bss was computed as 16384 + offset,
+//                which broke any binary larger than one page.
+//   entry_off    entry point, relative to the start of __text
+//   bss_vmsize   total size of the bss, already rounded up to 16KB
 //
-// DIRECCIONES QUE SE DERIVAN
+// ADDRESSES THAT ARE DERIVED
 //
-//   __TEXT      0x100000000                       (justo detras de __PAGEZERO)
+//   __TEXT      0x100000000                       (right after __PAGEZERO)
 //   __DATA      0x100000000 + text_pages*16384
 //   __LINKEDIT  __DATA + bss_vmsize
 //
-// Los tres vmaddr son multiplos de 16KB porque text_pages y bss_vmsize lo son;
-// el cargador exige que vmaddr y fileoff sean congruentes modulo el tamano de
-// pagina.
+// All three vmaddr are multiples of 16KB because text_pages and bss_vmsize
+// are; the loader requires vmaddr and fileoff to be congruent modulo the page
+// size.
 //
-// __DATA y __LINKEDIT comparten fileoff (= text_vmsize) y no se solapan porque
-// __DATA tiene filesize 0: es S_ZEROFILL, el kernel lo mapea como memoria
-// anonima a cero y no lee nada del fichero.
+// __DATA and __LINKEDIT share a fileoff (= text_vmsize) and do not overlap
+// because __DATA has filesize 0: it is S_ZEROFILL, the kernel maps it as
+// zeroed anonymous memory and reads nothing from the file.
 //
-// Valores literales especificos de este camino:
-//   4294968000 = 0x1000002c0  direccion de __text (= 0x100000000 + 704)
-//   704 + entry_off           entryoff de LC_MAIN, relativo al inicio del fichero
-//   1 en flags de seccion     S_ZEROFILL
+// Literal values specific to this path:
+//   4294968000 = 0x1000002c0  address of __text (= 0x100000000 + 704)
+//   704 + entry_off           LC_MAIN entryoff, relative to the file start
+//   1 in the section flags    S_ZEROFILL
 //   cs_datasize = 110 + text_pages*128
-//        110 = 20 (SuperBlob) + 90 (cabecera del CodeDirectory)
-//        128 = 4 hashes de 32 bytes por cada pagina de 16KB
+//        110 = 20 (SuperBlob) + 90 (CodeDirectory header)
+//        128 = 4 hashes of 32 bytes per 16KB page
 fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u64, bss_vmsize: u64) {
     let text_vmsize: u64 = text_pages * 16384
     let data_vmaddr: u64 = 4294967296 + text_vmsize
@@ -572,9 +579,8 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     e32(img, 0)
 
     // --- LC_SEGMENT_64 __PAGEZERO ---
-    // Los primeros 4GB sin mapear. Es lo que hace que desreferenciar nil (o
-    // cualquier puntero de 32 bits mal extendido) de un fallo limpio en vez de
-    // leer basura.
+    // The first 4GB left unmapped. It is what makes dereferencing nil (or any
+    // badly extended 32-bit pointer) fault cleanly instead of reading garbage.
     e32(img, 25)
     e32(img, 72)
     let pz: str = '__PAGEZERO'
@@ -588,11 +594,11 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     e32(img, 0)
     e32(img, 0)
 
-    // --- LC_SEGMENT_64 __TEXT (r-x) con la seccion __text ---
+    // --- LC_SEGMENT_64 __TEXT (r-x) with the __text section ---
     // vmaddr/vmsize/fileoff/filesize, maxprot=7 (rwx), initprot=5 (r-x),
-    // nsects=1, flags=0. El segmento arranca en el offset 0 del fichero, o sea
-    // que la propia cabecera Mach-O queda mapeada dentro de __TEXT; es lo
-    // normal y lo que permite que adrp alcance las cadenas.
+    // nsects=1, flags=0. The segment starts at offset 0 of the file, which
+    // means the Mach-O header itself is mapped inside __TEXT; that is normal
+    // and it is what lets adrp reach the strings.
     e32(img, 25)
     e32(img, 152)
     let tx: str = '__TEXT'
@@ -619,9 +625,9 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     e32(img, 0)
     e32(img, 0)
 
-    // --- LC_SEGMENT_64 __DATA (rw-) con la seccion __bss ---
-    // filesize = 0: no ocupa nada en el fichero. vmsize = bss_vmsize, que el
-    // kernel mapea como memoria anonima puesta a cero.
+    // --- LC_SEGMENT_64 __DATA (rw-) with the __bss section ---
+    // filesize = 0: it takes nothing in the file. vmsize = bss_vmsize, which
+    // the kernel maps as zeroed anonymous memory.
     e32(img, 25)
     e32(img, 152)
     let da: str = '__DATA'
@@ -649,8 +655,8 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     e32(img, 0)
 
     // --- LC_SEGMENT_64 __LINKEDIT (r--) ---
-    // Aqui solo vive la firma. vmsize fijo de 16KB (una pagina) porque
-    // cs_datasize nunca se acerca a eso: son ~1KB para 7 paginas de __TEXT.
+    // Only the signature lives here. A fixed vmsize of 16KB (one page) because
+    // cs_datasize never comes close to that: it is ~1KB for 7 __TEXT pages.
     e32(img, 25)
     e32(img, 72)
     let le: str = '__LINKEDIT'
@@ -665,9 +671,9 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     e32(img, 0)
 
     // --- LC_LOAD_DYLINKER ---
-    // El binario no enlaza contra ninguna dylib (todo son syscalls directas),
-    // pero macOS espera un ejecutable "dinamico" con dyld declarado. El offset
-    // 12 es donde empieza la ruta dentro del propio load command.
+    // The binary links against no dylib at all (everything is direct
+    // syscalls), but macOS expects a "dynamic" executable with dyld declared.
+    // Offset 12 is where the path starts inside the load command itself.
     e32(img, 14)
     e32(img, 32)
     e32(img, 12)
@@ -683,9 +689,9 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     }
 
     // --- LC_SYMTAB ---
-    // symoff, nsyms, stroff, strsize. No hay tabla de simbolos: nsyms y strsize
-    // son 0. Los offsets apuntan al inicio de __LINKEDIT porque el formato
-    // exige que caigan dentro de ese segmento aunque no se usen.
+    // symoff, nsyms, stroff, strsize. There is no symbol table: nsyms and
+    // strsize are 0. The offsets point at the start of __LINKEDIT because the
+    // format requires them to fall inside that segment even when unused.
     e32(img, 2)
     e32(img, 24)
     e32(img, text_vmsize)
@@ -694,8 +700,8 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     e32(img, 0)
 
     // --- LC_DYSYMTAB ---
-    // Los 18 campos a cero. Sin simbolos no hay nada que particionar en
-    // locales/externos/indefinidos.
+    // All 18 fields at zero. With no symbols there is nothing to partition
+    // into local/external/undefined.
     e32(img, 11)
     e32(img, 80)
     ezeros(img, 72)
@@ -706,7 +712,7 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
 
     // --- LC_BUILD_VERSION ---
     // platform=1 (macOS), minos=0x0b0000 (11.0), sdk=0x0b0000, ntools=0.
-    // Declarar 11.0 es lo minimo para arm64.
+    // Declaring 11.0 is the minimum for arm64.
     e32(img, 50)
     e32(img, 24)
     e32(img, 1)
@@ -715,16 +721,16 @@ fun mo_emit_headers_bss(img: *u8, text_size: u64, text_pages: u64, entry_off: u6
     e32(img, 0)
 
     // --- LC_MAIN ---
-    // entryoff (relativo al inicio del FICHERO, no de __text) y stacksize=0
-    // para aceptar el tamano de pila por defecto.
+    // entryoff (relative to the start of the FILE, not of __text) and
+    // stacksize=0 to accept the default stack size.
     e32(img, 2147483688)
     e32(img, 24)
     e64(img, 704 + entry_off)
     e64(img, 0)
 
     // --- LC_CODE_SIGNATURE ---
-    // dataoff = donde empieza la firma = fin de __TEXT = codeLimit.
-    // Tiene que ir el ULTIMO: la firma cubre todo lo anterior.
+    // dataoff = where the signature starts = end of __TEXT = codeLimit.
+    // It has to come LAST: the signature covers everything before it.
     e32(img, 29)
     e32(img, 16)
     e32(img, text_vmsize)

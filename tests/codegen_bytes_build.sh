@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Hito 24.e: stage1 compila un programa directamente a un Mach-O firmado por el
-# codegen de bytes (src/codegen_bytes.tt) y, en macOS nativo, el binario emitido
-# se ejecuta sin herramientas externas y devuelve 42.
+# Milestone 24.e: stage1 compiles a program straight into a Mach-O signed by
+# the byte codegen (src/codegen_bytes.tt) and, on native macOS, the emitted
+# binary runs with no external tools and returns 42.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -20,7 +20,7 @@ fi
 $CC -c "$BUILD/cgb_emit.s" -o "$BUILD/cgb_emit.o"
 $CC -e _tt_start -o "$BUILD/cgb_emit" "$BUILD/cgb_emit.o"
 
-# ejecuta el emisor: escribe /tmp/tt_cgb (Mach-O firmado por el codegen de bytes)
+# runs the emitter: writes /tmp/tt_cgb (Mach-O signed by the byte codegen)
 rm -f /tmp/tt_cgb
 "$BUILD/cgb_emit"
 
