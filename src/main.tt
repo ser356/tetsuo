@@ -369,19 +369,12 @@ fun main(argc: u64, argv: **u8) -> u32 {
     let flag_obj: str = '--emit=obj'
     let flag_elf: str = '--emit=elf'
     let flag_pe_arm64: str = '--emit=pe-arm64'
+    let flag_macos: str = '--target=macos'
     let flag_linux: str = '--target=linux'
     let flag_json: str = '--diagnostics=json'
     let flag_windows_x64: str = '--target=windows-x64'
     let is_dump_tok: u64 = cstr_eq(a1, flag_tok.ptr, flag_tok.len)
     let is_dump_ir: u64 = cstr_eq(a1, flag_ir.ptr, flag_ir.len)
-    let is_macho: u64 = cstr_eq(a1, flag_macho.ptr, flag_macho.len)
-    let is_obj: u64 = cstr_eq(a1, flag_obj.ptr, flag_obj.len)
-    let is_elf: u64 = cstr_eq(a1, flag_elf.ptr, flag_elf.len)
-    let is_pe_arm64: u64 = cstr_eq(a1, flag_pe_arm64.ptr, flag_pe_arm64.len)
-    let is_linux: u64 = cstr_eq(a1, flag_linux.ptr, flag_linux.len)
-    let is_json: u64 = cstr_eq(a1, flag_json.ptr, flag_json.len)
-    let is_windows_x64: u64 = cstr_eq(a1, flag_windows_x64.ptr, flag_windows_x64.len)
-    diagnostics_set_json(is_json)
 
     if is_dump_tok == 1 {
         let path: *u8 = argv[2]
@@ -421,6 +414,35 @@ fun main(argc: u64, argv: **u8) -> u32 {
     }
 
     if argc < 4 { return EXIT_BAD_ARGS }
+    let is_macho: u64 = 0
+    let is_obj: u64 = 0
+    let is_elf: u64 = 0
+    let is_pe_arm64: u64 = 0
+    let is_macos: u64 = 0
+    let is_linux: u64 = 0
+    let is_json: u64 = 0
+    let is_windows_x64: u64 = 0
+    let option_i: u64 = 1
+    while option_i < argc - 3 {
+        let option: *u8 = argv[option_i]
+        let known: u64 = 0
+        if cstr_eq(option, flag_macho.ptr, flag_macho.len) == 1 { is_macho = 1; known = 1 }
+        if cstr_eq(option, flag_obj.ptr, flag_obj.len) == 1 { is_obj = 1; known = 1 }
+        if cstr_eq(option, flag_elf.ptr, flag_elf.len) == 1 { is_elf = 1; known = 1 }
+        if cstr_eq(option, flag_pe_arm64.ptr, flag_pe_arm64.len) == 1 { is_pe_arm64 = 1; known = 1 }
+        if cstr_eq(option, flag_macos.ptr, flag_macos.len) == 1 { is_macos = 1; known = 1 }
+        if cstr_eq(option, flag_linux.ptr, flag_linux.len) == 1 { is_linux = 1; known = 1 }
+        if cstr_eq(option, flag_json.ptr, flag_json.len) == 1 { is_json = 1; known = 1 }
+        if cstr_eq(option, flag_windows_x64.ptr, flag_windows_x64.len) == 1 { is_windows_x64 = 1; known = 1 }
+        if known == 0 { return EXIT_BAD_ARGS }
+        option_i = option_i + 1
+    }
+    if is_macho + is_elf + is_pe_arm64 > 1 { return EXIT_BAD_ARGS }
+    if is_macos + is_linux + is_windows_x64 > 1 { return EXIT_BAD_ARGS }
+    if is_macho + is_elf + is_pe_arm64 > 0 {
+        if is_obj + is_macos + is_linux + is_windows_x64 > 0 { return EXIT_BAD_ARGS }
+    }
+    diagnostics_set_json(is_json)
     let input: *u8 = argv[argc - 3]
     let output: *u8 = argv[argc - 1]
 
@@ -476,7 +498,7 @@ fun main(argc: u64, argv: **u8) -> u32 {
         let o: *Out = OUT_STORAGE
         out_init(o, fd, OUT_BUF, 65536)
         if is_windows_x64 == 1 {
-            codegen_x64(o, prog, irhead)
+            codegen_x64(o, prog, irhead, is_obj)
             out_flush(o)
             io_close(fd)
             return EXIT_OK

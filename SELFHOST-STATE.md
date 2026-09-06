@@ -6,10 +6,10 @@ Verified 2026-09-05.
 
 | Platform | File | Bytes | SHA-256 |
 |---|---|---:|---|
-| macOS ARM64 | `bootstrap/tetsuoc.macho` | 214766 | `d44862e2a63aa6e28c16340954c3159714446b3e82b10070e8febaa046cf2064` |
-| Linux AArch64 | `bootstrap/tetsuoc.elf` | 196608 | `09dab27734edbcff00fa6c8782475cda3287cee353c6ca1d023a82dd05dbfc9d` |
-| Windows ARM64 | `bootstrap/tetsuoc-arm64.exe` | 197120 | `f518eb1551540bdf4f8547bac8e899282048f8e989075587cfd4b832744c9866` |
-| Windows x64 | `bootstrap/tetsuoc-x64.exe` | 586240 | `ee467a4e96f4d3dfadd50ed3b3a9e72b9e48b62abf0d0b04d7e871b47b546623` |
+| macOS ARM64 | `bootstrap/tetsuoc.macho` | 214766 | `3992ce7e0d6f3dbe3aa50c35747014974e9b205c1470591eff08e0e64eda00f7` |
+| Linux AArch64 | `bootstrap/tetsuoc.elf` | 200704 | `7017bab5c5eab6ddf6702a16bd292b2c2f91f911091564b7474faa67ec652ef1` |
+| Windows ARM64 | `bootstrap/tetsuoc-arm64.exe` | 198144 | `02972c3b6401afdc44b634d67891fd01f8698e726e8dd4aed14233f561f08132` |
+| Windows x64 | `bootstrap/tetsuoc-x64.exe` | 589312 | `ba85f95f1e42206b9453590f11b3dafb34f43b6eec7ffaca971913c36c1c5589` |
 
 ## Verified invariants
 

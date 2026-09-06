@@ -11,6 +11,8 @@ Verified 2026-09-05.
 | Windows ARM64 | direct AArch64 bytes | PE32+ | msvcrt IAT | structural | complete, hardware untested |
 | Windows x64 | textual AMD64 → COFF | deterministic PE32+ linker | msvcrt IAT | yes | production bootstrap |
 | macOS ARM64 object | textual AArch64 | external object link | caller | ABI smoke | FFI-ready |
+| Linux ARM64 object | textual AArch64 | external object link | caller | smoke | FFI-ready |
+| Windows x64 object | textual AMD64 | external COFF assembly | caller | smoke | FFI-ready |
 | QEMU virt | textual AArch64 | external bare-metal link | PL011/MMIO | separate | experimental |
 
 ## Shared frontend
@@ -40,8 +42,9 @@ sections so Windows accepts the PE.
 
 ## FFI object mode
 
-`--emit=obj` omits `_tt_start` and preserves AAPCS64. `lib/freestanding.tt`
-has no global scratch. `lib/release_name.tt` provides a tested C ABI example.
+`--emit=obj` omits process startup. It preserves AAPCS64 on macOS/Linux ARM64
+and the Windows x64 ABI with `--target=windows-x64`. `lib/freestanding.tt` has
+no global scratch. `lib/release_name.tt` provides a tested C ABI example.
 
 ## Verification
 

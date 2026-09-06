@@ -12,6 +12,8 @@ itself bit for bit and emits native executables for four targets.
 | Windows ARM64 | `--emit=pe-arm64` | PE32+ | `bootstrap/tetsuoc-arm64.exe` | structural |
 | Windows x64 | `--target=windows-x64` | GAS/COFF assembly | `bootstrap/tetsuoc-x64.exe` | native fixpoint + smoke |
 | macOS ARM64 C ABI | `--emit=obj` | linkable assembly | macOS seed | C/Rust ABI smoke |
+| Linux ARM64 C ABI | `--emit=obj --target=linux` | linkable assembly | Linux seed | object smoke |
+| Windows x64 C ABI | `--emit=obj --target=windows-x64` | linkable GAS/COFF assembly | x64 seed | COFF smoke |
 
 Bare-metal QEMU `virt` remains a separate experimental route in `test.sh`.
 
@@ -23,6 +25,8 @@ tetsuoc --emit=elf input.tt -o output
 tetsuoc --emit=pe-arm64 input.tt -o output.exe
 tetsuoc --target=windows-x64 input.tt -o output.s
 tetsuoc --emit=obj input.tt -o module.s
+tetsuoc --emit=obj --target=linux input.tt -o module.s
+tetsuoc --emit=obj --target=windows-x64 input.tt -o module.s
 tetsuoc --target=linux input.tt -o output.s
 tetsuoc --diagnostics=json input.tt -o output.s
 tetsuoc --dump-tokens input.tt

@@ -27,7 +27,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: bash bootstrap/linux/verify_native_elf.sh
+        - run: |
+          bash bootstrap/linux/verify_native_elf.sh
+          bash tests/linux_obj_build.sh
 
   windows:
     name: Windows x64

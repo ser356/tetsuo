@@ -50,6 +50,17 @@ grep -q '^X64_BUF:' "$tmp/ops.s"
 grep -q 'call    _write' "$tmp/ops.s"
 "$compiler" --target=windows-x64 tests/fixpoint_entry.tt -o "$tmp/compiler.s"
 grep -q 'testb.*(%rsp)' "$tmp/compiler.s"
+cat > "$tmp/component.tt" <<'EOF'
+fun tt_component_add(a: u64, b: u64) -> u64 {
+    return a + b
+}
+EOF
+"$compiler" --target=windows-x64 --emit=obj "$tmp/component.tt" -o "$tmp/component.s"
+grep -q '^tt_component_add:' "$tmp/component.s"
+if grep -Eq '(^|[[:space:]])(tt_start|__getmainargs|main|exit)($|[[:space:]])' "$tmp/component.s"; then
+    exit 1
+fi
+clang --target=x86_64-windows-msvc -c "$tmp/component.s" -o "$tmp/component.obj"
 if clang --target=x86_64-windows-msvc -c "$tmp/ops.s" -o "$tmp/ops.obj"; then
     python3 - "$tmp/ops.obj" <<'PY'
 import struct,sys

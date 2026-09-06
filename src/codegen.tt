@@ -1124,5 +1124,9 @@ fun codegen(o: *Out, target: u64, no_entry: u64, prog: *Program, funcs: *IrFn) {
     }
     emit_strings(o, prog)
     emit_bsses(o, prog)
+    if target == TGT_LINUX {
+        let stack: str = '\n    .section .note.GNU-stack,"",@progbits\n'
+        out_bytes(o, stack.ptr, stack.len)
+    }
     out_flush(o)
 }

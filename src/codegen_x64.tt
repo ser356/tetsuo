@@ -197,9 +197,13 @@ fun x64_instr(o: *Out, fn: *IrFn, ins: *Ins, epilogue: u64) {
     if ins.op == IR_LABEL { let l0: str = '.L'; out_bytes(o, l0.ptr, l0.len); out_u64(o, ins.label); let l1: str = ':\n'; out_bytes(o, l1.ptr, l1.len); return }
 }
 
-fun codegen_x64(o: *Out, prog: *Program, funcs: *IrFn) {
-    let text: str = '    .text\n    .globl  tt_start\ntt_start:\n    subq    $88, %rsp\n    leaq    48(%rsp), %rcx\n    leaq    56(%rsp), %rdx\n    leaq    64(%rsp), %r8\n    xorl    %r9d, %r9d\n    movl    $0, 40(%rsp)\n    leaq    40(%rsp), %rax\n    movq    %rax, 32(%rsp)\n    call    __getmainargs\n    movl    48(%rsp), %ecx\n    movq    56(%rsp), %rdx\n    call    main\n    movl    %eax, %ecx\n    call    exit\n    int3\n'
+fun codegen_x64(o: *Out, prog: *Program, funcs: *IrFn, no_entry: u64) {
+    let text: str = '    .text\n'
     out_bytes(o, text.ptr, text.len)
+    if no_entry == 0 {
+        let start: str = '    .globl  tt_start\ntt_start:\n    subq    $88, %rsp\n    leaq    48(%rsp), %rcx\n    leaq    56(%rsp), %rdx\n    leaq    64(%rsp), %r8\n    xorl    %r9d, %r9d\n    movl    $0, 40(%rsp)\n    leaq    40(%rsp), %rax\n    movq    %rax, 32(%rsp)\n    call    __getmainargs\n    movl    48(%rsp), %ecx\n    movq    56(%rsp), %rdx\n    call    main\n    movl    %eax, %ecx\n    call    exit\n    int3\n'
+        out_bytes(o, start.ptr, start.len)
+    }
     let fn: *IrFn = funcs
     let ep: u64 = 0
     while fn != nil {
