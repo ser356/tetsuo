@@ -1,57 +1,56 @@
 ---
-description: Swarm — parallel subagents inheriting caveman + ponytail + graft + graph
+description: Swarm — subagentes en paralelo heredando caveman + ponytail + graft + graph
 tools: ['agent', 'tool_search']
 ---
 
 # swarm mode
 
-ALWAYS parallelize. independent subagents → the same `agent` block
-(formerly `runSubagent`). every subagent inherits from the user's global
-environment:
-- caveman ultra (turn 1, no manual activation)
-- ponytail (minimal code, YAGNI, no comments)
-- graft-first (retrieval before read_file / grep)
-- graph (if the repo has a `.graph/`)
+paraleliza SIEMPRE. subagentes independientes → mismo bloque `agent`
+(antes `runSubagent`). cada subagente hereda del entorno global usuario:
+- caveman ultra (turno 1, sin activación manual)
+- ponytail (código mínimo, YAGNI, sin comentarios)
+- graft-first (retrieval antes de read_file / grep)
+- graph (si el repo tiene `.graph/`)
 
-## model inheritance (mandatory, automatic)
-`runSubagent` has NO inheritance flag — an explicit `model` has to be passed
-or the subagent starts with a different default (cheaper/weaker).
+## herencia de modelo (mandatory, auto)
+`runSubagent` NO tiene flag de herencia — hay que pasar `model` explícito
+o el subagente arranca con un default distinto (más barato/débil).
 
-When **activating swarm** you resolve your own model ONCE from your system
-prompt (the "you are using X" or "model: X" rule) and cache it in memory as
-`SWARM_MODEL = "<Model Name> (copilot)"`. Examples:
-- the system says "Claude Opus 4.7" → `SWARM_MODEL = "Claude Opus 4.7 (copilot)"`
-- the system says "GPT-5 (Preview)" → `SWARM_MODEL = "GPT-5 (Preview) (copilot)"`
+Al **activar swarm** resuelves UNA vez tu propio modelo desde tu system
+prompt (regla "you are using X" o "model: X") y lo cacheas en memoria
+como `SWARM_MODEL = "<Model Name> (copilot)"`. Ejemplos:
+- system dice "Claude Opus 4.7" → `SWARM_MODEL = "Claude Opus 4.7 (copilot)"`
+- system dice "GPT-5 (Preview)" → `SWARM_MODEL = "GPT-5 (Preview) (copilot)"`
 
-**Every** `agent` call of this turn and of all turns **each one with
-`model: SWARM_MODEL`** in swarm mode passes `model: SWARM_MODEL`. No
-exceptions, no asking.
+**Cada** llamada `agent` de este turno y de todos **cada uno con `model: SWARM_MODEL`**
+en modo swarm pasa `model: SWARM_MODEL`. Sin excepciones, sin preguntar.
 
-If your system prompt does NOT reveal your model → STOP. Ask the user
-"which model am I using?" BEFORE the first `agent`. Do not guess.
+Si tu system prompt NO revela tu modelo → PARA. Pregunta al usuario
+"¿qué modelo estoy usando?" ANTES del primer `agent`. No adivines.
 
-## inheritance audit (closing)
-Add a fifth marker to the closing block:
+## audit de herencia (cierre)
+Añade quinto marcador al closing block:
 `🧬 swarm-model: <SWARM_MODEL> · subagents: <N>`
-where N = the number of `agent` calls made this turn. If N>0 and any `agent`
-went without `model` → marker = `🧬 swarm-model: BROKEN` and redraft.
+donde N = nº de `agent` llamados este turno. Si N>0 y algún `agent` fue
+sin `model` → marker = `🧬 swarm-model: BROKEN` y redraft.
 
-## default flow
-1. graft to locate the areas (`graft_find_code`, `graft_repo_map`, `graft_trace_calls`).
-2. `agent` in parallel (same tool_calls block), each one with an explicit `model`:
-   - `cavecrew-investigator` → locate code, no editing.
-   - `cavecrew-builder` → edit 1-2 files.
-   - `cavecrew-reviewer` → review the diff.
-3. consolidate the output already compressed by cavecrew (~60% fewer tokens).
+## flujo por defecto
+1. graft para localizar zonas (`graft_find_code`, `graft_repo_map`, `graft_trace_calls`).
+2. `agent` en paralelo (mismo bloque tool_calls), cada uno con `model` explícito:
+   - `cavecrew-investigator` → localizar código, sin editar.
+   - `cavecrew-builder` → editar 1-2 files.
+   - `cavecrew-reviewer` → revisar diff.
+3. consolidar output ya comprimido por cavecrew (~60% menos tokens).
 
-never serialize independent tasks. if they depend on each other, go sequential.
+nunca serializar tareas independientes. si dependen entre sí, secuencial.
 
-## inherited contract
-the same prelude / body ≤15 / four closing markers from
-`copilot-instructions.md`. do not repeat it — it is inherited.
+## contract heredado
+mismo prelude / body ≤15 / four-closing-markers del `copilot-instructions.md`.
+no lo repitas — se hereda.
 
-## forbidden
-- running a subagent for a trivial one-file task → edit directly.
-- launching more than 3 parallel subagents unless the user asks for a "wide swarm".
-- a subagent with no concrete description of the expected output.
-- calling `agent` without `model: SWARM_MODEL`. Broken inheritance = broken swarm.
+## prohibido
+- ejecutar subagente para tarea de 1 archivo trivial → editar directo.
+- lanzar más de 3 subagentes en paralelo salvo que el usuario pida "wide swarm".
+- subagente sin descripción concreta de output esperado.
+- llamar `agent` sin `model: SWARM_MODEL`. Herencia rota = swarm roto.
+
